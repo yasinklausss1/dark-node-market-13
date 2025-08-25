@@ -5,18 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Oracle Market</title>
     <script>
-        // GitHub Pages SPA redirect - store the current path in sessionStorage
-        const currentPath = window.location.pathname.slice(0, -1) + 
-                          (window.location.search ? window.location.search : '') + 
-                          (window.location.hash ? window.location.hash : '');
-        
-        if (currentPath !== '/') {
-            // Store the path in sessionStorage
-            sessionStorage.setItem('github-pages-spa-redirect', currentPath);
-        }
-        
-        // Redirect to root
-        window.location.replace(window.location.origin + '/');
+        // GitHub Pages SPA redirect for custom domain
+        var pathSegmentsToKeep = 0;
+        var l = window.location;
+        l.replace(
+          l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+          l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?p=' +
+          l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+          (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash
+        );
     </script>
 </head>
 <body>
