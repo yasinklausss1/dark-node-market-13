@@ -32,10 +32,14 @@ jobs:
       
       - name: Build
         run: npm run build
+        env:
+          NODE_ENV: production
         
-      - name: Add CNAME
+      - name: Add CNAME and configure for GitHub Pages
         run: |
           echo "oracle-market.store" > dist/CNAME
+          # Ensure _redirects file doesn't interfere with GitHub Pages
+          rm -f dist/_redirects || true
         
       - name: Setup Pages
         uses: actions/configure-pages@v5

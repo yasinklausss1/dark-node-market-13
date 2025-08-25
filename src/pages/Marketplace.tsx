@@ -35,8 +35,6 @@ const Marketplace = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
-  
-  console.log('Marketplace render:', { user: !!user, profile, loading, products: products.length });
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');

@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: mode === 'development',
     assetsDir: 'assets',
     rollupOptions: {
       output: {
@@ -22,6 +22,8 @@ export default defineConfig(({ mode }) => ({
         entryFileNames: 'assets/[name]-[hash].js'
       },
     },
+    minify: mode === 'production',
+    cssMinify: mode === 'production',
   },
   plugins: [
     react(),
