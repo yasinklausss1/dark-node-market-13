@@ -35,11 +35,15 @@ jobs:
         env:
           NODE_ENV: production
         
-      - name: Add CNAME and configure for GitHub Pages
+      - name: Fix paths for GitHub Pages and add CNAME
         run: |
           echo "oracle-market.store" > dist/CNAME
-          # Ensure _redirects file doesn't interfere with GitHub Pages
-          rm -f dist/_redirects || true
+          # Fix all absolute paths to relative paths
+          find dist -name "*.html" -exec sed -i 's|="/|="./|g' {} \;
+          find dist -name "*.js" -exec sed -i 's|"/|"./|g' {} \;
+          find dist -name "*.css" -exec sed -i 's|url(/|url(./|g' {} \;
+          # Copy index.html to 404.html for SPA routing
+          cp dist/index.html dist/404.html
         
       - name: Setup Pages
         uses: actions/configure-pages@v5
