@@ -267,9 +267,11 @@ export const useChat = () => {
   useEffect(() => {
     if (!user) return;
 
+    console.log('Setting up real-time subscriptions for user:', user.id);
+
     // Subscribe to new messages
     const messagesChannel = supabase
-      .channel('chat-messages')
+      .channel('chat-messages-realtime')
       .on(
         'postgres_changes',
         {
@@ -279,7 +281,15 @@ export const useChat = () => {
         },
         async (payload) => {
           const newMessage = payload.new as ChatMessage;
-          console.log('New message received:', newMessage);
+          console.log('New message received via realtime:', newMessage);
+          
+          // Only add message if it's for a conversation we're involved in
+          const conversation = conversations.find(c => c.id === newMessage.conversation_id);
+          if (!conversation) {
+            console.log('Message for unknown conversation, fetching conversations...');
+            await fetchConversations();
+            return;
+          }
           
           // Get sender username
           const { data: senderProfile } = await supabase
@@ -306,22 +316,25 @@ export const useChat = () => {
 
     // Subscribe to conversation updates
     const conversationsChannel = supabase
-      .channel('chat-conversations')
+      .channel('chat-conversations-realtime')
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'conversations'
         },
-        () => {
-          console.log('Conversation updated, refreshing...');
+        (payload) => {
+          console.log('Conversation updated via realtime:', payload);
           fetchConversations();
         }
       )
       .subscribe();
 
+    console.log('Realtime subscriptions set up');
+
     return () => {
+      console.log('Cleaning up realtime subscriptions');
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(conversationsChannel);
     };
