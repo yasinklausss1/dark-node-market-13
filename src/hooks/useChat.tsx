@@ -220,6 +220,33 @@ export const useChat = () => {
     try {
       console.log('Sending message:', { conversationId, message: message.trim() });
       
+      // Check if conversation exists and user has access
+      const { data: conversation, error: convError } = await supabase
+        .from('conversations')
+        .select('buyer_id, seller_id, status')
+        .eq('id', conversationId)
+        .single();
+
+      if (convError) {
+        console.error('Error checking conversation:', convError);
+        throw new Error('Conversation not found');
+      }
+
+      if (conversation.status !== 'active') {
+        toast({
+          title: "Error",
+          description: "This conversation is closed and cannot receive new messages.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // Verify user is part of this conversation
+      if (conversation.buyer_id !== user.id && conversation.seller_id !== user.id) {
+        console.error('User not authorized for this conversation');
+        throw new Error('Not authorized');
+      }
+      
       const { error } = await supabase
         .from('chat_messages')
         .insert({
@@ -233,30 +260,13 @@ export const useChat = () => {
         throw error;
       }
 
-      // Update conversation timestamp
-      const { error: updateError } = await supabase
-        .from('conversations')
-        .update({ 
-          updated_at: new Date().toISOString(),
-          last_message_at: new Date().toISOString()
-        })
-        .eq('id', conversationId);
-
-      if (updateError) {
-        console.error('Error updating conversation:', updateError);
-      }
-
       console.log('Message sent successfully');
-      
-      // Refresh messages to show the new one
-      await fetchMessages(conversationId);
-      
       return true;
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
         title: "Error",
-        description: "Failed to send message.",
+        description: "Failed to send message. Please try again.",
         variant: "destructive"
       });
       return false;
