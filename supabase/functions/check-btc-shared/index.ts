@@ -36,7 +36,11 @@ serve(async (req) => {
     // Current BTC-EUR rate
     const priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur');
     const priceJson = await priceRes.json();
-    const BTC_EUR = priceJson.bitcoin.eur as number;
+    const BTC_EUR = priceJson.bitcoin?.eur;
+    
+    if (!BTC_EUR) {
+      throw new Error('Unable to fetch BTC-EUR exchange rate');
+    }
 
     for (const tx of txs || []) {
       // Sum outputs to our shared address
