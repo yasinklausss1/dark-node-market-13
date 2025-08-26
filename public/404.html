@@ -4,46 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Oracle Market</title>
-  <style>
-    body {
-      margin: 0;
-      background: #0a0a0a;
-      color: white;
-      font-family: system-ui, sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-    .loader {
-      text-align: center;
-    }
-    .spinner {
-      border: 2px solid #333;
-      border-top: 2px solid #3b82f6;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 20px;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
 </head>
 <body>
-  <div class="loader">
-    <div class="spinner"></div>
-    <p>Loading Oracle Market...</p>
-  </div>
-  
   <script>
-    // Redirect to index.html which will handle routing
-    setTimeout(function() {
-      window.location.replace('./index.html' + window.location.hash);
-    }, 1000);
+    // GitHub Pages 404 redirect for SPA
+    var pathSegmentsToKeep = 1;
+    var l = window.location;
+    l.replace(
+      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+      l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + 
+      '/?/' + 
+      l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+      (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+      l.hash
+    );
   </script>
 </body>
 </html>
