@@ -7,17 +7,13 @@
 </head>
 <body>
   <script>
-    // GitHub Pages 404 redirect for SPA
-    var pathSegmentsToKeep = 1;
-    var l = window.location;
-    l.replace(
-      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-      l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + 
-      '/?/' + 
-      l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
-      (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-      l.hash
-    );
+    // Simple redirect for GitHub Pages SPA
+    var pathname = window.location.pathname;
+    if (pathname !== '/') {
+      window.location.replace(
+        window.location.origin + '?' + pathname.slice(1) + window.location.search + window.location.hash
+      );
+    }
   </script>
 </body>
 </html>
