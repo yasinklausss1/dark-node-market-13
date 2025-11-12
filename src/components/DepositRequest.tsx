@@ -120,41 +120,41 @@ export function DepositRequest() {
         if (btcAddr && ltcAddr && btcAddr !== 'pending' && ltcAddr !== 'pending') {
           setUserAddresses({ btc: btcAddr, ltc: ltcAddr });
         } else {
-          // Generate addresses if they are still pending
-          await generateUserAddresses();
+          // Initialize wallet if addresses are still pending
+          await initializeWallet();
         }
       } else {
-        // Generate addresses if they don't exist
-        await generateUserAddresses();
+        // Initialize wallet if addresses don't exist
+        await initializeWallet();
       }
     } catch (error) {
       console.error('Error getting user addresses:', error);
     }
   };
 
-  const generateUserAddresses = async () => {
+  const initializeWallet = async () => {
     if (!user) return;
     
     setGeneratingAddresses(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-crypto-addresses');
+      const { data, error } = await supabase.functions.invoke('init-user-wallet');
       if (error) throw error;
       
       if (data && data.success) {
         // Refresh addresses
         setTimeout(() => getUserAddresses(), 1000);
         toast({
-          title: "Addresses Generated",
-          description: "Your Bitcoin and Litecoin addresses have been created.",
+          title: "Wallet Ready",
+          description: "Your wallet has been initialized successfully.",
         });
       } else {
-        throw new Error("Failed to generate addresses");
+        throw new Error("Failed to initialize wallet");
       }
     } catch (error) {
-      console.error('Error generating addresses:', error);
+      console.error('Error initializing wallet:', error);
       toast({
         title: "Error", 
-        description: "Could not generate crypto addresses. Please refresh the page.",
+        description: "Could not initialize wallet. Please refresh the page.",
         variant: "destructive",
       });
       
@@ -167,6 +167,7 @@ export function DepositRequest() {
       setTimeout(() => setGeneratingAddresses(false), 1000);
     }
   };
+
 
   const fetchPrices = async () => {
     try {

@@ -1039,10 +1039,7 @@ export type Database = {
         Args: { conversation_uuid: string }
         Returns: boolean
       }
-      close_deposit_request: {
-        Args: { request_id: string }
-        Returns: boolean
-      }
+      close_deposit_request: { Args: { request_id: string }; Returns: boolean }
       get_or_create_wallet_balance: {
         Args: { user_uuid: string }
         Returns: {
@@ -1074,14 +1071,8 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
-      is_user_verified: {
-        Args: { user_uuid: string }
-        Returns: boolean
-      }
-      make_user_admin: {
-        Args: { user_email: string }
-        Returns: undefined
-      }
+      is_user_verified: { Args: { user_uuid: string }; Returns: boolean }
+      make_user_admin: { Args: { user_email: string }; Returns: undefined }
       revoke_user_verification: {
         Args: { target_user_id: string }
         Returns: boolean
