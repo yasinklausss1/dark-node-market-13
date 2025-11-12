@@ -143,6 +143,46 @@ const AdminPanel = () => {
       return;
     }
 
+    // First check if product has orders
+    const { data: orderItems, error: checkError } = await supabase
+      .from('order_items')
+      .select('id')
+      .eq('product_id', productId)
+      .limit(1);
+
+    if (checkError) {
+      toast({
+        title: "Fehler beim Überprüfen",
+        description: checkError.message,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // If product has orders, deactivate instead of delete
+    if (orderItems && orderItems.length > 0) {
+      const { error } = await supabase
+        .from('products')
+        .update({ is_active: false })
+        .eq('id', productId);
+
+      if (error) {
+        toast({
+          title: "Fehler beim Deaktivieren",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        fetchAllProducts();
+        toast({
+          title: "Produkt deaktiviert",
+          description: "Dieses Produkt hat bestehende Bestellungen und wurde deaktiviert statt gelöscht.",
+        });
+      }
+      return;
+    }
+
+    // No orders, safe to delete
     const { error } = await supabase
       .from('products')
       .delete()

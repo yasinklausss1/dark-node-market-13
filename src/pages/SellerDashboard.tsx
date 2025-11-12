@@ -261,6 +261,46 @@ const fetchOrders = async () => {
       return;
     }
 
+    // First check if product has orders
+    const { data: orderItems, error: checkError } = await supabase
+      .from('order_items')
+      .select('id')
+      .eq('product_id', productId)
+      .limit(1);
+
+    if (checkError) {
+      toast({
+        title: "Error checking product",
+        description: checkError.message,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // If product has orders, deactivate instead of delete
+    if (orderItems && orderItems.length > 0) {
+      const { error } = await supabase
+        .from('products')
+        .update({ is_active: false })
+        .eq('id', productId);
+
+      if (error) {
+        toast({
+          title: "Error deactivating",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        fetchProducts();
+        toast({
+          title: "Product deactivated",
+          description: "This product has existing orders and was deactivated instead of deleted.",
+        });
+      }
+      return;
+    }
+
+    // No orders, safe to delete
     const { error } = await supabase
       .from('products')
       .delete()
