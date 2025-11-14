@@ -866,6 +866,8 @@ export type Database = {
         Row: {
           balance_btc: number
           balance_btc_deposited: number
+          balance_eth: number
+          balance_eth_deposited: number
           balance_eur: number
           balance_ltc: number
           balance_ltc_deposited: number
@@ -879,6 +881,8 @@ export type Database = {
         Insert: {
           balance_btc?: number
           balance_btc_deposited?: number
+          balance_eth?: number
+          balance_eth_deposited?: number
           balance_eur?: number
           balance_ltc?: number
           balance_ltc_deposited?: number
@@ -892,6 +896,8 @@ export type Database = {
         Update: {
           balance_btc?: number
           balance_btc_deposited?: number
+          balance_eth?: number
+          balance_eth_deposited?: number
           balance_eur?: number
           balance_ltc?: number
           balance_ltc_deposited?: number
