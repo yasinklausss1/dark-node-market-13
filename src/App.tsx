@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./hooks/useCart";
-import PrivacyWarning from "./components/PrivacyWarning";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Marketplace from "./pages/Marketplace";
@@ -28,7 +27,6 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <PrivacyWarning />
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
