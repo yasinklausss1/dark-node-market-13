@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./hooks/useCart";
 import CookieBanner from "./components/CookieBanner";
+import Footer from "./components/Footer";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Marketplace from "./pages/Marketplace";
@@ -36,26 +37,31 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <CookieBanner />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/marketplace" element={<Marketplace />} />
-                <Route path="/admin" element={<AdminPanel />} />
-                <Route path="/seller" element={<SellerDashboard />} />
-                <Route path="/wallet" element={<Wallet />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/legal/imprint" element={<Imprint />} />
-                <Route path="/legal/privacy" element={<Privacy />} />
-                <Route path="/legal/terms" element={<Terms />} />
-                <Route path="/legal/buyer-seller-terms" element={<BuyerSellerTerms />} />
-                <Route path="/legal/withdrawal" element={<Withdrawal />} />
-                <Route path="/legal/disclaimer" element={<Disclaimer />} />
-                <Route path="/legal/age-verification" element={<AgeVerification />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <div className="flex flex-col min-h-screen">
+                <CookieBanner />
+                <div className="flex-1">
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/marketplace" element={<Marketplace />} />
+                    <Route path="/admin" element={<AdminPanel />} />
+                    <Route path="/seller" element={<SellerDashboard />} />
+                    <Route path="/wallet" element={<Wallet />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/orders" element={<Orders />} />
+                    <Route path="/legal/imprint" element={<Imprint />} />
+                    <Route path="/legal/privacy" element={<Privacy />} />
+                    <Route path="/legal/terms" element={<Terms />} />
+                    <Route path="/legal/buyer-seller-terms" element={<BuyerSellerTerms />} />
+                    <Route path="/legal/withdrawal" element={<Withdrawal />} />
+                    <Route path="/legal/disclaimer" element={<Disclaimer />} />
+                    <Route path="/legal/age-verification" element={<AgeVerification />} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </div>
+                <Footer />
+              </div>
             </BrowserRouter>
           </TooltipProvider>
         </CartProvider>
