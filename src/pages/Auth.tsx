@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,16 @@ const Auth = () => {
   const { user, signIn, signUp, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('signin');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'signin' || tab === 'signup' || tab === 'seller') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   if (user && !loading) {
     return <Navigate to="/marketplace" replace />;
@@ -109,7 +118,7 @@ const Auth = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="signin" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Register</TabsTrigger>

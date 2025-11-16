@@ -16,6 +16,7 @@ interface ProductCardProps {
   onViewSeller: (sellerId: string) => void;
   onStartChat: (product: Product) => void;
   isOwner?: boolean;
+  isGuest?: boolean;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -25,7 +26,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onAddToCart,
   onViewSeller,
   onStartChat,
-  isOwner = false
+  isOwner = false,
+  isGuest = false
 }) => {
   const { btcPrice, ltcPrice } = useCryptoPrices();
   const { toast } = useToast();
@@ -68,7 +70,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <img
             src={product.image_url}
             alt={product.title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+            className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${
+              isGuest ? 'blur-xl' : ''
+            }`}
             onError={(e) => {
               e.currentTarget.style.display = 'none';
             }}
@@ -78,6 +82,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
             <ShoppingCart className="h-16 w-16 text-muted-foreground/50" />
+          </div>
+        )}
+        
+        {isGuest && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="text-center p-4">
+              <p className="text-sm font-semibold mb-2">Login to view</p>
+              <a href="/auth?tab=signin" className="text-xs text-primary hover:underline">
+                Sign in now
+              </a>
+            </div>
           </div>
         )}
 
@@ -135,13 +150,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             onClick={handleAddToCart}
             className="w-full mt-3 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white shadow-md hover:shadow-lg transition-all duration-300"
             size="sm"
-            disabled={product.stock === 0 || isOwner}
+            disabled={product.stock === 0 || isOwner || isGuest}
           >
-            {isOwner 
-              ? 'Your Product' 
-              : product.stock === 0 
-                ? 'Out of Stock' 
-                : 'Add to Cart'}
+            {isGuest
+              ? 'Login to Purchase'
+              : isOwner 
+                ? 'Your Product' 
+                : product.stock === 0 
+                  ? 'Out of Stock' 
+                  : 'Add to Cart'}
           </Button>
         </div>
       </CardContent>

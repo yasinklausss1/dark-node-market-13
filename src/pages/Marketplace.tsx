@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Header } from '@/components/Header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -343,84 +343,26 @@ const Marketplace = () => {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 py-3">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl md:text-3xl font-bold font-cinzel">Oracle Market</h1>
-            
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setCartOpen(true)}
-                className="relative shrink-0"
-              >
-                Cart ({getCartItemCount()})
-              </Button>
-              
-              <Button variant="outline" size="sm" onClick={handleSignOut} className="shrink-0">
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">Sign Out</span>
-              </Button>
-            </div>
-          </div>
-          
-          {/* Second row for user info and navigation on mobile */}
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
-            <span className="text-xs text-muted-foreground truncate">
-              {profile?.username} ({profile?.role})
-            </span>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-xs px-2">
-                  <Menu className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate('/settings')}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/orders')}>
-                  <ShoppingBag className="h-4 w-4 mr-2" />
-                  Orders
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/wallet')}>
-                  <Wallet className="h-4 w-4 mr-2" />
-                  Wallet
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setConversationsModalOpen(true)}>
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Conversations
-                </DropdownMenuItem>
-                {profile?.role === 'admin' && (
-                  <DropdownMenuItem onClick={() => window.location.href = '/admin'}>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Admin Panel
-                  </DropdownMenuItem>
-                )}
-                {(profile?.role === 'seller' || profile?.role === 'admin') && (
-                  <DropdownMenuItem onClick={() => window.location.href = '/seller'}>
-                    <Users className="h-4 w-4 mr-2" />
-                    Seller Dashboard
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6">
+      <main className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6">{!user && (
+          <div className="mb-6 p-4 bg-muted/50 border border-border rounded-lg text-center">
+            <p className="text-sm text-muted-foreground">
+              You are browsing as a guest. Please{' '}
+              <a href="/auth?tab=signin" className="text-primary hover:underline font-semibold">
+                login
+              </a>
+              {' '}or{' '}
+              <a href="/auth?tab=signup" className="text-primary hover:underline font-semibold">
+                sign up
+              </a>
+              {' '}to purchase products and access all features.
+            </p>
+          </div>
+        )}
         <div className="mb-6">
           <NewsPanel />
         </div>
@@ -491,6 +433,7 @@ const Marketplace = () => {
                 setChatModalOpen(true);
               }}
               isOwner={user?.id === product.seller_id}
+              isGuest={!user}
             />
           ))}
         </div>
