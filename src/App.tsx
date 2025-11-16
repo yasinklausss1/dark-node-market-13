@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./hooks/useCart";
+import CookieBanner from "./components/CookieBanner";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Marketplace from "./pages/Marketplace";
@@ -16,6 +17,13 @@ import Wallet from "./pages/Wallet";
 import Settings from "./pages/Settings";
 import Orders from "./pages/Orders";
 import NotFound from "./pages/NotFound";
+import Imprint from "./pages/Legal/Imprint";
+import Privacy from "./pages/Legal/Privacy";
+import Terms from "./pages/Legal/Terms";
+import BuyerSellerTerms from "./pages/Legal/BuyerSellerTerms";
+import Withdrawal from "./pages/Legal/Withdrawal";
+import Disclaimer from "./pages/Legal/Disclaimer";
+import AgeVerification from "./pages/Legal/AgeVerification";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +36,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <CookieBanner />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
@@ -37,6 +46,13 @@ const App = () => (
                 <Route path="/wallet" element={<Wallet />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/orders" element={<Orders />} />
+                <Route path="/legal/imprint" element={<Imprint />} />
+                <Route path="/legal/privacy" element={<Privacy />} />
+                <Route path="/legal/terms" element={<Terms />} />
+                <Route path="/legal/buyer-seller-terms" element={<BuyerSellerTerms />} />
+                <Route path="/legal/withdrawal" element={<Withdrawal />} />
+                <Route path="/legal/disclaimer" element={<Disclaimer />} />
+                <Route path="/legal/age-verification" element={<AgeVerification />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
