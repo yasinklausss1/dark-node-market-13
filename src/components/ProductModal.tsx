@@ -43,6 +43,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const {
     user
   } = useAuth();
+  const isGuest = !user;
   const {
     toast
   } = useToast();
@@ -92,10 +93,20 @@ const ProductModal: React.FC<ProductModalProps> = ({
   if (!product) return null;
   const productContent = <div className="space-y-3 sm:space-y-6">
       {/* Product Image */}
-      {product.image_url && <div className="w-full h-48 sm:h-64 bg-muted rounded-lg overflow-hidden">
-          <img src={product.image_url} alt={product.title} className="w-full h-full object-cover pointer-events-none select-none" onError={e => {
+      {product.image_url && <div className="relative w-full h-48 sm:h-64 bg-muted rounded-lg overflow-hidden">
+          <img src={product.image_url} alt={product.title} className={`w-full h-full object-cover pointer-events-none select-none ${isGuest ? 'blur-xl' : ''}`} onError={e => {
         e.currentTarget.style.display = 'none';
       }} onContextMenu={e => e.preventDefault()} draggable={false} />
+          {isGuest && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+              <div className="text-center p-4">
+                <p className="text-sm font-semibold mb-2">Login to view</p>
+                <a href="/auth?tab=signin" className="text-xs text-primary hover:underline">
+                  Sign in now
+                </a>
+              </div>
+            </div>
+          )}
         </div>}
 
       {/* Product Info */}
