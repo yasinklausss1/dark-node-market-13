@@ -30,10 +30,7 @@ const Imprint = () => {
               <p className="mb-2">Phone: +41 381 (937-281)    </p>
             </section>
 
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">Represented by</h2>
-              <p>[Name of Legal Representative]</p>
-            </section>
+            
 
             <section>
               <h2 className="text-2xl font-semibold mb-4">Register Entry</h2>
