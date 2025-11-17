@@ -2,10 +2,8 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-
 const Imprint = () => {
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Link to="/">
           <Button variant="ghost" className="mb-6">
@@ -20,7 +18,7 @@ const Imprint = () => {
           <div className="space-y-6 text-foreground">
             <section>
               <h2 className="text-2xl font-semibold mb-4">Information according to § 5 TMG</h2>
-              <p className="mb-2">[Company Name / Platform Operator Name]</p>
+              <p className="mb-2">Oracle Market      </p>
               <p className="mb-2">[Street Address]</p>
               <p className="mb-2">[Postal Code, City]</p>
               <p className="mb-2">[Country]</p>
@@ -98,12 +96,14 @@ const Imprint = () => {
               </p>
             </section>
 
-            <p className="text-sm text-muted-foreground mt-8">Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p className="text-sm text-muted-foreground mt-8">Last updated: {new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}</p>
           </div>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Imprint;
