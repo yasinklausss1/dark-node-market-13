@@ -19,9 +19,9 @@ const Imprint = () => {
             <section>
               <h2 className="text-2xl font-semibold mb-4">Information according to § 5 TMG</h2>
               <p className="mb-2">Oracle Market      </p>
-              <p className="mb-2">[Street Address]</p>
-              <p className="mb-2">[Postal Code, City]</p>
-              <p className="mb-2">[Country]</p>
+              <p className="mb-2">[Martin-Luther-Weg 11     </p>
+              <p className="mb-2">78532 Tuttlingen</p>
+              <p className="mb-2">Schweiz</p>
             </section>
 
             <section>
