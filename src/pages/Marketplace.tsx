@@ -104,7 +104,7 @@ const Marketplace = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, profile]);
+  }, []); // Load products for everyone, including guests
 
   // Handle URL product parameter to open modal directly
   useEffect(() => {
