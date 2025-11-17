@@ -19,7 +19,7 @@ const Imprint = () => {
             <section>
               <h2 className="text-2xl font-semibold mb-4">Information according to § 5 TMG</h2>
               <p className="mb-2">Oracle Market      </p>
-              <p className="mb-2">[Martin-Luther-Weg 11     </p>
+              <p className="mb-2">Martin-Luther-Weg 11          </p>
               <p className="mb-2">78532 Tuttlingen</p>
               <p className="mb-2">Schweiz</p>
             </section>
@@ -27,7 +27,7 @@ const Imprint = () => {
             <section>
               <h2 className="text-2xl font-semibold mb-4">Contact</h2>
               <p className="mb-2">Email: [your-email@example.com]</p>
-              <p className="mb-2">Phone: [your-phone-number]</p>
+              <p className="mb-2">Phone: +41 381 (937-281)    </p>
             </section>
 
             <section>
