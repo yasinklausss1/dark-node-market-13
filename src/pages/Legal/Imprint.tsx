@@ -42,24 +42,9 @@ const Imprint = () => {
               <p className="mb-2">Register Court: [Court Name]</p>
             </section>
 
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">VAT ID</h2>
-              <p className="mb-2">VAT identification number according to §27a German VAT Tax Act:</p>
-              <p>[Your VAT ID]</p>
-            </section>
+            
 
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">EU Dispute Resolution</h2>
-              <p className="mb-4">
-                The European Commission provides a platform for online dispute resolution (OS): 
-                <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline ml-1">
-                  https://ec.europa.eu/consumers/odr
-                </a>
-              </p>
-              <p>
-                We are not willing or obliged to participate in dispute resolution proceedings before a consumer arbitration board.
-              </p>
-            </section>
+            
 
             <section>
               <h2 className="text-2xl font-semibold mb-4">Liability for Content</h2>
