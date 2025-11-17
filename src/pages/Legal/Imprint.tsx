@@ -35,7 +35,12 @@ const Imprint = () => {
               <p>[Name of Legal Representative]</p>
             </section>
 
-            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Register Entry</h2>
+              <p className="mb-2">Entry in: [Commercial Register / Association Register]</p>
+              <p className="mb-2">Register Number: [Your Registration Number]</p>
+              <p className="mb-2">Register Court: [Court Name]</p>
+            </section>
 
             
 
