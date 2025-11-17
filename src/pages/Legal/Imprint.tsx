@@ -26,7 +26,7 @@ const Imprint = () => {
 
             <section>
               <h2 className="text-2xl font-semibold mb-4">Contact</h2>
-              <p className="mb-2">Email: [your-email@example.com]</p>
+              <p className="mb-2">Email: oracle.market@proton.me  </p>
               <p className="mb-2">Phone: +41 381 (937-281)    </p>
             </section>
 
