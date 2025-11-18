@@ -24,7 +24,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Sending verification code to:", email);
 
     const emailResponse = await resend.emails.send({
-      from: "Marketplace <onboarding@resend.dev>",
+      from: "Oracle Market <verify@oracle-market.store>",
       to: [email],
       subject: "Your Verification Code",
       html: `
