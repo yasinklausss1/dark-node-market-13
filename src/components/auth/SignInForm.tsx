@@ -44,7 +44,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading }) => {
               id="signin-identifier"
               name="identifier"
               type="text"
-              placeholder="username or email@example.com"
+              placeholder="Username or E-Mail"
               value={formData.identifier}
               onChange={handleInputChange}
               required
