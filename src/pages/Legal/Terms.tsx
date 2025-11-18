@@ -201,8 +201,8 @@ const Terms = () => {
                 For questions about these Terms or to report violations, please contact us at:
               </p>
               <p className="mb-2">Email: oracle.makret@proton.me </p>
-              <p className="mb-2">Legal inquiries: [legal@example.com]</p>
-              <p className="mb-2">Copyright/DMCA: [dmca@example.com]</p>
+              
+              
             </section>
 
             <p className="text-sm text-muted-foreground mt-8">Last updated: {new Date().toLocaleDateString('en-US', {
