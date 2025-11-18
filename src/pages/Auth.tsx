@@ -49,10 +49,10 @@ const Auth = () => {
     setIsLoading(false);
   };
 
-  const handleUserSignUp = async (username: string, password: string) => {
+  const handleUserSignUp = async (username: string, password: string, dateOfBirth: Date) => {
     setIsLoading(true);
 
-    const { error } = await signUp(username, password, false);
+    const { error } = await signUp(username, password, false, dateOfBirth);
     
     if (error) {
       let errorMessage = error.message;
@@ -75,10 +75,10 @@ const Auth = () => {
     setIsLoading(false);
   };
 
-  const handleSellerSignUp = async (username: string, password: string) => {
+  const handleSellerSignUp = async (username: string, password: string, dateOfBirth: Date) => {
     setIsLoading(true);
 
-    const { error } = await signUp(username, password, true);
+    const { error } = await signUp(username, password, true, dateOfBirth);
     
     if (error) {
       let errorMessage = error.message;

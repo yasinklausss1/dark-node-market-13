@@ -583,6 +583,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          date_of_birth: string | null
           id: string
           is_verified: boolean
           role: Database["public"]["Enums"]["user_role"]
@@ -596,6 +597,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          date_of_birth?: string | null
           id?: string
           is_verified?: boolean
           role?: Database["public"]["Enums"]["user_role"]
@@ -609,6 +611,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          date_of_birth?: string | null
           id?: string
           is_verified?: boolean
           role?: Database["public"]["Enums"]["user_role"]

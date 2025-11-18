@@ -19,7 +19,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   signIn: (username: string, password: string) => Promise<{ error: any }>;
-  signUp: (username: string, password: string, isSeller?: boolean) => Promise<{ error: any }>;
+  signUp: (username: string, password: string, isSeller?: boolean, dateOfBirth?: Date) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: any }>;
 }
@@ -122,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
-  const signUp = async (username: string, password: string, isSeller = false) => {
+  const signUp = async (username: string, password: string, isSeller = false, dateOfBirth?: Date) => {
     // Generate email from username
     const email = `${username}@example.com`;
     
@@ -133,7 +133,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         emailRedirectTo: `${window.location.origin}/`,
         data: {
           username,
-          role: isSeller ? 'seller' : 'user'
+          role: isSeller ? 'seller' : 'user',
+          date_of_birth: dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : undefined
         }
       }
     });
