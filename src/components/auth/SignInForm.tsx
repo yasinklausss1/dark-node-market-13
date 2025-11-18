@@ -6,12 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Eye, EyeOff } from 'lucide-react';
 
 interface SignInFormProps {
-  onSubmit: (username: string, password: string) => Promise<void>;
+  onSubmit: (identifier: string, password: string, isEmail: boolean) => Promise<void>;
   isLoading: boolean;
 }
 
 const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading }) => {
-  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,7 +23,9 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(formData.username, formData.password);
+    // Check if identifier is an email
+    const isEmail = formData.identifier.includes('@');
+    await onSubmit(formData.identifier, formData.password, isEmail);
   };
 
   return (
@@ -37,13 +39,13 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading }) => {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="signin-username">Username</Label>
+            <Label htmlFor="signin-identifier">Username or Email</Label>
             <Input
-              id="signin-username"
-              name="username"
+              id="signin-identifier"
+              name="identifier"
               type="text"
-              placeholder="Your username"
-              value={formData.username}
+              placeholder="username or email@example.com"
+              value={formData.identifier}
               onChange={handleInputChange}
               required
             />

@@ -18,8 +18,8 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (username: string, password: string) => Promise<{ error: any }>;
-  signUp: (username: string, password: string, isSeller?: boolean, dateOfBirth?: Date) => Promise<{ error: any }>;
+  signIn: (identifier: string, password: string, isEmail: boolean) => Promise<{ error: any }>;
+  signUp: (identifier: string, password: string, isSeller?: boolean, dateOfBirth?: Date, isEmail?: boolean) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: any }>;
 }
@@ -89,31 +89,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signIn = async (username: string, password: string) => {
-    // First, find the user by username to get their email
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('user_id')
-      .eq('username', username)
-      .maybeSingle();
+  const signIn = async (identifier: string, password: string, isEmail: boolean) => {
+    let email = identifier;
     
-    if (profileError || !profileData) {
-      return { error: new Error('Benutzername nicht gefunden') };
+    if (!isEmail) {
+      // If it's a username, find the user by username
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('username', identifier)
+        .maybeSingle();
+      
+      if (profileError || !profileData) {
+        return { error: new Error('Benutzername nicht gefunden') };
+      }
+
+      // Generate the email from username (same pattern used in signup)
+      email = `${identifier}@example.com`;
     }
-
-    // Get the user's email from auth.users
-    const { data: userData, error: userError } = await supabase
-      .from('profiles')
-      .select('user_id')
-      .eq('user_id', profileData.user_id)
-      .maybeSingle();
-
-    if (userError || !userData) {
-      return { error: new Error('Benutzer nicht gefunden') };
-    }
-
-    // Generate the email from username (same pattern used in signup)
-    const email = `${username}@example.com`;
     
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -122,9 +115,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
-  const signUp = async (username: string, password: string, isSeller = false, dateOfBirth?: Date) => {
-    // Generate email from username
-    const email = `${username}@example.com`;
+  const signUp = async (identifier: string, password: string, isSeller = false, dateOfBirth?: Date, isEmail = false) => {
+    let email = identifier;
+    let username = identifier;
+    
+    if (!isEmail) {
+      // Generate email from username for backward compatibility
+      email = `${identifier}@example.com`;
+    } else {
+      // Extract username from email
+      username = email.split('@')[0];
+    }
     
     const { error } = await supabase.auth.signUp({
       email,

@@ -6,20 +6,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Eye, EyeOff, CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface SignUpFormProps {
-  onSubmit: (username: string, password: string, dateOfBirth: Date) => Promise<void>;
+  onSubmit: (identifier: string, password: string, dateOfBirth: Date, isEmail: boolean) => Promise<void>;
   isLoading: boolean;
   title: string;
   description: string;
 }
 
 const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, description }) => {
+  const [registrationType, setRegistrationType] = useState<'username' | 'email'>('email');
   const [formData, setFormData] = useState({
     password: '',
-    username: '',
+    identifier: '', // username or email
     confirmPassword: ''
   });
   const [dateOfBirth, setDateOfBirth] = useState<Date>();
@@ -43,6 +45,25 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
+
+    // Validate identifier (username or email)
+    if (!formData.identifier.trim()) {
+      newErrors.identifier = registrationType === 'email' ? 'Email is required' : 'Username is required';
+    } else if (registrationType === 'email') {
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.identifier)) {
+        newErrors.identifier = 'Please enter a valid email address';
+      }
+    } else {
+      // Username validation
+      if (formData.identifier.length < 3 || formData.identifier.length > 30) {
+        newErrors.identifier = 'Username must be between 3 and 30 characters';
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(formData.identifier)) {
+        newErrors.identifier = 'Username can only contain letters, numbers, and underscores';
+      }
+    }
 
     if (formData.password.length < 7) {
       newErrors.password = 'Password must be at least 7 characters long';
@@ -82,7 +103,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
       return;
     }
 
-    await onSubmit(formData.username, formData.password, dateOfBirth);
+    await onSubmit(formData.identifier, formData.password, dateOfBirth, registrationType === 'email');
   };
 
   return (
@@ -93,18 +114,49 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="signup-username">Username</Label>
-            <Input
-              id="signup-username"
-              name="username"
-              type="text"
-              placeholder="YourUsername"
-              value={formData.username}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
+          <Tabs value={registrationType} onValueChange={(v) => setRegistrationType(v as 'username' | 'email')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="email">Email</TabsTrigger>
+              <TabsTrigger value="username">Username</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="email" className="space-y-2 mt-4">
+              <Label htmlFor="signup-email">Email Address</Label>
+              <Input
+                id="signup-email"
+                name="identifier"
+                type="email"
+                placeholder="your.email@example.com"
+                value={formData.identifier}
+                onChange={handleInputChange}
+                required
+                className={errors.identifier ? 'border-destructive' : ''}
+              />
+              {errors.identifier && (
+                <p className="text-sm text-destructive">{errors.identifier}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                You'll receive a verification email after registration
+              </p>
+            </TabsContent>
+
+            <TabsContent value="username" className="space-y-2 mt-4">
+              <Label htmlFor="signup-username">Username</Label>
+              <Input
+                id="signup-username"
+                name="identifier"
+                type="text"
+                placeholder="YourUsername"
+                value={formData.identifier}
+                onChange={handleInputChange}
+                required
+                className={errors.identifier ? 'border-destructive' : ''}
+              />
+              {errors.identifier && (
+                <p className="text-sm text-destructive">{errors.identifier}</p>
+              )}
+            </TabsContent>
+          </Tabs>
           
           <div className="space-y-2">
             <Label htmlFor="signup-password">Password (min. 7 characters)</Label>
