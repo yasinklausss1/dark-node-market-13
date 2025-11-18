@@ -2,10 +2,8 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-
 const Disclaimer = () => {
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Link to="/">
           <Button variant="ghost" className="mb-6">
@@ -267,15 +265,13 @@ const Disclaimer = () => {
                 For questions about this disclaimer, please contact:
               </p>
               <p className="mb-2">Email: [legal@example.com]</p>
-              <p className="mb-2">Address: [Your Address]</p>
+              
             </section>
 
-            <p className="text-sm text-muted-foreground mt-8">Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            
           </div>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Disclaimer;
