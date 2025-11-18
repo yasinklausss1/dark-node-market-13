@@ -91,7 +91,7 @@ const Footer = () => {
         <Separator className="my-6" />
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-          <p>© {currentYear} Digital Marketplace. All rights reserved.</p>
+          <p>© {currentYear} Oracle Market. All rights reserved.</p>
           <p className="text-xs">
             This platform is a marketplace. Sellers are responsible for their content.
           </p>
