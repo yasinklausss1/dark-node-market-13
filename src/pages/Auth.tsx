@@ -27,7 +27,7 @@ const Auth = () => {
     }
   }, [searchParams]);
 
-  if (user && !loading) {
+  if (user && !loading && !showVerificationModal) {
     return <Navigate to="/marketplace" replace />;
   }
 
@@ -172,7 +172,10 @@ const Auth = () => {
         isOpen={showVerificationModal}
         onClose={() => setShowVerificationModal(false)}
         email={verificationEmail}
-        onVerified={() => navigate('/')}
+        onVerified={() => {
+          setShowVerificationModal(false);
+          setActiveTab('signin');
+        }}
       />
     </div>
   );
