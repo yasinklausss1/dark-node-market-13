@@ -25,15 +25,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Verifying code for email:", email);
 
-    // Find the verification code
+    // Find the verification code (allow already verified codes for retry)
     const { data: verificationData, error: fetchError } = await supabase
       .from("email_verification_codes")
       .select("*")
       .eq("email", email)
       .eq("code", code)
-      .eq("verified", false)
       .gt("expires_at", new Date().toISOString())
-      .single();
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (fetchError || !verificationData) {
       console.error("Invalid or expired code:", fetchError);
@@ -49,6 +50,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Check if user already exists
     const { data: existingUser } = await supabase.auth.admin.listUsers();
     const userExists = existingUser?.users.some(u => u.email === verificationData.email);
+
+    let userId = null;
 
     if (!userExists) {
       // Create the user account
@@ -74,17 +77,22 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
+      userId = authData.user?.id;
+      console.log("User created successfully:", userId);
     } else {
       console.log("User already exists, skipping creation");
+      userId = existingUser?.users.find(u => u.email === verificationData.email)?.id;
     }
 
-    // Mark code as verified
-    await supabase
-      .from("email_verification_codes")
-      .update({ verified: true })
-      .eq("id", verificationData.id);
+    // Mark code as verified (if not already)
+    if (!verificationData.verified) {
+      await supabase
+        .from("email_verification_codes")
+        .update({ verified: true })
+        .eq("id", verificationData.id);
+    }
 
-    console.log("User created successfully:", authData.user?.id);
+    
 
     return new Response(
       JSON.stringify({ 
