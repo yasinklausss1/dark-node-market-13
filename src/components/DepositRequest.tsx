@@ -261,112 +261,112 @@ export function DepositRequest() {
               </Button>
             </div>
           </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Timer Section */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Clock className="h-4 w-4" />
-                Time Remaining
+          <CardContent className="space-y-6">
+            {/* Timer Section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Clock className="h-4 w-4" />
+                  Time Remaining
+                </div>
+                <span className="text-lg font-bold font-mono">{timeRemaining}</span>
               </div>
-              <span className="text-lg font-bold font-mono">{timeRemaining}</span>
+              <Progress value={progressPercent} className="h-2" />
+              {progressPercent < 20 && (
+                <Alert variant="destructive" className="mt-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Your deposit request will expire soon!
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
-            <Progress value={progressPercent} className="h-2" />
-            {progressPercent < 20 && (
-              <Alert variant="destructive" className="mt-2">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Your deposit request will expire soon!
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
 
-          {/* Amount Info */}
-          <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
-            <div>
-              <p className="text-sm text-muted-foreground">Amount to Send</p>
-              <p className="text-lg font-bold font-mono">
-                {activeRequest.crypto_amount.toFixed(8)} {activeRequest.currency}
-              </p>
+            {/* Amount Info */}
+            <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+              <div>
+                <p className="text-sm text-muted-foreground">Amount to Send</p>
+                <p className="text-lg font-bold font-mono">
+                  {activeRequest.crypto_amount.toFixed(8)} {activeRequest.currency}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">EUR Value</p>
+                <p className="text-lg font-bold">€{activeRequest.requested_eur.toFixed(2)}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-sm text-muted-foreground">Exchange Rate (Locked)</p>
+                <p className="text-sm font-medium">1 {activeRequest.currency} = €{activeRequest.rate_locked.toFixed(2)}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">EUR Value</p>
-              <p className="text-lg font-bold">€{activeRequest.requested_eur.toFixed(2)}</p>
-            </div>
-            <div className="col-span-2">
-              <p className="text-sm text-muted-foreground">Exchange Rate (Locked)</p>
-              <p className="text-sm font-medium">1 {activeRequest.currency} = €{activeRequest.rate_locked.toFixed(2)}</p>
-            </div>
-          </div>
 
-          {/* QR Code */}
-          <div className="flex justify-center p-4 bg-white rounded-lg">
-            <QRCodeSVG 
-              value={activeRequest.address} 
-              size={220}
-              includeMargin={true}
-            />
-          </div>
+            {/* QR Code */}
+            <div className="flex justify-center p-4 bg-white rounded-lg">
+              <QRCodeSVG 
+                value={activeRequest.address} 
+                size={220}
+                includeMargin={true}
+              />
+            </div>
 
-          {/* Deposit Address */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Deposit Address</Label>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 p-3 bg-muted rounded-lg text-sm break-all font-mono">
-                {activeRequest.address}
-              </code>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={copyAddress}
-                className="shrink-0"
+            {/* Deposit Address */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Deposit Address</Label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 p-3 bg-muted rounded-lg text-sm break-all font-mono">
+                  {activeRequest.address}
+                </code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyAddress}
+                  className="shrink-0"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="space-y-2">
+                <p className="font-medium">Important Instructions:</p>
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  <li>Send exactly <strong>{activeRequest.crypto_amount.toFixed(8)} {activeRequest.currency}</strong></li>
+                  <li>Only send {activeRequest.currency} to this address</li>
+                  <li>Your balance will be credited after network confirmation</li>
+                  <li>This request expires in {timeRemaining}</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+
+        {/* Close Confirmation Dialog */}
+        <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to close this deposit request?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will cancel your active deposit request. Any funds sent to this address after cancellation may not be credited to your account.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  closeDepositRequest();
+                  setShowCloseDialog(false);
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Instructions */}
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="space-y-2">
-              <p className="font-medium">Important Instructions:</p>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                <li>Send exactly <strong>{activeRequest.crypto_amount.toFixed(8)} {activeRequest.currency}</strong></li>
-                <li>Only send {activeRequest.currency} to this address</li>
-                <li>Your balance will be credited after network confirmation</li>
-                <li>This request expires in {timeRemaining}</li>
-              </ul>
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-
-      {/* Close Confirmation Dialog */}
-      <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to close this deposit request?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will cancel your active deposit request. Any funds sent to this address after cancellation may not be credited to your account.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                closeDepositRequest();
-                setShowCloseDialog(false);
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Close Request
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+                Close Request
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     );
   }
 
