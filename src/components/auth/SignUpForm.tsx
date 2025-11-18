@@ -3,11 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff, CalendarIcon } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Eye, EyeOff } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 interface SignUpFormProps {
@@ -25,6 +23,9 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
     confirmPassword: ''
   });
   const [dateOfBirth, setDateOfBirth] = useState<Date>();
+  const [birthDay, setBirthDay] = useState<string>('');
+  const [birthMonth, setBirthMonth] = useState<string>('');
+  const [birthYear, setBirthYear] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -73,19 +74,24 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    if (!dateOfBirth) {
+    // Validate date of birth
+    if (!birthDay || !birthMonth || !birthYear) {
       newErrors.dateOfBirth = 'Date of birth is required';
     } else {
+      const dob = new Date(parseInt(birthYear), parseInt(birthMonth) - 1, parseInt(birthDay));
       const today = new Date();
-      const age = today.getFullYear() - dateOfBirth.getFullYear();
-      const monthDiff = today.getMonth() - dateOfBirth.getMonth();
-      const dayDiff = today.getDate() - dateOfBirth.getDate();
+      const age = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+      const dayDiff = today.getDate() - dob.getDate();
       
       const isUnder18 = age < 18 || (age === 18 && (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)));
       
       if (isUnder18) {
         newErrors.dateOfBirth = 'You must be at least 18 years old to register';
       }
+      
+      // Set the dateOfBirth state for submission
+      setDateOfBirth(dob);
     }
 
     setErrors(newErrors);
@@ -209,34 +215,53 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
 
           <div className="space-y-2">
             <Label htmlFor="signup-dob">Date of Birth</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="signup-dob"
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dateOfBirth && "text-muted-foreground",
-                    errors.dateOfBirth && "border-destructive"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateOfBirth ? format(dateOfBirth, "PPP") : <span>Pick your date of birth</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dateOfBirth}
-                  onSelect={setDateOfBirth}
-                  disabled={(date) =>
-                    date > new Date() || date < new Date("1900-01-01")
-                  }
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
+            <div className="grid grid-cols-3 gap-2">
+              <Select value={birthDay} onValueChange={setBirthDay}>
+                <SelectTrigger className={errors.dateOfBirth ? 'border-destructive' : ''}>
+                  <SelectValue placeholder="Day" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                    <SelectItem key={day} value={day.toString()}>
+                      {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={birthMonth} onValueChange={setBirthMonth}>
+                <SelectTrigger className={errors.dateOfBirth ? 'border-destructive' : ''}>
+                  <SelectValue placeholder="Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">January</SelectItem>
+                  <SelectItem value="2">February</SelectItem>
+                  <SelectItem value="3">March</SelectItem>
+                  <SelectItem value="4">April</SelectItem>
+                  <SelectItem value="5">May</SelectItem>
+                  <SelectItem value="6">June</SelectItem>
+                  <SelectItem value="7">July</SelectItem>
+                  <SelectItem value="8">August</SelectItem>
+                  <SelectItem value="9">September</SelectItem>
+                  <SelectItem value="10">October</SelectItem>
+                  <SelectItem value="11">November</SelectItem>
+                  <SelectItem value="12">December</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={birthYear} onValueChange={setBirthYear}>
+                <SelectTrigger className={errors.dateOfBirth ? 'border-destructive' : ''}>
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - 18 - i).map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {errors.dateOfBirth && (
               <p className="text-sm text-destructive">{errors.dateOfBirth}</p>
             )}
