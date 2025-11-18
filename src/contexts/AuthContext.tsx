@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 type UserRole = 'user' | 'seller' | 'admin';
 
@@ -120,13 +121,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let username = identifier;
     
     if (!isEmail) {
-      // Generate email from username for backward compatibility
       email = `${identifier}@example.com`;
     } else {
-      // Extract username from email
       username = email.split('@')[0];
+      
+      // For email registration, send verification code first
+      const code = Math.floor(1000 + Math.random() * 9000).toString();
+      
+      const { error: dbError } = await supabase
+        .from('email_verification_codes')
+        .insert({
+          email,
+          code,
+          password_hash: password,
+          date_of_birth: dateOfBirth?.toISOString().split('T')[0] || null,
+          username,
+          is_email_registration: true
+        });
+
+      if (dbError) {
+        return { error: dbError };
+      }
+
+      const { error: emailError } = await supabase.functions.invoke('send-verification-code', {
+        body: { email, code }
+      });
+
+      if (emailError) {
+        return { error: emailError };
+      }
+
+      toast.success('Verification code sent to your email!');
+      
+      return { error: null, needsVerification: true, email };
     }
     
+    // Username registration - direct signup
     const { error } = await supabase.auth.signUp({
       email,
       password,

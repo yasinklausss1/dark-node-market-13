@@ -366,6 +366,45 @@ export type Database = {
           },
         ]
       }
+      email_verification_codes: {
+        Row: {
+          code: string
+          created_at: string
+          date_of_birth: string
+          email: string
+          expires_at: string
+          id: string
+          is_email_registration: boolean
+          password_hash: string
+          username: string
+          verified: boolean
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          date_of_birth: string
+          email: string
+          expires_at?: string
+          id?: string
+          is_email_registration?: boolean
+          password_hash: string
+          username: string
+          verified?: boolean
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          date_of_birth?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          is_email_registration?: boolean
+          password_hash?: string
+          username?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -1044,6 +1083,7 @@ export type Database = {
         Args: { amount_eur: number; user_uuid: string }
         Returns: boolean
       }
+      cleanup_expired_verification_codes: { Args: never; Returns: undefined }
       close_conversation: {
         Args: { conversation_uuid: string }
         Returns: boolean
