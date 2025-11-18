@@ -28,10 +28,10 @@ const Auth = () => {
     return <Navigate to="/marketplace" replace />;
   }
 
-  const handleSignIn = async (username: string, password: string) => {
+  const handleSignIn = async (identifier: string, password: string, isEmail: boolean) => {
     setIsLoading(true);
 
-    const { error } = await signIn(username, password);
+    const { error } = await signIn(identifier, password, isEmail);
     
     if (error) {
       toast({
@@ -49,15 +49,15 @@ const Auth = () => {
     setIsLoading(false);
   };
 
-  const handleUserSignUp = async (username: string, password: string, dateOfBirth: Date) => {
+  const handleUserSignUp = async (identifier: string, password: string, dateOfBirth: Date, isEmail: boolean) => {
     setIsLoading(true);
 
-    const { error } = await signUp(username, password, false, dateOfBirth);
+    const { error } = await signUp(identifier, password, false, dateOfBirth, isEmail);
     
     if (error) {
       let errorMessage = error.message;
       if (error.message.includes('User already registered')) {
-        errorMessage = 'This username is already registered';
+        errorMessage = 'This username/email is already registered';
       }
       
       toast({
@@ -68,22 +68,22 @@ const Auth = () => {
     } else {
       toast({
         title: "Registration successful",
-        description: "User account has been created!"
+        description: isEmail ? "Please check your email to verify your account!" : "User account has been created!"
       });
     }
     
     setIsLoading(false);
   };
 
-  const handleSellerSignUp = async (username: string, password: string, dateOfBirth: Date) => {
+  const handleSellerSignUp = async (identifier: string, password: string, dateOfBirth: Date, isEmail: boolean) => {
     setIsLoading(true);
 
-    const { error } = await signUp(username, password, true, dateOfBirth);
+    const { error } = await signUp(identifier, password, true, dateOfBirth, isEmail);
     
     if (error) {
       let errorMessage = error.message;
       if (error.message.includes('User already registered')) {
-        errorMessage = 'This username is already registered';
+        errorMessage = 'This username/email is already registered';
       }
       
       toast({
@@ -94,7 +94,7 @@ const Auth = () => {
     } else {
       toast({
         title: "Registration successful",
-        description: "Seller account has been created!"
+        description: isEmail ? "Please check your email to verify your account!" : "Seller account has been created!"
       });
     }
     
