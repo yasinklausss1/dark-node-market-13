@@ -164,7 +164,7 @@ const Withdrawal = () => {
               <p className="mb-4">
                 If you have questions about your right of withdrawal or need assistance, please contact:
               </p>
-              <p className="mb-2">Email: oracle.market@proton.me </p>
+              <p className="mb-2">Email: oracle.market@proton.me  </p>
               
             </section>
 
