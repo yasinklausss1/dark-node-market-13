@@ -3,10 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, CalendarIcon } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface SignUpFormProps {
-  onSubmit: (username: string, password: string) => Promise<void>;
+  onSubmit: (username: string, password: string, dateOfBirth: Date) => Promise<void>;
   isLoading: boolean;
   title: string;
   description: string;
@@ -18,6 +22,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
     username: '',
     confirmPassword: ''
   });
+  const [dateOfBirth, setDateOfBirth] = useState<Date>();
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -47,6 +52,21 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
+    if (!dateOfBirth) {
+      newErrors.dateOfBirth = 'Date of birth is required';
+    } else {
+      const today = new Date();
+      const age = today.getFullYear() - dateOfBirth.getFullYear();
+      const monthDiff = today.getMonth() - dateOfBirth.getMonth();
+      const dayDiff = today.getDate() - dateOfBirth.getDate();
+      
+      const isUnder18 = age < 18 || (age === 18 && (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)));
+      
+      if (isUnder18) {
+        newErrors.dateOfBirth = 'You must be at least 18 years old to register';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -58,7 +78,11 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
       return;
     }
 
-    await onSubmit(formData.username, formData.password);
+    if (!dateOfBirth) {
+      return;
+    }
+
+    await onSubmit(formData.username, formData.password, dateOfBirth);
   };
 
   return (
@@ -129,6 +153,44 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
             {errors.confirmPassword && (
               <p className="text-sm text-destructive">{errors.confirmPassword}</p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="signup-dob">Date of Birth</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="signup-dob"
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !dateOfBirth && "text-muted-foreground",
+                    errors.dateOfBirth && "border-destructive"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateOfBirth ? format(dateOfBirth, "PPP") : <span>Pick your date of birth</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateOfBirth}
+                  onSelect={setDateOfBirth}
+                  disabled={(date) =>
+                    date > new Date() || date < new Date("1900-01-01")
+                  }
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            {errors.dateOfBirth && (
+              <p className="text-sm text-destructive">{errors.dateOfBirth}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              You must be at least 18 years old to create an account
+            </p>
           </div>
           
           <Button 
