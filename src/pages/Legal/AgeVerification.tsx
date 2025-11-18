@@ -4,10 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ShieldAlert } from "lucide-react";
-
 const AgeVerification = () => {
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Link to="/">
           <Button variant="ghost" className="mb-6">
@@ -279,18 +277,20 @@ const AgeVerification = () => {
               <p className="mb-4">
                 For questions about age verification or content policies:
               </p>
-              <p className="mb-2">General inquiries: [support@example.com]</p>
-              <p className="mb-2">Age verification issues: [verification@example.com]</p>
-              <p className="mb-2">Report violations: [report@example.com]</p>
-              <p className="mb-2">CSAM or illegal content: [abuse@example.com]</p>
+              <p className="mb-2">General inquiries: oracle.market@proton.me </p>
+              
+              
+              
             </section>
 
-            <p className="text-sm text-muted-foreground mt-8">Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p className="text-sm text-muted-foreground mt-8">Last updated: {new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}</p>
           </div>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AgeVerification;
