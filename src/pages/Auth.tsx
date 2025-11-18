@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ShoppingBag, ArrowLeft } from 'lucide-react';
 import SignInForm from '@/components/auth/SignInForm';
 import SignUpForm from '@/components/auth/SignUpForm';
+import EmailVerificationModal from '@/components/auth/EmailVerificationModal';
 
 const Auth = () => {
   const { user, signIn, signUp, loading } = useAuth();
@@ -16,6 +17,8 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -52,11 +55,14 @@ const Auth = () => {
   const handleUserSignUp = async (identifier: string, password: string, dateOfBirth: Date, isEmail: boolean) => {
     setIsLoading(true);
 
-    const { error } = await signUp(identifier, password, false, dateOfBirth, isEmail);
+    const result: any = await signUp(identifier, password, false, dateOfBirth, isEmail);
     
-    if (error) {
-      let errorMessage = error.message;
-      if (error.message.includes('User already registered')) {
+    if (result?.needsVerification) {
+      setVerificationEmail(result.email);
+      setShowVerificationModal(true);
+    } else if (result?.error) {
+      let errorMessage = result.error.message;
+      if (result.error.message.includes('User already registered')) {
         errorMessage = 'This username/email is already registered';
       }
       
@@ -68,7 +74,7 @@ const Auth = () => {
     } else {
       toast({
         title: "Registration successful",
-        description: isEmail ? "Please check your email to verify your account!" : "User account has been created!"
+        description: "User account has been created!"
       });
     }
     
@@ -78,11 +84,14 @@ const Auth = () => {
   const handleSellerSignUp = async (identifier: string, password: string, dateOfBirth: Date, isEmail: boolean) => {
     setIsLoading(true);
 
-    const { error } = await signUp(identifier, password, true, dateOfBirth, isEmail);
+    const result: any = await signUp(identifier, password, true, dateOfBirth, isEmail);
     
-    if (error) {
-      let errorMessage = error.message;
-      if (error.message.includes('User already registered')) {
+    if (result?.needsVerification) {
+      setVerificationEmail(result.email);
+      setShowVerificationModal(true);
+    } else if (result?.error) {
+      let errorMessage = result.error.message;
+      if (result.error.message.includes('User already registered')) {
         errorMessage = 'This username/email is already registered';
       }
       
@@ -94,7 +103,7 @@ const Auth = () => {
     } else {
       toast({
         title: "Registration successful",
-        description: isEmail ? "Please check your email to verify your account!" : "Seller account has been created!"
+        description: "Seller account has been created!"
       });
     }
     
@@ -111,46 +120,60 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center space-x-2">
-            <h1 className="text-3xl font-bold font-cinzel">Oracle Market</h1>
-          </div>
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-2">Welcome</h1>
+          <p className="text-muted-foreground">Sign in to your account or create a new one</p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="signin" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Register</TabsTrigger>
-            <TabsTrigger value="seller">Seller</TabsTrigger>
+            <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="signin">
-            <SignInForm
+            <SignInForm 
               onSubmit={handleSignIn}
               isLoading={isLoading}
             />
           </TabsContent>
-          
-          <TabsContent value="signup">
-            <SignUpForm
-              onSubmit={handleUserSignUp}
-              isLoading={isLoading}
-              title="User Registration"
-              description="Create a new user account"
-            />
-          </TabsContent>
 
-          <TabsContent value="seller">
-            <SignUpForm
-              onSubmit={handleSellerSignUp}
-              isLoading={isLoading}
-              title="Seller Registration"
-              description="Create a seller account"
-            />
+          <TabsContent value="signup">
+            <Tabs defaultValue="user" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="user">User</TabsTrigger>
+                <TabsTrigger value="seller">Seller</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="user">
+                <SignUpForm
+                  onSubmit={handleUserSignUp}
+                  isLoading={isLoading}
+                  title="Create User Account"
+                  description="Sign up as a buyer"
+                />
+              </TabsContent>
+
+              <TabsContent value="seller">
+                <SignUpForm
+                  onSubmit={handleSellerSignUp}
+                  isLoading={isLoading}
+                  title="Create Seller Account"
+                  description="Sign up to sell products"
+                />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </div>
+
+      <EmailVerificationModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        email={verificationEmail}
+        onVerified={() => navigate('/')}
+      />
     </div>
   );
 };
