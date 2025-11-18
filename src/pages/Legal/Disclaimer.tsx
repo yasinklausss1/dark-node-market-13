@@ -264,7 +264,7 @@ const Disclaimer = () => {
               <p className="mb-4">
                 For questions about this disclaimer, please contact:
               </p>
-              <p className="mb-2">Email: [legal@example.com]</p>
+              <p className="mb-2">Email: oracle.market@proton.me </p>
               
             </section>
 
