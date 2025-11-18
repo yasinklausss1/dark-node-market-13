@@ -46,27 +46,36 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Create the user account
-    const { data: authData, error: signUpError } = await supabase.auth.admin.createUser({
-      email: verificationData.email,
-      password: verificationData.password_hash,
-      email_confirm: true,
-      user_metadata: {
-        username: verificationData.username,
-        date_of_birth: verificationData.date_of_birth,
-        role: "user"
-      }
-    });
+    // Check if user already exists
+    const { data: existingUser } = await supabase.auth.admin.listUsers();
+    const userExists = existingUser?.users.some(u => u.email === verificationData.email);
 
-    if (signUpError) {
-      console.error("Error creating user:", signUpError);
-      return new Response(
-        JSON.stringify({ error: signUpError.message }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+    if (!userExists) {
+      // Create the user account
+      const { data: authData, error: signUpError } = await supabase.auth.admin.createUser({
+        email: verificationData.email,
+        password: verificationData.password_hash,
+        email_confirm: true,
+        user_metadata: {
+          username: verificationData.username,
+          date_of_birth: verificationData.date_of_birth,
+          role: "user"
         }
-      );
+      });
+
+      if (signUpError) {
+        console.error("Error creating user:", signUpError);
+        return new Response(
+          JSON.stringify({ error: signUpError.message }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+
+    } else {
+      console.log("User already exists, skipping creation");
     }
 
     // Mark code as verified
