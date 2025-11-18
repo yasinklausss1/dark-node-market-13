@@ -12,6 +12,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCryptoPrices } from "@/hooks/useCryptoPrices";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface DepositAddress {
   currency: string;
@@ -28,6 +38,7 @@ export function DepositRequest() {
   const [loading, setLoading] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [progressPercent, setProgressPercent] = useState(100);
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
   const { btcPrice, ltcPrice } = useCryptoPrices();
   const ethPrice = 3500;
 
@@ -232,23 +243,24 @@ export function DepositRequest() {
   // Active Request View
   if (activeRequest) {
     return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              {getCurrencyIcon(activeRequest.currency)}
-              Active Deposit Request
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => closeDepositRequest()}
-              className="h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
+      <>
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                {getCurrencyIcon(activeRequest.currency)}
+                Active Deposit Request
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCloseDialog(true)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
         <CardContent className="space-y-6">
           {/* Timer Section */}
           <div className="space-y-2">
@@ -330,6 +342,31 @@ export function DepositRequest() {
           </Alert>
         </CardContent>
       </Card>
+
+      {/* Close Confirmation Dialog */}
+      <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to close this deposit request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will cancel your active deposit request. Any funds sent to this address after cancellation may not be credited to your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                closeDepositRequest();
+                setShowCloseDialog(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Close Request
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
     );
   }
 
