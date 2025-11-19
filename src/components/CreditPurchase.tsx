@@ -22,19 +22,26 @@ export const CreditPurchase = () => {
         body: { creditsAmount: amount }
       });
 
-      console.log('Purchase response:', { data, error });
+      console.log('Full purchase response:', { data, error });
 
       if (error) {
-        console.error('Error response:', error);
-        throw error;
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to create payment');
       }
 
-      if (!data || !data.paymentUrl) {
-        throw new Error('No payment URL received');
+      // Handle the response data
+      const responseData = data;
+      console.log('Response data:', responseData);
+
+      if (!responseData?.paymentUrl) {
+        console.error('Invalid response structure:', responseData);
+        throw new Error('No payment URL received from server');
       }
 
       // Open payment page
-      window.open(data.paymentUrl, '_blank');
+      const paymentUrl = responseData.paymentUrl;
+      console.log('Opening payment URL:', paymentUrl);
+      window.open(paymentUrl, '_blank');
       
       toast({
         title: "Payment initiated",
