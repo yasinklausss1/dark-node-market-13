@@ -13,29 +13,27 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
-    console.log('Auth header present:', !!authHeader);
-
+    
     if (!authHeader) {
       throw new Error('No authorization header');
     }
 
-    const supabaseClient = createClient(
+    // Create admin client for verifying JWT
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { 
-        global: { 
-          headers: { Authorization: authHeader } 
-        } 
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    
-    console.log('User retrieved:', !!user, 'Error:', userError?.message);
+    // Verify the JWT and get user
+    const jwt = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(jwt);
     
     if (userError || !user) {
-      throw new Error(`Authentication failed: ${userError?.message || 'No user found'}`);
+      console.error('Auth error:', userError?.message);
+      throw new Error('Not authenticated');
     }
+
+    console.log('User authenticated:', user.id);
 
     const { creditsAmount } = await req.json();
     
@@ -74,8 +72,8 @@ serve(async (req) => {
     const paymentData = await paymentResponse.json();
     console.log('Payment created:', paymentData);
 
-    // Save to database
-    const { data: purchase, error: dbError } = await supabaseClient
+    // Save to database using admin client
+    const { data: purchase, error: dbError } = await supabaseAdmin
       .from('credit_purchases')
       .insert({
         user_id: user.id,
