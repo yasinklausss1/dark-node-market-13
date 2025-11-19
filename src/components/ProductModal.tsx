@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Bitcoin, ShoppingCart, User, Coins, Minus, Plus, MessageCircle, Share2 } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { WatermarkedImage } from '@/components/ui/watermarked-image';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
@@ -117,7 +118,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
       {productImages.length > 0 && (
         <div className="relative w-full h-48 sm:h-96 bg-muted rounded-lg overflow-hidden">
           {productImages.length === 1 ? (
-            <img 
+            <WatermarkedImage 
               src={productImages[0]} 
               alt={product.title} 
               className={`w-full h-full object-contain pointer-events-none select-none ${isGuest ? 'blur-xl' : ''}`} 
@@ -132,7 +133,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <CarouselContent>
                 {productImages.map((imageUrl, index) => (
                   <CarouselItem key={index} className="flex items-center justify-center h-48 sm:h-96">
-                    <img 
+                    <WatermarkedImage 
                       src={imageUrl} 
                       alt={`${product.title} - Bild ${index + 1}`} 
                       className={`max-w-full max-h-full object-contain pointer-events-none select-none ${isGuest ? 'blur-xl' : ''}`}
