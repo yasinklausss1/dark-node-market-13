@@ -148,9 +148,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           
 
           {/* Stock Info */}
-          <div className="text-xs text-muted-foreground">
-            Stock: {product.stock > 0 ? `${product.stock} available` : 'Out of stock'}
-          </div>
+          
 
           {/* Action Button */}
           <Button onClick={handleAddToCart} className="w-full mt-3 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white shadow-md hover:shadow-lg transition-all duration-300" size="sm" disabled={product.stock === 0 || isOwner || isGuest}>
