@@ -43,14 +43,14 @@ export const CreditTransactionHistory = () => {
   }, []);
 
   const getTransactionIcon = (type: string) => {
-    if (type === 'purchase' || type === 'sale_received') {
+    if (type === 'purchase' || type === 'sale') {
       return <ArrowDownRight className="h-4 w-4 text-green-500" />;
     }
     return <ArrowUpRight className="h-4 w-4 text-red-500" />;
   };
 
   const getTransactionColor = (type: string) => {
-    if (type === 'purchase' || type === 'sale_received') {
+    if (type === 'purchase' || type === 'sale') {
       return 'text-green-500';
     }
     return 'text-red-500';
@@ -87,7 +87,7 @@ export const CreditTransactionHistory = () => {
                     </div>
                   </div>
                   <div className={`font-bold ${getTransactionColor(tx.type)}`}>
-                    {tx.type === 'purchase' || tx.type === 'sale_received' ? '+' : '-'}
+                    {tx.type === 'purchase' || tx.type === 'sale' ? '+' : '-'}
                     {Math.abs(tx.amount)}
                   </div>
                 </div>
