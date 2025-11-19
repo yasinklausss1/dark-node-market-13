@@ -5,14 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import { Bitcoin, ShoppingCart, User, Coins, Minus, Plus, MessageCircle, Share2 } from 'lucide-react';
+import { Coins, ShoppingCart, User, Minus, Plus, MessageCircle, Share2 } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { WatermarkedImage } from '@/components/ui/watermarked-image';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { TelegramIntegration } from '@/components/TelegramIntegration';
 import { ProductAddonsSelection, AddonSelection } from '@/components/ProductAddonsSelection';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -50,13 +49,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const {
     toast
   } = useToast();
-  const {
-    btcPrice,
-    ltcPrice
-  } = useCryptoPrices();
   const isMobile = useIsMobile();
-  const [btcAmount, setBtcAmount] = useState<number | null>(null);
-  const [ltcAmount, setLtcAmount] = useState<number | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [sellerUsername, setSellerUsername] = useState<string>('');
   const [addonSelections, setAddonSelections] = useState<AddonSelection[]>([]);
@@ -69,10 +62,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
       setQuantity(1);
     }
   }, [product, open]);
-  useEffect(() => {
-    if (product && btcPrice) setBtcAmount(product.price / btcPrice);
-    if (product && ltcPrice) setLtcAmount(product.price / ltcPrice);
-  }, [product, btcPrice, ltcPrice]);
   const fetchSellerUsername = async () => {
     if (!product) return;
     try {
@@ -181,18 +170,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
         </div>
 
         <div className="space-y-1 sm:space-y-2">
-          <div className="text-xl sm:text-2xl font-bold text-primary">
-            €{(product.price * quantity + addonsTotalPrice).toFixed(2)}
-          </div>
-          <div className="flex flex-col sm:flex-row gap-1 sm:gap-4">
-            {btcPrice && btcAmount && <div className="flex items-center text-sm sm:text-lg text-orange-500">
-                <Bitcoin className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                <span>₿{btcAmount.toFixed(8)}</span>
-              </div>}
-            {ltcPrice && ltcAmount && <div className="flex items-center text-sm sm:text-lg text-blue-500">
-                <Coins className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                <span>Ł{ltcAmount.toFixed(8)}</span>
-              </div>}
+          <div className="flex items-center gap-2">
+            <Coins className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+            <span className="text-xl sm:text-2xl font-bold text-primary">
+              {(product.price * quantity + addonsTotalPrice)} Credits
+            </span>
           </div>
         </div>
 

@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Share2, Heart, ShoppingCart, Eye, MessageCircle, Bitcoin } from 'lucide-react';
+import { Star, Share2, Heart, ShoppingCart, Eye, MessageCircle, Coins } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { WatermarkedImage } from '@/components/ui/watermarked-image';
-import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/Product';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,10 +31,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   isOwner = false,
   isGuest = false
 }) => {
-  const {
-    btcPrice,
-    ltcPrice
-  } = useCryptoPrices();
   const {
     toast
   } = useToast();
@@ -142,10 +137,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <CardContent className="px-4 pb-4">
         {/* Price Section */}
         <div className="space-y-3">
-          <div className="text-xl font-bold text-primary">
-            €{product.price.toFixed(2)}
+          <div className="flex items-center gap-2">
+            <Coins className="h-5 w-5 text-primary" />
+            <span className="text-xl font-bold text-primary">
+              {product.price} Credits
+            </span>
           </div>
-          
 
           {/* Stock Info */}
           
