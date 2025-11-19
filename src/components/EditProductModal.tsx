@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Edit } from 'lucide-react';
 import { FileUpload } from '@/components/ui/file-upload';
 import { BulkDiscountManager } from '@/components/BulkDiscountManager';
+import { ProductAddonManager } from '@/components/ProductAddonManager';
 
 interface Product {
   id: string;
@@ -228,11 +229,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
           </div>
         </form>
 
-        <div className="mt-6 border-t pt-6">
+        <div className="mt-6 border-t pt-6 space-y-6">
           <BulkDiscountManager 
             productId={product.id}
             productTitle={product.title}
           />
+          <ProductAddonManager productId={product.id} />
         </div>
       </DialogContent>
     </Dialog>
