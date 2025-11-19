@@ -72,6 +72,12 @@ serve(async (req) => {
     const paymentData = await paymentResponse.json();
     console.log('Payment created:', paymentData);
 
+    // Construct payment URL - NOWPayments doesn't always return invoice_url directly
+    const paymentUrl = paymentData.invoice_url || 
+                       `https://nowpayments.io/payment/?iid=${paymentData.payment_id}`;
+    
+    console.log('Payment URL:', paymentUrl);
+
     // Save to database using admin client
     const { data: purchase, error: dbError } = await supabaseAdmin
       .from('credit_purchases')
@@ -81,7 +87,7 @@ serve(async (req) => {
         eur_amount: eurAmount,
         payment_provider: 'nowpayments',
         payment_id: paymentData.payment_id,
-        payment_url: paymentData.invoice_url,
+        payment_url: paymentUrl,
         crypto_currency: paymentData.pay_currency,
         crypto_amount: paymentData.pay_amount,
         status: 'pending',
@@ -96,11 +102,12 @@ serve(async (req) => {
 
     console.log('Credit purchase created:', purchase.id);
 
+    // Return the payment URL
     return new Response(
       JSON.stringify({
         success: true,
         purchaseId: purchase.id,
-        paymentUrl: paymentData.invoice_url,
+        paymentUrl: paymentUrl,
         paymentId: paymentData.payment_id,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
