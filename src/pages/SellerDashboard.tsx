@@ -16,6 +16,7 @@ import EditProductModal from '@/components/EditProductModal';
 import OrderStatusModal from '@/components/OrderStatusModal';
 import { DisputeResolutionPanel } from '@/components/DisputeResolutionPanel';
 import { BulkDiscountManager } from '@/components/BulkDiscountManager';
+import { ProductAddonManager } from '@/components/ProductAddonManager';
 import { Switch } from '@/components/ui/switch';
 import { useChat } from '@/hooks/useChat';
 import { ConversationsModal } from '@/components/ConversationsModal';
@@ -83,6 +84,7 @@ const SellerDashboard = () => {
   const [newProductId, setNewProductId] = useState<string | null>(null);
   const [newProductTitle, setNewProductTitle] = useState<string>('');
   const [categories, setCategories] = useState<any[]>([]);
+  const [showNewProductAddons, setShowNewProductAddons] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -178,9 +180,14 @@ const SellerDashboard = () => {
         variant: "destructive"
       });
     } else {
+      // Store new product ID for add-ons
+      setNewProductId(data.id);
+      setNewProductTitle(data.title);
+      setShowNewProductAddons(true);
+      
       toast({
         title: "Product added",
-        description: "Your product has been successfully added."
+        description: "Your product has been successfully added. You can now add add-ons below."
       });
 
       // If bulk discount is enabled, create it
@@ -197,11 +204,6 @@ const SellerDashboard = () => {
             title: "Product added, but bulk discount failed",
             description: discountError.message,
             variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Product and bulk discount added",
-            description: "Your product and bulk discount have been successfully created."
           });
         }
       }
@@ -467,12 +469,14 @@ const SellerDashboard = () => {
                     </Button>
                   </form>
 
-                  {/* Bulk Discount Management - Show after product is created */}
-                  {newProductId && <div className="mt-6 border-t pt-6">
+                  {/* Bulk Discount and Add-ons - Show after product is created */}
+                  {showNewProductAddons && newProductId && <div className="mt-6 border-t pt-6 space-y-6">
                       <BulkDiscountManager productId={newProductId} productTitle={newProductTitle} />
+                      <ProductAddonManager productId={newProductId} />
                       <Button variant="outline" className="w-full mt-4" onClick={() => {
                     setNewProductId(null);
                     setNewProductTitle('');
+                    setShowNewProductAddons(false);
                   }}>
                         Finish Product Setup
                       </Button>
