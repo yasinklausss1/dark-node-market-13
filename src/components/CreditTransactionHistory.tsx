@@ -42,15 +42,15 @@ export const CreditTransactionHistory = () => {
     fetchTransactions();
   }, []);
 
-  const getTransactionIcon = (type: string) => {
-    if (type === 'purchase' || type === 'sale') {
+  const getTransactionIcon = (amount: number) => {
+    if (amount > 0) {
       return <ArrowDownRight className="h-4 w-4 text-green-500" />;
     }
     return <ArrowUpRight className="h-4 w-4 text-red-500" />;
   };
 
-  const getTransactionColor = (type: string) => {
-    if (type === 'purchase' || type === 'sale') {
+  const getTransactionColor = (amount: number) => {
+    if (amount > 0) {
       return 'text-green-500';
     }
     return 'text-red-500';
@@ -78,7 +78,7 @@ export const CreditTransactionHistory = () => {
                   className="flex items-center justify-between p-3 bg-muted rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    {getTransactionIcon(tx.type)}
+                    {getTransactionIcon(tx.amount)}
                     <div>
                       <p className="font-medium text-sm">{tx.description}</p>
                       <p className="text-xs text-muted-foreground">
@@ -86,8 +86,8 @@ export const CreditTransactionHistory = () => {
                       </p>
                     </div>
                   </div>
-                  <div className={`font-bold ${getTransactionColor(tx.type)}`}>
-                    {tx.type === 'purchase' || tx.type === 'sale' ? '+' : '-'}
+                  <div className={`font-bold ${getTransactionColor(tx.amount)}`}>
+                    {tx.amount > 0 ? '+' : '-'}
                     {Math.abs(tx.amount)}
                   </div>
                 </div>
