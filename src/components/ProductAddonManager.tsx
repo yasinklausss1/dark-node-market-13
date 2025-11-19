@@ -118,7 +118,7 @@ export const ProductAddonManager = ({
         <h4 className="font-medium">New Add-On </h4>
         <div className="space-y-2">
           <Label>Name</Label>
-          <Input placeholder="z.B. Waffe hinzufügen, Munitionsart" value={newAddon.name} onChange={e => setNewAddon({
+          <Input placeholder="e.g. Add weapon, ammunition type" value={newAddon.name} onChange={e => setNewAddon({
           ...newAddon,
           name: e.target.value
         })} />
