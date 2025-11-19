@@ -81,10 +81,8 @@ const SellerDashboard = () => {
     minQuantity: '',
     discountPercentage: ''
   });
-  const [newProductId, setNewProductId] = useState<string | null>(null);
-  const [newProductTitle, setNewProductTitle] = useState<string>('');
+  const [newProductAddons, setNewProductAddons] = useState<Array<{name: string, price_eur: number, is_required: boolean}>>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [showNewProductAddons, setShowNewProductAddons] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -180,16 +178,6 @@ const SellerDashboard = () => {
         variant: "destructive"
       });
     } else {
-      // Store new product ID for add-ons
-      setNewProductId(data.id);
-      setNewProductTitle(data.title);
-      setShowNewProductAddons(true);
-      
-      toast({
-        title: "Product added",
-        description: "Your product has been successfully added. You can now add add-ons below."
-      });
-
       // If bulk discount is enabled, create it
       if (enableBulkDiscount && bulkDiscountData.minQuantity && bulkDiscountData.discountPercentage) {
         const {
@@ -200,13 +188,33 @@ const SellerDashboard = () => {
           discount_percentage: parseFloat(bulkDiscountData.discountPercentage)
         });
         if (discountError) {
-          toast({
-            title: "Product added, but bulk discount failed",
-            description: discountError.message,
-            variant: "destructive"
-          });
+          console.error("Bulk discount error:", discountError);
         }
       }
+
+      // Create add-ons if any were added
+      if (newProductAddons.length > 0) {
+        const addonsToInsert = newProductAddons.map(addon => ({
+          product_id: data.id,
+          name: addon.name,
+          price_eur: addon.price_eur,
+          is_required: addon.is_required
+        }));
+        
+        const { error: addonsError } = await supabase
+          .from('product_addons')
+          .insert(addonsToInsert);
+        
+        if (addonsError) {
+          console.error("Add-ons error:", addonsError);
+        }
+      }
+
+      toast({
+        title: "Product added",
+        description: "Your product has been successfully added with all add-ons."
+      });
+
       setFormData({
         title: '',
         description: '',
@@ -220,6 +228,7 @@ const SellerDashboard = () => {
         minQuantity: '',
         discountPercentage: ''
       });
+      setNewProductAddons([]);
       fetchProducts();
     }
     setIsLoading(false);
@@ -469,18 +478,85 @@ const SellerDashboard = () => {
                     </Button>
                   </form>
 
-                  {/* Bulk Discount and Add-ons - Show after product is created */}
-                  {showNewProductAddons && newProductId && <div className="mt-6 border-t pt-6 space-y-6">
-                      <BulkDiscountManager productId={newProductId} productTitle={newProductTitle} />
-                      <ProductAddonManager productId={newProductId} />
-                      <Button variant="outline" className="w-full mt-4" onClick={() => {
-                    setNewProductId(null);
-                    setNewProductTitle('');
-                    setShowNewProductAddons(false);
-                  }}>
-                        Finish Product Setup
-                      </Button>
-                    </div>}
+                  {/* Add-ons Section - Before product is created */}
+                  <div className="space-y-4 border-t pt-4">
+                    <h3 className="text-lg font-semibold">Product Add-ons (Optional)</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Add customizable options for your product (e.g., custom names, extra services)
+                    </p>
+                    
+                    {/* Display existing addons */}
+                    {newProductAddons.map((addon, index) => (
+                      <div key={index} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
+                        <div className="flex-1">
+                          <div className="font-medium">{addon.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            +€{addon.price_eur.toFixed(2)} {addon.is_required && "(Erforderlich)"}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          type="button"
+                          onClick={() => {
+                            setNewProductAddons(newProductAddons.filter((_, i) => i !== index));
+                          }}
+                        >
+                          <Upload className="h-4 w-4 rotate-180" />
+                        </Button>
+                      </div>
+                    ))}
+
+                    {/* Add new addon inline */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input
+                        placeholder="Add-on Name (z.B. Custom Name)"
+                        id="addon-name"
+                        type="text"
+                      />
+                      <Input
+                        placeholder="Preis (EUR)"
+                        id="addon-price"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="addon-required"
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="addon-required" className="cursor-pointer text-sm">
+                        Erforderlich
+                      </Label>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        const nameInput = document.getElementById('addon-name') as HTMLInputElement;
+                        const priceInput = document.getElementById('addon-price') as HTMLInputElement;
+                        const requiredInput = document.getElementById('addon-required') as HTMLInputElement;
+                        
+                        if (nameInput.value.trim()) {
+                          setNewProductAddons([...newProductAddons, {
+                            name: nameInput.value,
+                            price_eur: parseFloat(priceInput.value) || 0,
+                            is_required: requiredInput.checked
+                          }]);
+                          nameInput.value = '';
+                          priceInput.value = '';
+                          requiredInput.checked = false;
+                        }
+                      }}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Add-on hinzufügen
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
