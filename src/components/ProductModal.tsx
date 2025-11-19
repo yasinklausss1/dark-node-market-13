@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Bitcoin, ShoppingCart, User, Coins, Minus, Plus, MessageCircle, Share2 } from 'lucide-react';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,9 +60,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const [sellerUsername, setSellerUsername] = useState<string>('');
   const [addonSelections, setAddonSelections] = useState<AddonSelection[]>([]);
   const [addonsTotalPrice, setAddonsTotalPrice] = useState(0);
+  const [productImages, setProductImages] = useState<string[]>([]);
   useEffect(() => {
     if (product && open) {
       fetchSellerUsername();
+      fetchProductImages();
       setQuantity(1);
     }
   }, [product, open]);
@@ -87,6 +90,21 @@ const ProductModal: React.FC<ProductModalProps> = ({
       setSellerUsername('Unknown');
     }
   };
+  
+  const fetchProductImages = async () => {
+    if (!product) return;
+    const { data } = await supabase
+      .from('product_images')
+      .select('image_url')
+      .eq('product_id', product.id)
+      .order('display_order', { ascending: true });
+    
+    if (data && data.length > 0) {
+      setProductImages(data.map(img => img.image_url));
+    } else if (product.image_url) {
+      setProductImages([product.image_url]);
+    }
+  };
   const handleShare = () => {
     const productUrl = `${window.location.origin}/marketplace?product=${product.id}`;
     const text = `🛍️ Check out this product: ${product.title} - €${product.price.toFixed(2)}`;
@@ -95,11 +113,49 @@ const ProductModal: React.FC<ProductModalProps> = ({
   };
   if (!product) return null;
   const productContent = <div className="space-y-3 sm:space-y-6">
-      {/* Product Image */}
-      {product.image_url && <div className="relative w-full h-48 sm:h-64 bg-muted rounded-lg overflow-hidden">
-          <img src={product.image_url} alt={product.title} className={`w-full h-full object-cover pointer-events-none select-none ${isGuest ? 'blur-xl' : ''}`} onError={e => {
-        e.currentTarget.style.display = 'none';
-      }} onContextMenu={e => e.preventDefault()} draggable={false} />
+      {/* Product Images Carousel */}
+      {productImages.length > 0 && (
+        <div className="relative w-full h-48 sm:h-96 bg-muted rounded-lg overflow-hidden">
+          {productImages.length === 1 ? (
+            <img 
+              src={productImages[0]} 
+              alt={product.title} 
+              className={`w-full h-full object-contain pointer-events-none select-none ${isGuest ? 'blur-xl' : ''}`} 
+              onError={e => {
+                e.currentTarget.style.display = 'none';
+              }} 
+              onContextMenu={e => e.preventDefault()} 
+              draggable={false} 
+            />
+          ) : (
+            <Carousel className="w-full h-full">
+              <CarouselContent>
+                {productImages.map((imageUrl, index) => (
+                  <CarouselItem key={index} className="flex items-center justify-center h-48 sm:h-96">
+                    <img 
+                      src={imageUrl} 
+                      alt={`${product.title} - Bild ${index + 1}`} 
+                      className={`max-w-full max-h-full object-contain pointer-events-none select-none ${isGuest ? 'blur-xl' : ''}`}
+                      onError={e => {
+                        e.currentTarget.style.display = 'none';
+                      }} 
+                      onContextMenu={e => e.preventDefault()} 
+                      draggable={false} 
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              {!isGuest && (
+                <>
+                  <CarouselPrevious className="left-2" />
+                  <CarouselNext className="right-2" />
+                  <div className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium">
+                    {productImages.length} Bilder
+                  </div>
+                </>
+              )}
+            </Carousel>
+          )}
           {isGuest && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
               <div className="text-center p-4">
@@ -110,7 +166,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
               </div>
             </div>
           )}
-        </div>}
+        </div>
+      )}
 
       {/* Product Info */}
       <div className="space-y-3 sm:space-y-4">
