@@ -79,7 +79,7 @@ export const ProductAddonsSelection = ({
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="custom" id="custom-name" />
             <Label htmlFor="custom-name" className="cursor-pointer font-normal">
-              Eigenen Namen eingeben
+              Choose my own text
             </Label>
           </div>
         </RadioGroup>
