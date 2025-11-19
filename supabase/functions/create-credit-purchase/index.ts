@@ -18,15 +18,19 @@ serve(async (req) => {
       throw new Error('No authorization header');
     }
 
-    // Create admin client for verifying JWT
-    const supabaseAdmin = createClient(
+    // Create client with user's auth token to verify authentication
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader }
+        }
+      }
     );
 
-    // Verify the JWT and get user
-    const jwt = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(jwt);
+    // Get authenticated user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     
     if (userError || !user) {
       console.error('Auth error:', userError?.message);
@@ -34,6 +38,12 @@ serve(async (req) => {
     }
 
     console.log('User authenticated:', user.id);
+
+    // Create admin client for database operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
     const { creditsAmount } = await req.json();
     
