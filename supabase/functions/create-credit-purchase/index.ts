@@ -46,8 +46,8 @@ serve(async (req) => {
 
     console.log(`Creating payment for ${creditsAmount} credits (${eurAmount} EUR) for user ${user.id}`);
 
-    // Create payment with NOWPayments
-    const paymentResponse = await fetch('https://api.nowpayments.io/v1/payment', {
+    // Create invoice with NOWPayments (allows multiple crypto options)
+    const paymentResponse = await fetch('https://api.nowpayments.io/v1/invoice', {
       method: 'POST',
       headers: {
         'x-api-key': nowpaymentsApiKey!,
@@ -56,10 +56,11 @@ serve(async (req) => {
       body: JSON.stringify({
         price_amount: eurAmount,
         price_currency: 'eur',
-        pay_currency: 'btc', // Default to BTC, user can choose on payment page
-        ipn_callback_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/nowpayments-webhook`,
         order_id: crypto.randomUUID(),
         order_description: `${creditsAmount} Credits`,
+        ipn_callback_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/nowpayments-webhook`,
+        success_url: `${Deno.env.get('SUPABASE_URL')}/wallet`,
+        cancel_url: `${Deno.env.get('SUPABASE_URL')}/wallet`,
       }),
     });
 
@@ -70,13 +71,12 @@ serve(async (req) => {
     }
 
     const paymentData = await paymentResponse.json();
-    console.log('Payment created:', paymentData);
+    console.log('Invoice created:', paymentData);
 
-    // Construct payment URL - NOWPayments doesn't always return invoice_url directly
-    const paymentUrl = paymentData.invoice_url || 
-                       `https://nowpayments.io/payment/?iid=${paymentData.payment_id}`;
+    // Get invoice URL from response
+    const paymentUrl = paymentData.invoice_url;
     
-    console.log('Payment URL:', paymentUrl);
+    console.log('Invoice URL:', paymentUrl);
 
     // Save to database using admin client
     const { data: purchase, error: dbError } = await supabaseAdmin
@@ -86,10 +86,10 @@ serve(async (req) => {
         credits_amount: creditsAmount,
         eur_amount: eurAmount,
         payment_provider: 'nowpayments',
-        payment_id: paymentData.payment_id,
+        payment_id: paymentData.id,
         payment_url: paymentUrl,
-        crypto_currency: paymentData.pay_currency,
-        crypto_amount: paymentData.pay_amount,
+        crypto_currency: null,
+        crypto_amount: null,
         status: 'pending',
       })
       .select()
@@ -108,7 +108,7 @@ serve(async (req) => {
         success: true,
         purchaseId: purchase.id,
         paymentUrl: paymentUrl,
-        paymentId: paymentData.payment_id,
+        paymentId: paymentData.id,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
