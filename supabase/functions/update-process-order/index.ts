@@ -21,7 +21,7 @@ serve(async (req) => {
     const { userId, items, method, btcPrice, ltcPrice, shippingAddress } = body as {
       userId: string;
       items: CartItem[];
-      method: 'btc' | 'ltc';
+      method: 'btc' | 'ltc' | 'credits';
       btcPrice?: number;
       ltcPrice?: number;
       shippingAddress: {
@@ -35,10 +35,12 @@ serve(async (req) => {
       };
     };
 
+    console.log(`Processing order for user ${userId} with method ${method}`);
+
     if (!userId || !items?.length || !method || !shippingAddress) throw new Error('Invalid payload');
 
     // Load product info and compute totals + amounts per seller
-    const sellerTotals: Record<string, { eur: number; btc: number; ltc: number }> = {};
+    const sellerTotals: Record<string, { eur: number; btc: number; ltc: number; credits: number }> = {};
     let totalEUR = 0;
 
     for (const it of items) {
@@ -73,27 +75,33 @@ serve(async (req) => {
 
       const btcAmt = btcPrice ? lineEUR / btcPrice : 0;
       const ltcAmt = ltcPrice ? lineEUR / ltcPrice : 0;
+      const creditsAmt = Math.ceil(lineEUR); // Credits = EUR rounded up
 
-      const s = sellerTotals[product.seller_id] || { eur: 0, btc: 0, ltc: 0 };
+      const s = sellerTotals[product.seller_id] || { eur: 0, btc: 0, ltc: 0, credits: 0 };
       s.eur += lineEUR;
       s.btc += btcAmt;
       s.ltc += ltcAmt;
+      s.credits += creditsAmt;
       sellerTotals[product.seller_id] = s;
     }
 
     // Check buyer balance
     const { data: buyerBal } = await supabase
       .from('wallet_balances')
-      .select('balance_eur, balance_btc, balance_ltc')
+      .select('balance_eur, balance_btc, balance_ltc, balance_credits')
       .eq('user_id', userId)
       .maybeSingle();
     if (!buyerBal) throw new Error('Buyer wallet not found');
 
     const totalBTC = method === 'btc' ? (totalEUR / (btcPrice || 1)) : 0;
     const totalLTC = method === 'ltc' ? (totalEUR / (ltcPrice || 1)) : 0;
+    const totalCredits = method === 'credits' ? Math.ceil(totalEUR) : 0;
+
+    console.log(`Total: ${totalEUR} EUR, ${totalCredits} credits, Buyer has: ${buyerBal.balance_credits} credits`);
 
     if (method === 'btc' && Number(buyerBal.balance_btc) + 1e-12 < totalBTC) throw new Error('Insufficient BTC balance');
     if (method === 'ltc' && Number((buyerBal as any).balance_ltc || 0) + 1e-12 < totalLTC) throw new Error('Insufficient LTC balance');
+    if (method === 'credits' && Number(buyerBal.balance_credits || 0) < totalCredits) throw new Error('Insufficient credits balance');
 
     // Create order with shipping address
     const { data: order, error: orderErr } = await supabase
@@ -168,7 +176,7 @@ serve(async (req) => {
         transaction_direction: 'outgoing',
         related_order_id: order.id
       });
-    } else {
+    } else if (method === 'ltc') {
       await supabase.from('wallet_balances')
         .update({ balance_ltc: Number((buyerBal as any).balance_ltc || 0) - totalLTC })
         .eq('user_id', userId);
@@ -176,12 +184,30 @@ serve(async (req) => {
         user_id: userId,
         type: 'purchase',
         amount_eur: -totalEUR,
-        amount_btc: -totalLTC, // store LTC amount here as convention
+        amount_btc: -totalLTC,
         status: 'confirmed',
         description: `Order #${String(order.id).slice(0,8)} (LTC)`,
         transaction_direction: 'outgoing',
         related_order_id: order.id
       });
+    } else if (method === 'credits') {
+      console.log(`Deducting ${totalCredits} credits from buyer ${userId}`);
+      
+      // Deduct credits from buyer
+      await supabase.from('wallet_balances')
+        .update({ balance_credits: Number(buyerBal.balance_credits || 0) - totalCredits })
+        .eq('user_id', userId);
+      
+      // Create credit transaction for buyer
+      await supabase.from('credit_transactions').insert({
+        user_id: userId,
+        type: 'purchase',
+        amount: -totalCredits,
+        description: `Order #${String(order.id).slice(0,8)}`,
+        related_order_id: order.id
+      });
+
+      console.log(`Credits deducted successfully from buyer`);
     }
 
     // Get buyer username for transaction tracking
@@ -218,7 +244,7 @@ serve(async (req) => {
           from_username: buyerProfile?.username || 'Unknown',
           related_order_id: order.id
         });
-      } else {
+      } else if (method === 'ltc') {
         const { data: sBal } = await supabase
           .from('wallet_balances')
           .select('balance_ltc')
@@ -236,9 +262,47 @@ serve(async (req) => {
           user_id: sellerId,
           type: 'sale',
           amount_eur: sums.eur,
-          amount_btc: sums.ltc, // store LTC amount here
+          amount_btc: sums.ltc,
           status: 'confirmed',
           description: `Sale #${String(order.id).slice(0,8)} (LTC)`,
+          transaction_direction: 'incoming',
+          from_username: buyerProfile?.username || 'Unknown',
+          related_order_id: order.id
+        });
+      } else if (method === 'credits') {
+        console.log(`Crediting ${sums.credits} credits to seller ${sellerId}`);
+        
+        // Get current balance
+        const { data: sBal } = await supabase
+          .from('wallet_balances')
+          .select('balance_credits')
+          .eq('user_id', sellerId)
+          .maybeSingle();
+        
+        if (sBal) {
+          await supabase.from('wallet_balances')
+            .update({ balance_credits: Number(sBal.balance_credits || 0) + sums.credits })
+            .eq('user_id', sellerId);
+        } else {
+          // Create wallet if it doesn't exist
+          await supabase.rpc('get_or_create_wallet_balance', { user_uuid: sellerId });
+          await supabase.from('wallet_balances')
+            .update({ balance_credits: sums.credits })
+            .eq('user_id', sellerId);
+        }
+        
+        // Create credit transaction for seller
+        await supabase.from('credit_transactions').insert({
+          user_id: sellerId,
+          type: 'sale',
+          amount: sums.credits,
+          description: `Sale #${String(order.id).slice(0,8)} from ${buyerProfile?.username || 'Unknown'}`,
+          related_order_id: order.id
+        });
+
+        console.log(`Credits credited successfully to seller ${sellerId}`);
+      }
+    }
           transaction_direction: 'incoming',
           from_username: buyerProfile?.username || 'Unknown',
           related_order_id: order.id
