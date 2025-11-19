@@ -224,6 +224,102 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_purchases: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          credits_amount: number
+          crypto_amount: number | null
+          crypto_currency: string | null
+          eur_amount: number
+          id: string
+          payment_id: string | null
+          payment_provider: string
+          payment_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          credits_amount: number
+          crypto_amount?: number | null
+          crypto_currency?: string | null
+          eur_amount: number
+          id?: string
+          payment_id?: string | null
+          payment_provider?: string
+          payment_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          credits_amount?: number
+          crypto_amount?: number | null
+          crypto_currency?: string | null
+          eur_amount?: number
+          id?: string
+          payment_id?: string | null
+          payment_provider?: string
+          payment_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          related_order_id: string | null
+          related_purchase_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          related_order_id?: string | null
+          related_purchase_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          related_order_id?: string | null
+          related_purchase_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_transactions_related_purchase_id_fkey"
+            columns: ["related_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "credit_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deposit_requests: {
         Row: {
           address: string
@@ -1009,6 +1105,7 @@ export type Database = {
         Row: {
           balance_btc: number
           balance_btc_deposited: number
+          balance_credits: number
           balance_eth: number
           balance_eth_deposited: number
           balance_eur: number
@@ -1024,6 +1121,7 @@ export type Database = {
         Insert: {
           balance_btc?: number
           balance_btc_deposited?: number
+          balance_credits?: number
           balance_eth?: number
           balance_eth_deposited?: number
           balance_eur?: number
@@ -1039,6 +1137,7 @@ export type Database = {
         Update: {
           balance_btc?: number
           balance_btc_deposited?: number
+          balance_credits?: number
           balance_eth?: number
           balance_eth_deposited?: number
           balance_eur?: number
