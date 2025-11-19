@@ -30,7 +30,6 @@ export const CreditPurchase = () => {
         throw new Error(error.message || 'Failed to create payment');
       }
 
-      // Handle the response data
       const responseData = data;
       console.log('Response data:', responseData);
 
@@ -39,7 +38,6 @@ export const CreditPurchase = () => {
         throw new Error('No payment URL received from server');
       }
 
-      // Open payment page
       const paymentUrl = responseData.paymentUrl;
       console.log('Opening payment URL:', paymentUrl);
       window.open(paymentUrl, '_blank');
@@ -61,8 +59,6 @@ export const CreditPurchase = () => {
       setCustomAmount("");
     }
   };
-
-
 
   return (
     <Card>
@@ -108,26 +104,22 @@ export const CreditPurchase = () => {
 
         <div>
           <p className="text-sm font-medium mb-2">Custom amount:</p>
-          <div className="flex gap-2">
-            <Input
-              type="number"
-              min="1"
-              placeholder="Enter amount"
-              value={customAmount}
-              onChange={(e) => {
-                setCustomAmount(e.target.value);
+          <Input
+            type="number"
+            min="1"
+            placeholder="Enter amount"
+            value={customAmount}
+            onChange={(e) => {
+              setCustomAmount(e.target.value);
+              const amount = parseInt(e.target.value);
+              if (amount && amount > 0) {
+                setSelectedAmount(amount);
+              } else {
                 setSelectedAmount(null);
-              }}
-              disabled={loading}
-            />
-            <Button
-              onClick={handleCustomPurchase}
-              disabled={loading || !customAmount}
-              variant="secondary"
-            >
-              Buy
-            </Button>
-          </div>
+              }
+            }}
+            disabled={loading}
+          />
         </div>
 
         {selectedAmount && (
@@ -147,7 +139,6 @@ export const CreditPurchase = () => {
             )}
           </Button>
         )}
-
 
         <p className="text-xs text-muted-foreground text-center">
           You will be redirected to a secure payment page where you can pay with cryptocurrency
