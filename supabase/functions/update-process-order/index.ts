@@ -279,34 +279,52 @@ serve(async (req) => {
           .eq('user_id', sellerId)
           .maybeSingle();
         
+        console.log(`Seller ${sellerId} current balance:`, sBal);
+        
         if (sBal) {
-          await supabase.from('wallet_balances')
-            .update({ balance_credits: Number(sBal.balance_credits || 0) + sums.credits })
+          const newBalance = Number(sBal.balance_credits || 0) + sums.credits;
+          console.log(`Updating seller balance from ${sBal.balance_credits} to ${newBalance}`);
+          
+          const { error: updateError } = await supabase.from('wallet_balances')
+            .update({ balance_credits: newBalance })
             .eq('user_id', sellerId);
+          
+          if (updateError) {
+            console.error(`Error updating seller balance:`, updateError);
+            throw updateError;
+          }
         } else {
+          console.log(`Creating wallet for seller ${sellerId}`);
           // Create wallet if it doesn't exist
           await supabase.rpc('get_or_create_wallet_balance', { user_uuid: sellerId });
-          await supabase.from('wallet_balances')
+          
+          const { error: updateError } = await supabase.from('wallet_balances')
             .update({ balance_credits: sums.credits })
             .eq('user_id', sellerId);
+          
+          if (updateError) {
+            console.error(`Error creating seller balance:`, updateError);
+            throw updateError;
+          }
         }
         
+        console.log(`Creating credit transaction for seller ${sellerId}`);
+        
         // Create credit transaction for seller
-        await supabase.from('credit_transactions').insert({
+        const { error: txError } = await supabase.from('credit_transactions').insert({
           user_id: sellerId,
           type: 'sale',
           amount: sums.credits,
           description: `Sale #${String(order.id).slice(0,8)} from ${buyerProfile?.username || 'Unknown'}`,
           related_order_id: order.id
         });
+        
+        if (txError) {
+          console.error(`Error creating seller transaction:`, txError);
+          throw txError;
+        }
 
         console.log(`Credits credited successfully to seller ${sellerId}`);
-      }
-    }
-          transaction_direction: 'incoming',
-          from_username: buyerProfile?.username || 'Unknown',
-          related_order_id: order.id
-        });
       }
     }
 
