@@ -240,6 +240,16 @@ const ProductModal: React.FC<ProductModalProps> = ({
               Back
             </Button>
             <Button className="w-full sm:flex-1 h-10" disabled={product.stock === 0} onClick={() => {
+            // Check if user is logged in
+            if (!user) {
+              toast({
+                title: "Login Required",
+                description: "Please sign in to add items to your cart.",
+                variant: "destructive"
+              });
+              return;
+            }
+            
             // Prevent purchasing own product if logged in
             if (user && product.seller_id === user.id) {
               toast({
