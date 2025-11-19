@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./hooks/useCart";
 import CookieBanner from "./components/CookieBanner";
+import AgeVerificationModal from "./components/AgeVerificationModal";
 import Footer from "./components/Footer";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -38,6 +39,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <div className="flex flex-col min-h-screen">
+                <AgeVerificationModal />
                 <CookieBanner />
                 <div className="flex-1">
                   <Routes>
