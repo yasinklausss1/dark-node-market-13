@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Star, Share2, Heart, ShoppingCart, Eye, MessageCircle, Bitcoin } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { WatermarkedImage } from '@/components/ui/watermarked-image';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/Product';
@@ -89,7 +90,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {productImages.length > 0 ? (
           productImages.length === 1 ? (
             // Single image - no carousel needed
-            <img
+            <WatermarkedImage
               src={productImages[0]}
               alt={product.title}
               className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${
@@ -107,7 +108,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <CarouselContent>
                 {productImages.map((imageUrl, index) => (
                   <CarouselItem key={index}>
-                    <img
+                    <WatermarkedImage
                       src={imageUrl}
                       alt={`${product.title} - Image ${index + 1}`}
                       className={`w-full h-full object-cover ${
