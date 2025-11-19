@@ -41,13 +41,13 @@ export const WatermarkedImage: React.FC<WatermarkedImageProps> = ({
               x="0" 
               y="0" 
               width="180" 
-              height="100" 
+              height="120" 
               patternUnits="userSpaceOnUse"
               patternTransform="rotate(-40)"
             >
               <text
                 x="0"
-                y="20"
+                y="15"
                 fill="white"
                 fontSize="13"
                 fontWeight="500"
@@ -58,7 +58,18 @@ export const WatermarkedImage: React.FC<WatermarkedImageProps> = ({
               </text>
               <text
                 x="0"
-                y="55"
+                y="40"
+                fill="white"
+                fontSize="13"
+                fontWeight="500"
+                fontFamily="Arial, Helvetica, sans-serif"
+                opacity="1"
+              >
+                {watermarkText}
+              </text>
+              <text
+                x="0"
+                y="65"
                 fill="white"
                 fontSize="13"
                 fontWeight="500"
@@ -70,6 +81,17 @@ export const WatermarkedImage: React.FC<WatermarkedImageProps> = ({
               <text
                 x="0"
                 y="90"
+                fill="white"
+                fontSize="13"
+                fontWeight="500"
+                fontFamily="Arial, Helvetica, sans-serif"
+                opacity="1"
+              >
+                {watermarkText}
+              </text>
+              <text
+                x="0"
+                y="115"
                 fill="white"
                 fontSize="13"
                 fontWeight="500"
