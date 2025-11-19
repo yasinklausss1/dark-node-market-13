@@ -25,6 +25,13 @@ export const WatermarkedImage: React.FC<WatermarkedImageProps> = ({
       <div 
         className="absolute inset-0 pointer-events-none select-none"
         style={{
+          backgroundImage: `repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 100px,
+            rgba(255, 255, 255, 0.03) 100px,
+            rgba(255, 255, 255, 0.03) 200px
+          )`,
           mixBlendMode: 'overlay'
         }}
       >
@@ -32,7 +39,7 @@ export const WatermarkedImage: React.FC<WatermarkedImageProps> = ({
           className="w-full h-full" 
           xmlns="http://www.w3.org/2000/svg"
           style={{
-            opacity: 0.5
+            opacity: 0.15
           }}
         >
           <defs>
@@ -40,44 +47,41 @@ export const WatermarkedImage: React.FC<WatermarkedImageProps> = ({
               id="watermark-pattern" 
               x="0" 
               y="0" 
-              width="200" 
-              height="120" 
+              width="300" 
+              height="200" 
               patternUnits="userSpaceOnUse"
-              patternTransform="rotate(-25)"
+              patternTransform="rotate(-35)"
             >
               <text
                 x="0"
-                y="30"
+                y="40"
                 fill="white"
-                fontSize="20"
-                fontWeight="700"
-                fontFamily="'Arial Black', 'Arial Bold', sans-serif"
-                letterSpacing="1"
-                opacity="1"
+                fontSize="16"
+                fontWeight="500"
+                fontFamily="system-ui, -apple-system, sans-serif"
+                opacity="0.8"
               >
                 {watermarkText}
               </text>
               <text
                 x="0"
-                y="70"
+                y="100"
                 fill="white"
-                fontSize="20"
-                fontWeight="700"
-                fontFamily="'Arial Black', 'Arial Bold', sans-serif"
-                letterSpacing="1"
-                opacity="1"
+                fontSize="16"
+                fontWeight="500"
+                fontFamily="system-ui, -apple-system, sans-serif"
+                opacity="0.8"
               >
                 {watermarkText}
               </text>
               <text
                 x="0"
-                y="110"
+                y="160"
                 fill="white"
-                fontSize="20"
-                fontWeight="700"
-                fontFamily="'Arial Black', 'Arial Bold', sans-serif"
-                letterSpacing="1"
-                opacity="1"
+                fontSize="16"
+                fontWeight="500"
+                fontFamily="system-ui, -apple-system, sans-serif"
+                opacity="0.8"
               >
                 {watermarkText}
               </text>
