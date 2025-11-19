@@ -22,20 +22,29 @@ export const CreditPurchase = () => {
         body: { creditsAmount: amount }
       });
 
-      if (error) throw error;
+      console.log('Purchase response:', { data, error });
 
-      if (data?.paymentUrl) {
-        window.open(data.paymentUrl, '_blank');
-        toast({
-          title: "Payment initiated",
-          description: `Opening payment page for ${amount} credits (€${amount})`,
-        });
+      if (error) {
+        console.error('Error response:', error);
+        throw error;
       }
+
+      if (!data || !data.paymentUrl) {
+        throw new Error('No payment URL received');
+      }
+
+      // Open payment page
+      window.open(data.paymentUrl, '_blank');
+      
+      toast({
+        title: "Payment initiated",
+        description: `Opening payment page for ${amount} credits (€${amount})`,
+      });
     } catch (error: any) {
       console.error('Error creating purchase:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create payment",
+        description: error.message || "Failed to create payment. Please try again.",
         variant: "destructive",
       });
     } finally {
