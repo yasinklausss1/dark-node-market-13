@@ -450,6 +450,39 @@ export type Database = {
         }
         Relationships: []
       }
+      order_addon_selections: {
+        Row: {
+          addon_id: string
+          addon_name: string
+          created_at: string
+          custom_value: string | null
+          id: string
+          order_id: string
+          order_item_id: string
+          price_eur: number
+        }
+        Insert: {
+          addon_id: string
+          addon_name: string
+          created_at?: string
+          custom_value?: string | null
+          id?: string
+          order_id: string
+          order_item_id: string
+          price_eur: number
+        }
+        Update: {
+          addon_id?: string
+          addon_name?: string
+          created_at?: string
+          custom_value?: string | null
+          id?: string
+          order_id?: string
+          order_item_id?: string
+          price_eur?: number
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -562,6 +595,39 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      product_addons: {
+        Row: {
+          addon_type: string
+          created_at: string
+          id: string
+          is_required: boolean
+          name: string
+          price_eur: number
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          addon_type?: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          name: string
+          price_eur?: number
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          addon_type?: string
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          name?: string
+          price_eur?: number
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       products: {
         Row: {

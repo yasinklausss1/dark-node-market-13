@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { TelegramIntegration } from '@/components/TelegramIntegration';
+import { ProductAddonsSelection, AddonSelection } from '@/components/ProductAddonsSelection';
 import { useIsMobile } from '@/hooks/use-mobile';
 interface Product {
   id: string;
@@ -56,6 +57,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const [ltcAmount, setLtcAmount] = useState<number | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [sellerUsername, setSellerUsername] = useState<string>('');
+  const [addonSelections, setAddonSelections] = useState<AddonSelection[]>([]);
+  const [addonsTotalPrice, setAddonsTotalPrice] = useState(0);
   useEffect(() => {
     if (product && open) {
       fetchSellerUsername();
@@ -121,7 +124,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
         <div className="space-y-1 sm:space-y-2">
           <div className="text-xl sm:text-2xl font-bold text-primary">
-            €{product.price.toFixed(2)}
+            €{(product.price * quantity + addonsTotalPrice).toFixed(2)}
           </div>
           <div className="flex flex-col sm:flex-row gap-1 sm:gap-4">
             {btcPrice && btcAmount && <div className="flex items-center text-sm sm:text-lg text-orange-500">
@@ -159,6 +162,15 @@ const ProductModal: React.FC<ProductModalProps> = ({
             <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
         </div>
+
+        {/* Product Add-ons Selection */}
+        <ProductAddonsSelection 
+          productId={product.id}
+          onSelectionsChange={(selections, totalPrice) => {
+            setAddonSelections(selections);
+            setAddonsTotalPrice(totalPrice);
+          }}
+        />
 
         {/* Telegram Integration */}
         <Separator />
