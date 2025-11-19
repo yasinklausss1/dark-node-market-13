@@ -87,10 +87,7 @@ export const ProductAddonsSelection = ({
       </div>
 
       {/* Additional Notes */}
-      <div className="space-y-2">
-        <Label>Zusätzliche Hinweise</Label>
-        <Textarea placeholder="Besondere Wünsche oder Anmerkungen..." value={additionalNotes} onChange={e => setAdditionalNotes(e.target.value)} rows={3} />
-      </div>
+      
 
       {/* Add-ons */}
       <div className="space-y-4">
