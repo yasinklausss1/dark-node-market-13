@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, ExternalLink, TestTube } from "lucide-react";
+import { ShoppingCart, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const PRESET_AMOUNTS = [10, 25, 50, 100, 250, 500];
@@ -12,7 +12,7 @@ export const CreditPurchase = () => {
   const [customAmount, setCustomAmount] = useState<string>("");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [testing, setTesting] = useState(false);
+  
   const { toast } = useToast();
 
   const handlePurchase = async (amount: number) => {
@@ -75,57 +75,6 @@ export const CreditPurchase = () => {
     }
   };
 
-  const testWebhook = async () => {
-    setTesting(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Error",
-          description: "You must be logged in to test",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const response = await supabase.functions.invoke('test-credit-webhook', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (response.error) {
-        toast({
-          title: "Error",
-          description: response.error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const result = response.data;
-      if (result.test_results.test_passed) {
-        toast({
-          title: "✅ Test passed!",
-          description: `${result.test_results.credits_added} credits added. Balance: ${result.test_results.balance_before} → ${result.test_results.balance_after}`,
-        });
-      } else {
-        toast({
-          title: "Test completed with issues",
-          description: `Expected ${result.test_results.credits_purchased} credits, got ${result.test_results.credits_added}`,
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Test failed: " + error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setTesting(false);
-    }
-  };
 
   return (
     <Card>
@@ -211,16 +160,6 @@ export const CreditPurchase = () => {
           </Button>
         )}
 
-        <Button 
-          onClick={testWebhook} 
-          disabled={testing} 
-          variant="outline" 
-          className="w-full"
-          size="sm"
-        >
-          <TestTube className="mr-2 h-4 w-4" />
-          {testing ? "Testing..." : "Test Webhook (Dev)"}
-        </Button>
 
         <p className="text-xs text-muted-foreground text-center">
           You will be redirected to a secure payment page where you can pay with cryptocurrency
