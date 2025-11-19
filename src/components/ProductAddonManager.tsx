@@ -47,7 +47,7 @@ export const ProductAddonManager = ({
   const handleAddAddon = async () => {
     if (!newAddon.name.trim()) {
       toast({
-        title: "Bitte Add-on Namen eingeben",
+        title: "Please enter add-on name",
         variant: "destructive"
       });
       return;
@@ -63,12 +63,12 @@ export const ProductAddonManager = ({
     });
     if (error) {
       toast({
-        title: "Fehler beim Hinzufügen",
+        title: "Error adding add-on",
         variant: "destructive"
       });
     } else {
       toast({
-        title: "Add-on hinzugefügt"
+        title: "Add-on added"
       });
       setNewAddon({
         name: "",
@@ -85,12 +85,12 @@ export const ProductAddonManager = ({
     } = await supabase.from("product_addons").delete().eq("id", addonId);
     if (error) {
       toast({
-        title: "Fehler beim Löschen",
+        title: "Error deleting add-on",
         variant: "destructive"
       });
     } else {
       toast({
-        title: "Add-on gelöscht"
+        title: "Add-on deleted"
       });
       fetchAddons();
     }
@@ -104,7 +104,7 @@ export const ProductAddonManager = ({
             <div className="flex-1">
               <div className="font-medium">{addon.name}</div>
               <div className="text-sm text-muted-foreground">
-                +€{addon.price_eur.toFixed(2)} {addon.is_required && "(Erforderlich)"}
+                +€{addon.price_eur.toFixed(2)} {addon.is_required && "(Required)"}
               </div>
             </div>
             <Button variant="ghost" size="icon" onClick={() => handleDeleteAddon(addon.id)}>
@@ -124,7 +124,7 @@ export const ProductAddonManager = ({
         })} />
         </div>
         <div className="space-y-2">
-          <Label>Preis (EUR)</Label>
+          <Label>Price (EUR)</Label>
           <Input type="number" step="0.01" min="0" placeholder="0.00" value={newAddon.price_eur} onChange={e => setNewAddon({
           ...newAddon,
           price_eur: parseFloat(e.target.value) || 0
@@ -136,12 +136,12 @@ export const ProductAddonManager = ({
           is_required: checked as boolean
         })} />
           <Label htmlFor="is-required" className="cursor-pointer">
-            Erforderlich (mindestens eine Option muss ausgewählt werden)
+            Required (at least one option must be selected)
           </Label>
         </div>
         <Button onClick={handleAddAddon} disabled={isLoading} className="w-full">
           <Plus className="h-4 w-4 mr-2" />
-          Add-on hinzufügen
+          Add Add-on
         </Button>
       </div>
     </div>;
