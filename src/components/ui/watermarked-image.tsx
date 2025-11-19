@@ -1,5 +1,4 @@
 import React from 'react';
-import watermarkPattern from '@/assets/watermark-pattern.png';
 
 interface WatermarkedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -26,13 +25,64 @@ export const WatermarkedImage: React.FC<WatermarkedImageProps> = ({
       <div 
         className="absolute inset-0 pointer-events-none select-none"
         style={{
-          backgroundImage: `url(${watermarkPattern})`,
-          backgroundRepeat: 'repeat',
-          backgroundSize: '512px 512px',
-          opacity: 0.5,
-          mixBlendMode: 'overlay'
+          mixBlendMode: 'normal'
         }}
-      />
+      >
+        <svg 
+          className="w-full h-full" 
+          xmlns="http://www.w3.org/2000/svg"
+          style={{
+            opacity: 0.5
+          }}
+        >
+          <defs>
+            <pattern 
+              id="watermark-pattern" 
+              x="0" 
+              y="0" 
+              width="250" 
+              height="150" 
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(-40)"
+            >
+              <text
+                x="0"
+                y="30"
+                fill="white"
+                fontSize="14"
+                fontWeight="500"
+                fontFamily="Arial, Helvetica, sans-serif"
+                opacity="1"
+              >
+                {watermarkText}
+              </text>
+              <text
+                x="0"
+                y="80"
+                fill="white"
+                fontSize="14"
+                fontWeight="500"
+                fontFamily="Arial, Helvetica, sans-serif"
+                opacity="1"
+              >
+                {watermarkText}
+              </text>
+              <text
+                x="0"
+                y="130"
+                fill="white"
+                fontSize="14"
+                fontWeight="500"
+                fontFamily="Arial, Helvetica, sans-serif"
+                opacity="1"
+              >
+                {watermarkText}
+              </text>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#watermark-pattern)" />
+        </svg>
+      </div>
     </div>
   );
 };
