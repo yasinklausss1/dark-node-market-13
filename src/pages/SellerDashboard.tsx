@@ -150,11 +150,11 @@ const SellerDashboard = () => {
     e.preventDefault();
     if (!user) return;
 
-    // Validate image is required
-    if (!formData.imageUrl) {
+    // Validate at least one image is required
+    if (!formData.imageUrl && productImages.length === 0) {
       toast({
-        title: "Image required",
-        description: "Please upload an image for your product.",
+        title: "Bild erforderlich",
+        description: "Bitte laden Sie mindestens ein Bild für Ihr Produkt hoch.",
         variant: "destructive"
       });
       return;
