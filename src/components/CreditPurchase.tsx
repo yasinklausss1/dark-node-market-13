@@ -62,18 +62,6 @@ export const CreditPurchase = () => {
     }
   };
 
-  const handleCustomPurchase = () => {
-    const amount = parseInt(customAmount);
-    if (amount && amount > 0) {
-      handlePurchase(amount);
-    } else {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid amount",
-        variant: "destructive",
-      });
-    }
-  };
 
 
   return (
