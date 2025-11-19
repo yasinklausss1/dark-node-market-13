@@ -50,7 +50,7 @@ const AgeVerificationModal = () => {
             </div>
           </div>
           <AlertDialogTitle className="text-center text-2xl">
-            Age Verification Required
+            Age Verification
           </AlertDialogTitle>
           <AlertDialogDescription className="text-center space-y-4 pt-4">
             <p className="text-base font-medium text-foreground">
