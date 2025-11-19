@@ -73,7 +73,7 @@ export const ProductAddonsSelection = ({
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="username" id="use-username" />
             <Label htmlFor="use-username" className="cursor-pointer font-normal">
-              Meinen Benutzernamen verwenden
+              Use my Oracle Market username
             </Label>
           </div>
           <div className="flex items-center space-x-2">
