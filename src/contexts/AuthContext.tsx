@@ -125,6 +125,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       username = email.split('@')[0];
       
+      // Check if email is already registered in auth.users
+      const { data: authData, error: listError } = await supabase.auth.admin.listUsers();
+      
+      if (!listError && authData?.users) {
+        const existingUser = authData.users.find((u: any) => u.email === email);
+        if (existingUser) {
+          return { error: new Error('Diese E-Mail ist bereits registriert') };
+        }
+      }
+      
+      // Check if there's already a pending verification for this email
+      const { data: existingCode, error: codeCheckError } = await supabase
+        .from('email_verification_codes')
+        .select('*')
+        .eq('email', email)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+      
+      if (existingCode) {
+        return { error: new Error('Ein Bestätigungscode wurde bereits an diese E-Mail gesendet. Bitte prüfen Sie Ihren Posteingang.') };
+      }
+      
       // For email registration, send verification code first
       const code = Math.floor(1000 + Math.random() * 9000).toString();
       
@@ -151,7 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: emailError };
       }
 
-      toast.success('Verification code sent to your email!');
+      toast.success('Bestätigungscode wurde an Ihre E-Mail gesendet!');
       
       return { error: null, needsVerification: true, email };
     }
