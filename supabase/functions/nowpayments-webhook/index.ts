@@ -98,10 +98,19 @@ serve(async (req) => {
         console.error('Error getting wallet:', walletError);
       }
 
+      // Get current balance
+      const { data: currentBalance } = await supabaseAdmin
+        .from('wallet_balances')
+        .select('balance_credits')
+        .eq('user_id', purchase.user_id)
+        .single();
+
+      const newBalance = (currentBalance?.balance_credits || 0) + purchase.credits_amount;
+
       const { error: updateError } = await supabaseAdmin
         .from('wallet_balances')
         .update({
-          balance_credits: supabaseAdmin.raw(`balance_credits + ${purchase.credits_amount}`),
+          balance_credits: newBalance,
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', purchase.user_id);
