@@ -17,6 +17,7 @@ import OrderStatusModal from '@/components/OrderStatusModal';
 import { DisputeResolutionPanel } from '@/components/DisputeResolutionPanel';
 import { BulkDiscountManager } from '@/components/BulkDiscountManager';
 import { ProductAddonManager } from '@/components/ProductAddonManager';
+import { MultiImageUpload } from '@/components/ui/multi-image-upload';
 import { Switch } from '@/components/ui/switch';
 import { useChat } from '@/hooks/useChat';
 import { ConversationsModal } from '@/components/ConversationsModal';
@@ -76,6 +77,7 @@ const SellerDashboard = () => {
     imageUrl: '',
     stock: ''
   });
+  const [productImages, setProductImages] = useState<string[]>([]);
   const [enableBulkDiscount, setEnableBulkDiscount] = useState(false);
   const [bulkDiscountData, setBulkDiscountData] = useState({
     minQuantity: '',
@@ -210,6 +212,28 @@ const SellerDashboard = () => {
         }
       }
 
+      // Insert product images if any
+      if (productImages.length > 0) {
+        const imagesToInsert = productImages.map((url, index) => ({
+          product_id: data.id,
+          image_url: url,
+          display_order: index
+        }));
+        
+        const { error: imagesError } = await supabase
+          .from('product_images')
+          .insert(imagesToInsert);
+        
+        if (imagesError) {
+          console.error("Images error:", imagesError);
+          toast({
+            title: "Warning",
+            description: "Product created but some images couldn't be saved.",
+            variant: "destructive"
+          });
+        }
+      }
+
       toast({
         title: "Product added",
         description: "Your product has been successfully added with all add-ons."
@@ -229,6 +253,7 @@ const SellerDashboard = () => {
         discountPercentage: ''
       });
       setNewProductAddons([]);
+      setProductImages([]);
       fetchProducts();
     }
     setIsLoading(false);
@@ -454,7 +479,16 @@ const SellerDashboard = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="imageUrl">Product Image</Label>
+                      <Label>Produktbilder (mehrere möglich)</Label>
+                      <MultiImageUpload 
+                        images={productImages} 
+                        onChange={setProductImages}
+                        maxImages={5}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="imageUrl">Hauptbild (optional - wird aus Galerie verwendet)</Label>
                       <FileUpload value={formData.imageUrl} onChange={url => setFormData({
                       ...formData,
                       imageUrl: url

@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Star, Share2, Heart, ShoppingCart, Eye, MessageCircle, Bitcoin } from 'lucide-react';
-
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/Product';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProductCardProps {
   product: Product;
@@ -32,6 +33,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const { btcPrice, ltcPrice } = useCryptoPrices();
   const { toast } = useToast();
   const [isHovered, setIsHovered] = useState(false);
+  const [productImages, setProductImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchProductImages = async () => {
+      const { data } = await supabase
+        .from('product_images')
+        .select('image_url')
+        .eq('product_id', product.id)
+        .order('display_order', { ascending: true });
+      
+      if (data && data.length > 0) {
+        setProductImages(data.map(img => img.image_url));
+      } else if (product.image_url) {
+        setProductImages([product.image_url]);
+      }
+    };
+
+    fetchProductImages();
+  }, [product.id, product.image_url]);
 
 
   const handleShare = (e: React.MouseEvent) => {
@@ -64,21 +84,52 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => onProductClick(product)}
     >
-      {/* Image Section */}
+      {/* Image Section with Carousel */}
       <div className="relative aspect-square overflow-hidden">
-        {product.image_url ? (
-          <img
-            src={product.image_url}
-            alt={product.title}
-            className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${
-              isGuest ? 'blur-xl' : ''
-            }`}
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-            onContextMenu={(e) => e.preventDefault()}
-            draggable={false}
-          />
+        {productImages.length > 0 ? (
+          productImages.length === 1 ? (
+            // Single image - no carousel needed
+            <img
+              src={productImages[0]}
+              alt={product.title}
+              className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${
+                isGuest ? 'blur-xl' : ''
+              }`}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+              onContextMenu={(e) => e.preventDefault()}
+              draggable={false}
+            />
+          ) : (
+            // Multiple images - show carousel
+            <Carousel className="w-full h-full">
+              <CarouselContent>
+                {productImages.map((imageUrl, index) => (
+                  <CarouselItem key={index}>
+                    <img
+                      src={imageUrl}
+                      alt={`${product.title} - Image ${index + 1}`}
+                      className={`w-full h-full object-cover ${
+                        isGuest ? 'blur-xl' : ''
+                      }`}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                      onContextMenu={(e) => e.preventDefault()}
+                      draggable={false}
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              {!isGuest && (
+                <>
+                  <CarouselPrevious className="left-2" />
+                  <CarouselNext className="right-2" />
+                </>
+              )}
+            </Carousel>
+          )
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
             <ShoppingCart className="h-16 w-16 text-muted-foreground/50" />
@@ -106,6 +157,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {product.stock > 0 && product.stock <= 5 && (
           <div className="absolute top-3 left-3">
             <Badge variant="secondary">Low Stock</Badge>
+          </div>
+        )}
+
+        {/* Image count indicator */}
+        {productImages.length > 1 && !isGuest && (
+          <div className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium">
+            {productImages.length} Bilder
           </div>
         )}
       </div>
