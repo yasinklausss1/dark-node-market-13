@@ -173,7 +173,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
           <div className="flex items-center gap-2">
             <Coins className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             <span className="text-xl sm:text-2xl font-bold text-primary">
-              {(product.price * quantity + addonsTotalPrice)} Credits
+              {(product.price * quantity + addonsTotalPrice)} Credits ({(product.price * quantity + addonsTotalPrice)}€)
             </span>
           </div>
         </div>
