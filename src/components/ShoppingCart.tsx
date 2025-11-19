@@ -5,14 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart as ShoppingCartIcon, Trash2, Plus, Minus, Bitcoin, Coins } from 'lucide-react';
+import { ShoppingCart as ShoppingCartIcon, Trash2, Plus, Minus, Coins } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import CheckoutModal from './CheckoutModal';
-import { PaymentMethodModal } from './PaymentMethodModal';
+
 interface CartItem {
   id: string;
   title: string;
@@ -21,6 +20,7 @@ interface CartItem {
   image_url: string | null;
   category: string;
 }
+
 interface ShoppingCartProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -29,11 +29,11 @@ interface ShoppingCartProps {
   onRemoveItem: (id: string) => void;
   onClearCart: () => void;
 }
+
 interface WalletBalance {
-  balance_eur: number;
-  balance_btc: number;
-  balance_ltc: number;
+  balance_credits: number;
 }
+
 const ShoppingCart: React.FC<ShoppingCartProps> = ({
   open,
   onOpenChange,
@@ -42,122 +42,118 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
   onRemoveItem,
   onClearCart
 }) => {
-  const {
-    user
-  } = useAuth();
-  const {
-    toast
-  } = useToast();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const isMobile = useIsMobile();
-  const {
-    btcPrice,
-    ltcPrice
-  } = useCryptoPrices();
+
   const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
-  const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'btc' | 'ltc' | null>(null);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+
   useEffect(() => {
     if (open) {
       fetchWalletBalance();
     }
   }, [open, user]);
+
   const fetchWalletBalance = async () => {
     if (!user) return;
+
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('wallet_balances').select('balance_eur, balance_btc, balance_ltc').eq('user_id', user.id).single();
+      const { data, error } = await supabase
+        .from('wallet_balances')
+        .select('balance_credits')
+        .eq('user_id', user.id)
+        .single();
+
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
-      setWalletBalance(data || {
-        balance_eur: 0,
-        balance_btc: 0,
-        balance_ltc: 0
-      });
+
+      setWalletBalance(data || { balance_credits: 0 });
     } catch (error) {
       console.error('Error fetching wallet balance:', error);
     }
   };
+
   const handleCheckout = async () => {
     if (!walletBalance) {
       toast({
         title: "Error",
         description: "Wallet balance could not be loaded",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    // Calculate crypto amounts needed
-    const btcNeeded = btcPrice ? totalEUR / btcPrice : 0;
-    const ltcNeeded = ltcPrice ? totalEUR / ltcPrice : 0;
+    const creditsNeeded = Math.ceil(totalEUR);
 
-    // Check if user has enough in either currency
-    const hasBtc = walletBalance.balance_btc >= btcNeeded;
-    const hasLtc = walletBalance.balance_ltc >= ltcNeeded;
-    if (!hasBtc && !hasLtc) {
+    if (walletBalance.balance_credits < creditsNeeded) {
       toast({
-        title: "Insufficient Balance",
-        description: `You need either ${btcNeeded.toFixed(8)} BTC or ${ltcNeeded.toFixed(8)} LTC to complete this purchase.`,
-        variant: "destructive"
+        title: "Insufficient Credits",
+        description: `You need ${creditsNeeded} credits to complete this purchase. You have ${walletBalance.balance_credits} credits.`,
+        variant: "destructive",
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              onOpenChange(false);
+              window.location.href = '/wallet';
+            }}
+          >
+            Buy Credits
+          </Button>
+        ),
       });
       return;
     }
-    setPaymentMethodOpen(true);
+
+    setCheckoutOpen(true);
   };
+
   const handleConfirmOrder = async (addressData: any) => {
-    if (!user || !selectedPaymentMethod) return;
+    if (!user) return;
+
     setIsProcessingOrder(true);
+
     try {
-      // Use the new process-order function
       const items = cartItems.map(item => ({
         id: item.id,
-        quantity: item.quantity
+        quantity: item.quantity,
       }));
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('update-process-order', {
+
+      const { data, error } = await supabase.functions.invoke('update-process-order', {
         body: {
           userId: user.id,
           items,
-          method: selectedPaymentMethod,
-          btcPrice,
-          ltcPrice,
-          shippingAddress: addressData
-        }
+          method: 'credits',
+          shippingAddress: addressData,
+        },
       });
+
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      // Success
       toast({
         title: "Order Successful",
-        description: "Your order has been successfully placed and sellers have been credited"
+        description: "Your order has been successfully placed and credits have been transferred to sellers",
       });
+
       onClearCart();
       setCheckoutOpen(false);
-      setPaymentMethodOpen(false);
       onOpenChange(false);
+      fetchWalletBalance(); // Refresh balance
     } catch (error) {
       console.error('Error processing order:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Order could not be processed",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsProcessingOrder(false);
     }
-  };
-  const handleSelectPayment = (method: 'btc' | 'ltc') => {
-    setSelectedPaymentMethod(method);
-    setPaymentMethodOpen(false);
-    setCheckoutOpen(true);
   };
   const [bulkDiscounts, setBulkDiscounts] = useState<Record<string, any[]>>({});
 
@@ -208,13 +204,11 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     };
   };
   const totalEUR = cartItems.reduce((sum, item) => {
-    const {
-      totalPrice
-    } = calculateItemPrice(item);
+    const { totalPrice } = calculateItemPrice(item);
     return sum + totalPrice;
   }, 0);
-  const totalBTC = btcPrice ? totalEUR / btcPrice : null;
-  const totalLTC = ltcPrice ? totalEUR / ltcPrice : null;
+
+  const totalCredits = Math.ceil(totalEUR);
   const CartContent = () => <div className="space-y-4">
       {cartItems.length === 0 ? <div className="text-center py-8">
           <ShoppingCartIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -287,17 +281,13 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
           {/* Total */}
           <div className="space-y-3">
             <div className="flex justify-between items-center text-lg font-semibold">
-              <span>Gesamt:</span>
+              <span>Total:</span>
               <div className="text-right">
                 <div className="text-primary">€{totalEUR.toFixed(2)}</div>
-                {totalBTC && <div className="text-sm text-orange-500 flex items-center justify-end">
-                    <Bitcoin className="h-3 w-3 mr-1" />
-                    ₿{totalBTC.toFixed(8)}
-                  </div>}
-                {totalLTC && <div className="text-sm text-blue-500 flex items-center justify-end">
-                    <Coins className="h-3 w-3 mr-1" />
-                    Ł{totalLTC.toFixed(8)}
-                  </div>}
+                <div className="text-sm text-muted-foreground flex items-center justify-end mt-1">
+                  <Coins className="h-3 w-3 mr-1" />
+                  {totalCredits} Credits
+                </div>
               </div>
             </div>
           </div>
@@ -307,10 +297,10 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
           {/* Actions */}
           <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'space-x-2'}`}>
             <Button variant="outline" onClick={onClearCart} className="flex-1">
-              Warenkorb leeren
+              Clear Cart
             </Button>
             <Button className="flex-1" onClick={handleCheckout}>
-              Zur Kasse
+              Checkout
             </Button>
           </div>
         </>}
@@ -321,7 +311,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
             <DrawerHeader className="pb-4">
               <DrawerTitle className="flex items-center space-x-2">
                 <ShoppingCartIcon className="h-5 w-5" />
-                <span>Warenkorb ({cartItems.length} Artikel)</span>
+                <span>Shopping Cart ({cartItems.length} items)</span>
               </DrawerTitle>
             </DrawerHeader>
             
@@ -334,7 +324,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
             <DialogHeader>
               <DialogTitle className="flex items-center space-x-2">
                 <ShoppingCartIcon className="h-5 w-5" />
-                <span>Warenkorb ({cartItems.length} Artikel)</span>
+                <span>Shopping Cart ({cartItems.length} items)</span>
               </DialogTitle>
             </DialogHeader>
             
@@ -342,9 +332,14 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
           </DialogContent>
         </Dialog>}
       
-      <PaymentMethodModal open={paymentMethodOpen} onOpenChange={setPaymentMethodOpen} onSelectPayment={handleSelectPayment} totalAmountEur={totalEUR} currentBtcPrice={btcPrice || 90000} currentLtcPrice={ltcPrice || 100} walletBalance={walletBalance} />
-      
-      <CheckoutModal open={checkoutOpen} onOpenChange={setCheckoutOpen} totalAmount={totalEUR} onConfirmOrder={handleConfirmOrder} loading={isProcessingOrder} />
+      <CheckoutModal
+        open={checkoutOpen}
+        onOpenChange={setCheckoutOpen}
+        totalAmount={totalCredits}
+        onConfirmOrder={handleConfirmOrder}
+        loading={isProcessingOrder}
+      />
     </>;
 };
+
 export default ShoppingCart;
