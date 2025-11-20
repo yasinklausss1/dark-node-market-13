@@ -4,7 +4,6 @@ import { Header } from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat, Conversation } from '@/hooks/useChat';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -255,21 +254,9 @@ export default function Messages() {
                             )}
                           </div>
                           
-                          <p className="text-xs text-white/60 truncate mb-2">
+                          <p className="text-xs text-white/60 truncate">
                             {conversation.product_title}
                           </p>
-                          
-                          <Badge 
-                            className={`text-xs ${
-                              conversation.status === 'active'
-                                ? selectedConversation?.id === conversation.id
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-[hsl(280,70%,60%)]/20 text-[hsl(280,70%,60%)]'
-                                : 'bg-[hsl(240,30%,50%)]/20 text-[hsl(240,30%,70%)]'
-                            }`}
-                          >
-                            {conversation.status}
-                          </Badge>
                         </div>
                       </div>
                     </div>
