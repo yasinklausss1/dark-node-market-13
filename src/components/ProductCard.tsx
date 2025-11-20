@@ -70,12 +70,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     e.stopPropagation();
     onStartChat(product);
   };
-  return <Card className="group relative overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border-border/50 hover:border-primary/50" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} onClick={() => onProductClick(product)}>
+  return <Card className="group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 cursor-pointer bg-[hsl(240,55%,25%)] border-[hsl(240,55%,30%)] hover:shadow-2xl" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} onClick={() => onProductClick(product)}>
+      {/* Title Section */}
+      <CardHeader className="pb-3 px-6 pt-6 text-center">
+        <div className="relative">
+          <CardTitle className="text-xl md:text-2xl font-bold text-white line-clamp-2">
+            {product.title}
+          </CardTitle>
+          {/* SALE Badge */}
+          {product.stock > 0 && product.stock <= 5 && (
+            <Badge className="absolute -top-2 -right-2 bg-gradient-to-r from-[hsl(290,80%,65%)] to-[hsl(280,70%,60%)] text-white border-0 px-3 py-1 text-xs font-bold shadow-lg">
+              SALE!
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+
       {/* Image Section with Carousel */}
-      <div className="relative aspect-square overflow-hidden">
+      <div className="relative aspect-square overflow-hidden mx-4 mb-4 rounded-lg">
         {productImages.length > 0 ? productImages.length === 1 ?
       // Single image - no carousel needed
-      <WatermarkedImage src={productImages[0]} alt={product.title} className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${isGuest ? 'blur-xl' : ''}`} onError={e => {
+      <WatermarkedImage src={productImages[0]} alt={product.title} className={`w-full h-full object-cover ${isGuest ? 'blur-xl' : ''}`} onError={e => {
         e.currentTarget.style.display = 'none';
       }} onContextMenu={e => e.preventDefault()} draggable={false} /> :
       // Multiple images - show carousel
@@ -88,17 +103,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   </CarouselItem>)}
               </CarouselContent>
               {!isGuest && <>
-                  <CarouselPrevious className="left-2" />
-                  <CarouselNext className="right-2" />
+                  <CarouselPrevious className="left-2 bg-[hsl(240,55%,35%)] border-[hsl(240,55%,45%)] text-white hover:bg-[hsl(240,55%,40%)]" />
+                  <CarouselNext className="right-2 bg-[hsl(240,55%,35%)] border-[hsl(240,55%,45%)] text-white hover:bg-[hsl(240,55%,40%)]" />
                 </>}
-            </Carousel> : <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-            <ShoppingCart className="h-16 w-16 text-muted-foreground/50" />
+            </Carousel> : <div className="w-full h-full bg-gradient-to-br from-[hsl(240,55%,20%)] to-[hsl(240,55%,30%)] flex items-center justify-center">
+            <ShoppingCart className="h-16 w-16 text-white/30" />
           </div>}
         
-        {isGuest && <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        {isGuest && <div className="absolute inset-0 flex items-center justify-center bg-[hsl(240,55%,25%)]/90 backdrop-blur-sm">
             <div className="text-center p-4">
-              <p className="text-sm font-semibold mb-2">Login to view</p>
-              <a href="/auth?tab=signin" className="text-xs text-primary hover:underline">
+              <p className="text-sm font-semibold mb-2 text-white">Login to view</p>
+              <a href="/auth?tab=signin" className="text-xs text-[hsl(290,80%,65%)] hover:underline">
                 Sign in now
               </a>
             </div>
@@ -108,50 +123,30 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {product.stock === 0 && <div className="absolute top-3 left-3">
             <Badge variant="destructive">Out of Stock</Badge>
           </div>}
-        
-        {product.stock > 0 && product.stock <= 5 && <div className="absolute top-3 left-3">
-            <Badge variant="secondary">Low Stock</Badge>
-          </div>}
-
-        {/* Image count indicator */}
-        {productImages.length > 1 && !isGuest && <div className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium">
-            {productImages.length} Bilder
-          </div>}
       </div>
 
-      {/* Content Section */}
-      <CardHeader className="pb-2 px-4 pt-4">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-sm md:text-base line-clamp-2 flex-1">
-            {product.title}
-          </CardTitle>
-          <Badge variant="outline" className="text-xs shrink-0">
-            {product.category}
-          </Badge>
-        </div>
-        
-        {/* Seller Rating */}
-        
-      </CardHeader>
+      <CardContent className="px-6 pb-6 text-center space-y-4">
+        {/* Delivery Info */}
+        <p className="text-white/90 text-sm">
+          Average Delivery: 3 days
+        </p>
 
-      <CardContent className="px-4 pb-4">
         {/* Price Section */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Coins className="h-5 w-5 text-primary" />
-            <span className="text-xl font-bold text-primary">
-              {product.price} Credits
+        <div className="space-y-1">
+          <p className="text-white/80 text-sm">
+            Starting from:
+          </p>
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-3xl font-bold text-[hsl(45,100%,60%)]">
+              💳 {product.price} Credits
             </span>
           </div>
-
-          {/* Stock Info */}
-          
-
-          {/* Action Button */}
-          <Button onClick={handleAddToCart} className="w-full mt-3 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white shadow-md hover:shadow-lg transition-all duration-300" size="sm" disabled={product.stock === 0 || isOwner || isGuest}>
-            {isGuest ? 'Login to Purchase' : isOwner ? 'Your Product' : product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
-          </Button>
         </div>
+
+        {/* Action Button */}
+        <Button onClick={handleAddToCart} className="w-full bg-gradient-to-r from-[hsl(290,80%,65%)] to-[hsl(280,70%,60%)] hover:from-[hsl(290,80%,60%)] hover:to-[hsl(280,70%,55%)] text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 py-6 text-lg font-semibold" disabled={product.stock === 0 || isOwner || isGuest}>
+          {isGuest ? 'Login to Purchase' : isOwner ? 'Your Product' : product.stock === 0 ? 'Out of Stock' : 'More Info'}
+        </Button>
       </CardContent>
     </Card>;
 };
