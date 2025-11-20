@@ -70,7 +70,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     e.stopPropagation();
     onStartChat(product);
   };
-  return <Card className="group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 cursor-pointer bg-gradient-to-b from-[hsl(240,50%,8%)] to-[hsl(240,50%,6%)] border-[hsl(240,40%,18%)] hover:shadow-2xl hover:border-[hsl(280,70%,55%)]" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} onClick={() => onProductClick(product)}>
+  return <Card className="group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-b from-[hsl(240,50%,8%)] to-[hsl(240,50%,6%)] border-[hsl(240,40%,18%)] hover:shadow-2xl hover:border-[hsl(280,70%,55%)]" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
       {/* Title Section */}
       <CardHeader className="pb-3 px-6 pt-6 text-center">
         <div className="relative">
@@ -145,7 +145,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Action Button */}
-        <Button onClick={handleAddToCart} className="w-full bg-gradient-to-r from-[hsl(280,70%,60%)] to-[hsl(270,70%,55%)] hover:from-[hsl(280,70%,65%)] hover:to-[hsl(270,70%,60%)] text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 py-6 text-lg font-semibold" disabled={product.stock === 0 || isOwner || isGuest}>
+        <Button onClick={(e) => {
+          e.stopPropagation();
+          onProductClick(product);
+        }} className="w-full bg-gradient-to-r from-[hsl(280,70%,60%)] to-[hsl(270,70%,55%)] hover:from-[hsl(280,70%,65%)] hover:to-[hsl(270,70%,60%)] text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 py-6 text-lg font-semibold" disabled={product.stock === 0 || isOwner || isGuest}>
           {isGuest ? 'Login to Purchase' : isOwner ? 'Your Product' : product.stock === 0 ? 'Out of Stock' : 'More Info'}
         </Button>
       </CardContent>
