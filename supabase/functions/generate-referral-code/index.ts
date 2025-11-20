@@ -11,12 +11,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Create client with user's auth token
+    // Extract JWT token from Authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
     }
 
+    const token = authHeader.replace('Bearer ', '');
+
+    // Create authenticated Supabase client using the JWT token
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -24,14 +27,19 @@ Deno.serve(async (req) => {
         global: {
           headers: { Authorization: authHeader },
         },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false,
+        },
       }
     );
 
-    // Get authenticated user
+    // Verify token and get user
     const {
       data: { user },
       error: authError,
-    } = await supabaseClient.auth.getUser();
+    } = await supabaseClient.auth.getUser(token);
 
     if (authError || !user) {
       console.error('Auth error:', authError);
