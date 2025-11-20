@@ -170,18 +170,13 @@ Deno.serve(async (req) => {
       },
     ]);
 
-    // Update referral code usage count
-    const { data: codeData } = await supabaseAdmin
-      .from('referral_codes')
-      .select('uses_count')
-      .eq('user_id', referrerProfile.user_id)
-      .single();
-
+    // Update the specific referral code usage count (the one we're actually using)
     await supabaseAdmin
       .from('referral_codes')
       .update({
-        uses_count: (codeData?.uses_count || 0) + 1,
+        uses_count: referralCode.uses_count + 1,
       })
+      .eq('code', referralCode.code)
       .eq('user_id', referrerProfile.user_id);
 
     console.log(`Successfully processed referral: ${referrerProfile.username} -> ${user.email}`);
