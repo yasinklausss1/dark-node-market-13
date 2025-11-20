@@ -33,10 +33,15 @@ export default function Messages() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
+    }
   };
 
   // Filter conversations based on search
@@ -310,7 +315,7 @@ export default function Messages() {
                 </div>
 
                 {/* Messages */}
-                <ScrollArea className="flex-1 p-4 min-h-0">
+                <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 min-h-0">
                   <div className="space-y-4">
                     {messages.length === 0 ? (
                       <div className="text-center py-12">
@@ -354,7 +359,6 @@ export default function Messages() {
                         </div>
                       ))
                     )}
-                    <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
 
