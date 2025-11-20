@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat, Conversation } from '@/hooks/useChat';
@@ -7,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, Search, X, Send, ArrowLeft } from 'lucide-react';
+import { MessageCircle, Search, Send, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,8 +23,9 @@ interface ChatMessage {
 
 export default function Messages() {
   const { user } = useAuth();
-  const { conversations, loading, closeConversation } = useChat();
+  const { conversations, loading } = useChat();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -127,19 +129,6 @@ export default function Messages() {
     }
   };
 
-  const handleCloseConversation = async (conversationId: string) => {
-    const success = await closeConversation(conversationId);
-    if (success) {
-      if (selectedConversation?.id === conversationId) {
-        setSelectedConversation(null);
-      }
-      toast({
-        title: "Conversation closed",
-        description: "The conversation has been closed successfully."
-      });
-    }
-  };
-
   if (!user) {
     return (
       <div className="min-h-screen bg-background">
@@ -160,7 +149,18 @@ export default function Messages() {
       <Header />
       
       <div className="container mx-auto px-4 py-6">
-        <div className="flex gap-4 h-[calc(100vh-120px)]">
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/marketplace')}
+            className="text-white hover:bg-[hsl(240,45%,18%)]"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Marketplace
+          </Button>
+        </div>
+        
+        <div className="flex gap-4 h-[calc(100vh-180px)]">
           {/* Conversations List */}
           <div className={`${selectedConversation ? 'hidden md:block' : 'block'} w-full md:w-80 bg-gradient-to-b from-[hsl(240,45%,12%)] to-[hsl(240,45%,10%)] border border-[hsl(240,40%,20%)] rounded-lg overflow-hidden`}>
             <div className="p-4 border-b border-[hsl(240,40%,20%)]">
@@ -287,18 +287,6 @@ export default function Messages() {
                       <p className="text-xs text-[hsl(240,30%,70%)]">{selectedConversation.product_title}</p>
                     </div>
                   </div>
-
-                  {selectedConversation.status === 'active' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCloseConversation(selectedConversation.id)}
-                      className="text-[hsl(240,30%,70%)] hover:text-white hover:bg-[hsl(240,45%,18%)]"
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Close Chat
-                    </Button>
-                  )}
                 </div>
 
                 {/* Messages */}
@@ -337,34 +325,28 @@ export default function Messages() {
                 </ScrollArea>
 
                 {/* Message Input */}
-                {selectedConversation.status === 'active' ? (
-                  <div className="p-4 border-t border-[hsl(240,40%,20%)]">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        placeholder="Type a message..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        disabled={sendingMessage}
-                        className="flex-1 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white placeholder:text-[hsl(240,30%,60%)]"
-                      />
-                      <Button
-                        onClick={sendMessage}
-                        disabled={sendingMessage || !newMessage.trim()}
-                        className="bg-gradient-to-r from-[hsl(280,70%,60%)] to-[hsl(270,70%,55%)] hover:from-[hsl(280,70%,65%)] hover:to-[hsl(270,70%,60%)]"
-                      >
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-xs text-[hsl(240,30%,70%)] mt-2">
-                      Press Enter to send, Shift+Enter for new line
-                    </p>
+                <div className="p-4 border-t border-[hsl(240,40%,20%)]">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Type a message..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      disabled={sendingMessage}
+                      className="flex-1 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white placeholder:text-[hsl(240,30%,60%)]"
+                    />
+                    <Button
+                      onClick={sendMessage}
+                      disabled={sendingMessage || !newMessage.trim()}
+                      className="bg-gradient-to-r from-[hsl(280,70%,60%)] to-[hsl(270,70%,55%)] hover:from-[hsl(280,70%,65%)] hover:to-[hsl(270,70%,60%)]"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
                   </div>
-                ) : (
-                  <div className="p-4 border-t border-[hsl(240,40%,20%)] text-center">
-                    <p className="text-sm text-[hsl(240,30%,70%)]">This conversation is closed</p>
-                  </div>
-                )}
+                  <p className="text-xs text-[hsl(240,30%,70%)] mt-2">
+                    Press Enter to send, Shift+Enter for new line
+                  </p>
+                </div>
               </>
             ) : (
               <div className="flex items-center justify-center h-full">
