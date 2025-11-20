@@ -105,7 +105,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const productContent = <div className="space-y-3 sm:space-y-6">
       {/* Product Images Carousel */}
       {productImages.length > 0 && (
-        <div className="relative w-full h-48 sm:h-96 bg-muted rounded-lg overflow-hidden">
+        <div className="relative w-full h-48 sm:h-96 bg-[hsl(240,55%,20%)] rounded-lg overflow-hidden border border-[hsl(240,55%,35%)]">
           {productImages.length === 1 ? (
             <WatermarkedImage 
               src={productImages[0]} 
@@ -137,9 +137,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
               </CarouselContent>
               {!isGuest && (
                 <>
-                  <CarouselPrevious className="left-2" />
-                  <CarouselNext className="right-2" />
-                  <div className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium">
+                  <CarouselPrevious className="left-2 bg-[hsl(240,55%,35%)] border-[hsl(240,55%,45%)] text-white hover:bg-[hsl(240,55%,40%)]" />
+                  <CarouselNext className="right-2 bg-[hsl(240,55%,35%)] border-[hsl(240,55%,45%)] text-white hover:bg-[hsl(240,55%,40%)]" />
+                  <div className="absolute bottom-3 right-3 bg-[hsl(240,55%,30%)]/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-white">
                     {productImages.length} Bilder
                   </div>
                 </>
@@ -147,10 +147,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </Carousel>
           )}
           {isGuest && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="absolute inset-0 flex items-center justify-center bg-[hsl(240,55%,25%)]/90 backdrop-blur-sm">
               <div className="text-center p-4">
-                <p className="text-sm font-semibold mb-2">Login to view</p>
-                <a href="/auth?tab=signin" className="text-xs text-primary hover:underline">
+                <p className="text-sm font-semibold mb-2 text-white">Login to view</p>
+                <a href="/auth?tab=signin" className="text-xs text-[hsl(290,80%,65%)] hover:underline">
                   Sign in now
                 </a>
               </div>
@@ -162,8 +162,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
       {/* Product Info */}
       <div className="space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <Badge variant="secondary" className="w-fit">{product.category}</Badge>
-          <div className="flex items-center space-x-1 text-xs sm:text-sm text-muted-foreground">
+          <Badge className="w-fit bg-gradient-to-r from-[hsl(290,80%,65%)] to-[hsl(280,70%,60%)] text-white border-0">{product.category}</Badge>
+          <div className="flex items-center space-x-1 text-xs sm:text-sm text-white/80">
             <User className="h-3 w-3 sm:h-4 sm:w-4" />
             <span>Seller: {sellerUsername}</span>
           </div>
@@ -171,34 +171,36 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
         <div className="space-y-1 sm:space-y-2">
           <div className="flex items-center gap-2">
-            <Coins className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            <span className="text-xl sm:text-2xl font-bold text-primary">
-              {(product.price * quantity + addonsTotalPrice)} Credits ({(product.price * quantity + addonsTotalPrice)}€)
+            <span className="text-xl sm:text-2xl font-bold text-[hsl(45,100%,60%)]">
+              💳 {(product.price * quantity + addonsTotalPrice)} Credits
             </span>
           </div>
+          <p className="text-white/70 text-sm">
+            ({(product.price * quantity + addonsTotalPrice)}€)
+          </p>
         </div>
 
         <div>
-          <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-2">Description</h3>
-          <p className="text-muted-foreground text-sm sm:text-base">
+          <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-2 text-white">Description</h3>
+          <p className="text-white/80 text-sm sm:text-base">
             {product.description || 'No description available.'}
           </p>
         </div>
 
-        <Separator />
+        <Separator className="bg-[hsl(240,55%,35%)]" />
 
         {/* Quantity */}
         <div className="flex items-center gap-2">
-          <span className="text-sm">Quantity</span>
-          <Button variant="outline" size="icon" onClick={() => setQuantity(q => Math.max(1, q - 1))} aria-label="Decrease quantity" className="h-8 w-8 sm:h-10 sm:w-10">
+          <span className="text-sm text-white">Quantity</span>
+          <Button variant="outline" size="icon" onClick={() => setQuantity(q => Math.max(1, q - 1))} aria-label="Decrease quantity" className="h-8 w-8 sm:h-10 sm:w-10 bg-[hsl(240,55%,30%)] border-[hsl(240,55%,40%)] text-white hover:bg-[hsl(240,55%,35%)]">
             <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
           <Input type="number" min={1} max={product.stock ?? 99} value={quantity} onChange={e => {
           const val = Number(e.target.value);
           if (Number.isNaN(val)) return;
           setQuantity(Math.max(1, Math.min(val, product.stock ?? 99)));
-        }} className="w-16 sm:w-20 text-center h-8 sm:h-10" />
-          <Button variant="outline" size="icon" onClick={() => setQuantity(q => Math.min(product.stock ?? 99, q + 1))} aria-label="Increase quantity" className="h-8 w-8 sm:h-10 sm:w-10">
+        }} className="w-16 sm:w-20 text-center h-8 sm:h-10 bg-[hsl(240,55%,30%)] border-[hsl(240,55%,40%)] text-white" />
+          <Button variant="outline" size="icon" onClick={() => setQuantity(q => Math.min(product.stock ?? 99, q + 1))} aria-label="Increase quantity" className="h-8 w-8 sm:h-10 sm:w-10 bg-[hsl(240,55%,30%)] border-[hsl(240,55%,40%)] text-white hover:bg-[hsl(240,55%,35%)]">
             <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
         </div>
@@ -213,13 +215,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
         />
 
         {/* Telegram Integration */}
-        <Separator />
+        <Separator className="bg-[hsl(240,55%,35%)]" />
         <div>
           
           <TelegramIntegration productId={product.id} productTitle={product.title} productPrice={product.price} productImage={product.image_url} sellerUsername={sellerUsername} />
         </div>
 
-        <Separator />
+        <Separator className="bg-[hsl(240,55%,35%)]" />
 
         {/* Action Buttons */}
         <div className="flex flex-col space-y-2">
@@ -228,7 +230,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             
             
             {/* Contact Seller Button - only show if not the owner and onStartChat is provided */}
-            {user && product.seller_id !== user.id && onStartChat && <Button variant="outline" onClick={() => onStartChat(product)} className="flex-1 h-10">
+            {user && product.seller_id !== user.id && onStartChat && <Button variant="outline" onClick={() => onStartChat(product)} className="flex-1 h-10 bg-[hsl(240,55%,30%)] border-[hsl(240,55%,40%)] text-white hover:bg-[hsl(240,55%,35%)]">
                 <MessageCircle className="h-4 w-4 mr-2" />
                 <span className="text-sm">Contact</span>
               </Button>}
@@ -236,10 +238,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
           
           {/* Bottom Row - Back and Buy */}
           <div className="flex space-x-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:flex-1 h-10">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:flex-1 h-10 bg-[hsl(240,55%,30%)] border-[hsl(240,55%,40%)] text-white hover:bg-[hsl(240,55%,35%)]">
               Back
             </Button>
-            <Button className="w-full sm:flex-1 h-10" disabled={product.stock === 0} onClick={() => {
+            <Button className="w-full sm:flex-1 h-10 bg-gradient-to-r from-[hsl(290,80%,65%)] to-[hsl(280,70%,60%)] hover:from-[hsl(290,80%,60%)] hover:to-[hsl(280,70%,55%)] text-white border-0 shadow-lg" disabled={product.stock === 0} onClick={() => {
             // Check if user is logged in
             if (!user) {
               toast({
@@ -279,16 +281,16 @@ const ProductModal: React.FC<ProductModalProps> = ({
         </div>
 
         {/* Product Meta */}
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-white/60">
           Added on: {new Date(product.created_at).toLocaleDateString('en-US')}
         </div>
       </div>
     </div>;
   if (isMobile) {
     return <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
+        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto bg-[hsl(240,55%,25%)] border-[hsl(240,55%,35%)]">
           <SheetHeader className="pb-2">
-            <SheetTitle className="flex items-center space-x-2 text-sm">
+            <SheetTitle className="flex items-center space-x-2 text-sm text-white">
               <ShoppingCart className="h-4 w-4" />
               <span className="line-clamp-2">{product.title}</span>
             </SheetTitle>
@@ -298,9 +300,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
       </Sheet>;
   }
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[95vh] overflow-y-auto sm:max-w-2xl w-[95vw] sm:w-full p-3 sm:p-6">
+      <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[95vh] overflow-y-auto sm:max-w-2xl w-[95vw] sm:w-full p-3 sm:p-6 bg-[hsl(240,55%,25%)] border-[hsl(240,55%,35%)]">
         <DialogHeader className="pb-2">
-          <DialogTitle className="flex items-center space-x-2 text-sm sm:text-base">
+          <DialogTitle className="flex items-center space-x-2 text-sm sm:text-base text-white">
             <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
             <span className="line-clamp-2">{product.title}</span>
           </DialogTitle>
