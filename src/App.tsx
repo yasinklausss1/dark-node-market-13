@@ -18,6 +18,7 @@ import SellerDashboard from "./pages/SellerDashboard";
 import Wallet from "./pages/Wallet";
 import Settings from "./pages/Settings";
 import Orders from "./pages/Orders";
+import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
 import Imprint from "./pages/Legal/Imprint";
 import Privacy from "./pages/Legal/Privacy";
@@ -46,6 +47,7 @@ const App = () => (
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/marketplace" element={<Marketplace />} />
+                    <Route path="/messages" element={<Messages />} />
                     <Route path="/admin" element={<AdminPanel />} />
                     <Route path="/seller" element={<SellerDashboard />} />
                     <Route path="/wallet" element={<Wallet />} />

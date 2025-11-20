@@ -68,6 +68,13 @@ export const Header = () => {
                     </Button>
                   </Link>
 
+                  <Link to="/messages" onClick={() => setOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      Messages
+                    </Button>
+                  </Link>
+
                   {profile?.role === 'seller' && (
                     <Link to="/seller" onClick={() => setOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start">
