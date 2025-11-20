@@ -10,7 +10,7 @@ interface WatermarkedImageProps extends React.ImgHTMLAttributes<HTMLImageElement
 export const WatermarkedImage: React.FC<WatermarkedImageProps> = ({
   src,
   alt,
-  watermarkText = "oracle-market.store",
+  watermarkText = "Oracle Market",
   className = "",
   ...props
 }) => {
@@ -23,87 +23,19 @@ export const WatermarkedImage: React.FC<WatermarkedImageProps> = ({
         {...props}
       />
       <div 
-        className="absolute inset-0 pointer-events-none select-none"
-        style={{
-          mixBlendMode: 'normal'
-        }}
+        className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
       >
-        <svg 
-          className="w-full h-full" 
-          xmlns="http://www.w3.org/2000/svg"
+        <div
+          className="text-white font-bold text-4xl md:text-6xl lg:text-7xl"
           style={{
-            opacity: 0.5
+            opacity: 0.15,
+            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
+            letterSpacing: '0.1em',
+            transform: 'rotate(-25deg)'
           }}
         >
-          <defs>
-            <pattern 
-              id="watermark-pattern" 
-              x="0" 
-              y="0" 
-              width="180" 
-              height="120" 
-              patternUnits="userSpaceOnUse"
-              patternTransform="rotate(-40)"
-            >
-              <text
-                x="0"
-                y="15"
-                fill="white"
-                fontSize="13"
-                fontWeight="500"
-                fontFamily="Arial, Helvetica, sans-serif"
-                opacity="1"
-              >
-                {watermarkText}
-              </text>
-              <text
-                x="0"
-                y="40"
-                fill="white"
-                fontSize="13"
-                fontWeight="500"
-                fontFamily="Arial, Helvetica, sans-serif"
-                opacity="1"
-              >
-                {watermarkText}
-              </text>
-              <text
-                x="0"
-                y="65"
-                fill="white"
-                fontSize="13"
-                fontWeight="500"
-                fontFamily="Arial, Helvetica, sans-serif"
-                opacity="1"
-              >
-                {watermarkText}
-              </text>
-              <text
-                x="0"
-                y="90"
-                fill="white"
-                fontSize="13"
-                fontWeight="500"
-                fontFamily="Arial, Helvetica, sans-serif"
-                opacity="1"
-              >
-                {watermarkText}
-              </text>
-              <text
-                x="0"
-                y="115"
-                fill="white"
-                fontSize="13"
-                fontWeight="500"
-                fontFamily="Arial, Helvetica, sans-serif"
-                opacity="1"
-              >
-                {watermarkText}
-              </text>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#watermark-pattern)" />
-        </svg>
+          {watermarkText}
+        </div>
       </div>
     </div>
   );
