@@ -65,16 +65,18 @@ Deno.serve(async (req) => {
     // Check if user already has a referral code
     const { data: existingCode } = await supabaseClient
       .from('referral_codes')
-      .select('code')
+      .select('code, uses_count')
       .eq('user_id', user.id)
       .maybeSingle();
 
     if (existingCode) {
-      console.log('Existing code found:', existingCode.code);
+      console.log('Existing code found:', existingCode.code, 'uses:', existingCode.uses_count);
       return new Response(
         JSON.stringify({
           code: existingCode.code,
           link: `https://oracle-market.store/invite/${profile.username}`,
+          uses_count: existingCode.uses_count,
+          max_uses: 3,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -131,6 +133,8 @@ Deno.serve(async (req) => {
       JSON.stringify({
         code: code,
         link: `https://oracle-market.store/invite/${profile.username}`,
+        uses_count: 0,
+        max_uses: 3,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
