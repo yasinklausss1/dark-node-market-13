@@ -181,34 +181,43 @@ const ReferralProgram = () => {
             <CardHeader>
               <CardTitle>Your Referral Link</CardTitle>
               <CardDescription>
-                Share this link with friends to invite them
-                {stats.uses_count >= stats.max_uses && <span className="block mt-1 text-destructive">
-                    This code has reached its maximum usage limit
-                  </span>}
+                {stats.uses_count >= stats.max_uses 
+                  ? 'Your referral link has reached its maximum usage limit'
+                  : 'Share this link with friends to invite them'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <input type="text" value={referralLink} readOnly className="flex-1 px-3 py-2 bg-muted rounded-md text-sm" />
-                <Button onClick={copyToClipboard} size="icon">
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Share via:</p>
-                <div className="flex gap-2">
-                  
-                  <Button variant="outline" size="sm" onClick={shareViaTelegram} className="flex-1">
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Telegram
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={shareViaEmail} className="flex-1">
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Email
-                  </Button>
+              {stats.uses_count >= stats.max_uses ? (
+                <div className="p-4 bg-muted rounded-lg border border-border">
+                  <p className="text-sm text-muted-foreground text-center">
+                    Your referral code has been used {stats.max_uses} times and has reached its limit. 
+                    You can no longer use this link to invite new users.
+                  </p>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="flex gap-2">
+                    <input type="text" value={referralLink} readOnly className="flex-1 px-3 py-2 bg-muted rounded-md text-sm" />
+                    <Button onClick={copyToClipboard} size="icon">
+                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Share via:</p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={shareViaTelegram} className="flex-1">
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Telegram
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={shareViaEmail} className="flex-1">
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Email
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
