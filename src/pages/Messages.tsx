@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, Search, Send, ArrowLeft } from 'lucide-react';
+import { MessageCircle, Search, Send, ArrowLeft, Check, CheckCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +19,8 @@ interface ChatMessage {
   sender_id: string;
   created_at: string;
   is_read: boolean;
+  delivered_at: string | null;
+  read_at: string | null;
 }
 
 export default function Messages() {
@@ -76,13 +78,21 @@ export default function Messages() {
 
     setMessages(data || []);
 
-    // Mark messages as read
+    // Mark messages as read with read_at timestamp
     if (user) {
-      await supabase
-        .from('chat_messages')
-        .update({ is_read: true })
-        .eq('conversation_id', conversationId)
-        .neq('sender_id', user.id);
+      const unreadMessages = data?.filter(
+        (msg) => !msg.is_read && msg.sender_id !== user.id
+      );
+
+      if (unreadMessages && unreadMessages.length > 0) {
+        await supabase
+          .from('chat_messages')
+          .update({ 
+            is_read: true,
+            read_at: new Date().toISOString()
+          })
+          .in('id', unreadMessages.map((msg) => msg.id));
+      }
     }
   };
 
@@ -311,12 +321,25 @@ export default function Messages() {
                             }`}
                           >
                             <p className="text-sm break-words">{message.message}</p>
-                            <span className="text-xs opacity-70 mt-2 block">
-                              {new Date(message.created_at).toLocaleTimeString('de-DE', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </span>
+                            <div className="flex items-center gap-1.5 mt-2">
+                              <span className="text-xs opacity-70">
+                                {new Date(message.created_at).toLocaleTimeString('de-DE', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                              {message.sender_id === user?.id && (
+                                <span className="opacity-70">
+                                  {message.read_at ? (
+                                    <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
+                                  ) : message.delivered_at ? (
+                                    <CheckCheck className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <Check className="w-3.5 h-3.5" />
+                                  )}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))
