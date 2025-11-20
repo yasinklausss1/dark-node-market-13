@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
 
     console.log('Found profile:', profile.username);
 
-    // Get user's latest referral code
+    // Get user's latest referral code - ALWAYS return existing code if one exists
     const { data: existingCodes } = await supabaseClient
       .from('referral_codes')
       .select('code, uses_count')
@@ -70,24 +70,12 @@ Deno.serve(async (req) => {
       .order('created_at', { ascending: false })
       .limit(1);
 
+    // If user has ANY code, return it (whether expired or not)
     if (existingCodes && existingCodes.length > 0) {
       const existingCode = existingCodes[0];
-      console.log('Existing code found:', existingCode.code, 'uses:', existingCode.uses_count);
+      console.log('Returning existing code:', existingCode.code, 'uses:', existingCode.uses_count);
       
-      // Check if the code has reached its limit
-      if (existingCode.uses_count >= 3) {
-        console.log('Code has reached maximum uses');
-        return new Response(
-          JSON.stringify({
-            code: existingCode.code,
-            link: `https://oracle-market.store/invite/${profile.username}`,
-            uses_count: existingCode.uses_count,
-            max_uses: 3,
-            is_expired: true,
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+      const isExpired = existingCode.uses_count >= 3;
       
       return new Response(
         JSON.stringify({
@@ -95,11 +83,14 @@ Deno.serve(async (req) => {
           link: `https://oracle-market.store/invite/${profile.username}`,
           uses_count: existingCode.uses_count,
           max_uses: 3,
-          is_expired: false,
+          is_expired: isExpired,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // ONLY create a new code if user has NO codes at all
+    console.log('No existing code found, generating new one');
 
     // Generate unique code (8 characters, alphanumeric, no confusing chars)
     const generateCode = () => {
@@ -146,7 +137,7 @@ Deno.serve(async (req) => {
       throw insertError;
     }
 
-    console.log(`Successfully created referral code ${code} for user ${user.id}`);
+    console.log(`Successfully created FIRST referral code ${code} for user ${user.id}`);
 
     return new Response(
       JSON.stringify({
