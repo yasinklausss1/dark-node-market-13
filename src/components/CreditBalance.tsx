@@ -20,10 +20,21 @@ export const CreditBalance = () => {
         .from('wallet_balances')
         .select('balance_credits')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      setCredits(data?.balance_credits || 0);
+      
+      // If no wallet balance exists, create one
+      if (!data) {
+        const { error: insertError } = await supabase
+          .from('wallet_balances')
+          .insert({ user_id: user.id, balance_credits: 0 });
+        
+        if (insertError) throw insertError;
+        setCredits(0);
+      } else {
+        setCredits(data.balance_credits || 0);
+      }
     } catch (error) {
       console.error('Error fetching credit balance:', error);
       toast({
