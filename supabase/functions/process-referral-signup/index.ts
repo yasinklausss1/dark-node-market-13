@@ -17,12 +17,18 @@ Deno.serve(async (req) => {
       throw new Error('Referrer username is required');
     }
 
+    // Create client with user's auth token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
@@ -34,8 +40,11 @@ Deno.serve(async (req) => {
     } = await supabaseClient.auth.getUser();
 
     if (authError || !user) {
+      console.error('Auth error:', authError);
       throw new Error('Unauthorized');
     }
+
+    console.log('Processing referral for new user:', user.id);
 
     // Get referrer profile by username
     const { data: referrerProfile, error: referrerError } = await supabaseClient
@@ -45,8 +54,11 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (referrerError || !referrerProfile) {
+      console.error('Referrer not found:', referrerError);
       throw new Error('Referrer not found');
     }
+
+    console.log('Found referrer:', referrerProfile.username);
 
     // Prevent self-referral
     if (referrerProfile.user_id === user.id) {
@@ -72,6 +84,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (codeError || !referralCode) {
+      console.error('Referral code not found:', codeError);
       throw new Error('Referral code not found');
     }
 
@@ -87,34 +100,46 @@ Deno.serve(async (req) => {
       });
 
     if (rewardError) {
+      console.error('Reward insert error:', rewardError);
       throw rewardError;
     }
 
+    // Use service role key for updating balances
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Get current balances
+    const { data: referrerBalance } = await supabaseAdmin
+      .from('wallet_balances')
+      .select('balance_credits')
+      .eq('user_id', referrerProfile.user_id)
+      .single();
+
+    const { data: referredBalance } = await supabaseAdmin
+      .from('wallet_balances')
+      .select('balance_credits')
+      .eq('user_id', user.id)
+      .single();
+
     // Add 3 credits to both users
-    const { error: referrerBalanceError } = await supabaseClient
+    await supabaseAdmin
       .from('wallet_balances')
       .update({
-        balance_credits: supabaseClient.rpc('increment', { x: 3 }),
+        balance_credits: (referrerBalance?.balance_credits || 0) + 3,
       })
       .eq('user_id', referrerProfile.user_id);
 
-    if (referrerBalanceError) {
-      console.error('Error updating referrer balance:', referrerBalanceError);
-    }
-
-    const { error: referredBalanceError } = await supabaseClient
+    await supabaseAdmin
       .from('wallet_balances')
       .update({
-        balance_credits: supabaseClient.rpc('increment', { x: 3 }),
+        balance_credits: (referredBalance?.balance_credits || 0) + 3,
       })
       .eq('user_id', user.id);
 
-    if (referredBalanceError) {
-      console.error('Error updating referred balance:', referredBalanceError);
-    }
-
     // Create credit transactions for transparency
-    await supabaseClient.from('credit_transactions').insert([
+    await supabaseAdmin.from('credit_transactions').insert([
       {
         user_id: referrerProfile.user_id,
         amount: 3,
@@ -130,14 +155,20 @@ Deno.serve(async (req) => {
     ]);
 
     // Update referral code usage count
-    await supabaseClient
+    const { data: codeData } = await supabaseAdmin
+      .from('referral_codes')
+      .select('uses_count')
+      .eq('user_id', referrerProfile.user_id)
+      .single();
+
+    await supabaseAdmin
       .from('referral_codes')
       .update({
-        uses_count: supabaseClient.rpc('increment', { x: 1 }),
+        uses_count: (codeData?.uses_count || 0) + 1,
       })
       .eq('user_id', referrerProfile.user_id);
 
-    console.log(`Processed referral: ${referrerProfile.username} -> ${user.email}`);
+    console.log(`Successfully processed referral: ${referrerProfile.username} -> ${user.email}`);
 
     return new Response(
       JSON.stringify({
