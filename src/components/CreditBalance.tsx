@@ -16,6 +16,28 @@ export const CreditBalance = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // First ensure profile exists
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!profile) {
+        // Create profile if it doesn't exist
+        const username = user.email?.split('@')[0] || 'user';
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            username: username,
+            role: 'user',
+            date_of_birth: user.user_metadata?.date_of_birth || null
+          });
+        
+        if (profileError) throw profileError;
+      }
+
       const { data, error } = await supabase
         .from('wallet_balances')
         .select('balance_credits')
