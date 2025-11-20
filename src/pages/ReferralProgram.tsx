@@ -45,14 +45,21 @@ const ReferralProgram = () => {
         throw new Error('Not authenticated');
       }
 
-      // Generate or get referral code
+      // Generate or get referral code with proper auth header
       const { data, error } = await supabase.functions.invoke('generate-referral-code', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Function error:', error);
+        throw error;
+      }
+
+      if (!data || !data.link) {
+        throw new Error('Invalid response from server');
+      }
 
       setReferralLink(data.link);
 
@@ -68,7 +75,10 @@ const ReferralProgram = () => {
         .eq('status', 'completed')
         .order('created_at', { ascending: false });
 
-      if (rewardsError) throw rewardsError;
+      if (rewardsError) {
+        console.error('Rewards error:', rewardsError);
+        throw rewardsError;
+      }
 
       const total_referrals = rewards?.length || 0;
       const total_credits_earned = rewards?.reduce((sum, r) => sum + r.credits_awarded, 0) || 0;
@@ -80,7 +90,7 @@ const ReferralProgram = () => {
             .from('profiles')
             .select('username')
             .eq('user_id', reward.referred_id)
-            .single();
+            .maybeSingle();
 
           return {
             username: profile?.username || 'Unknown',
@@ -95,9 +105,9 @@ const ReferralProgram = () => {
         total_credits_earned,
         recent_referrals: recentWithUsernames,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading referral data:', error);
-      toast.error('Failed to load referral data');
+      toast.error(error.message || 'Failed to load referral data');
     } finally {
       setLoading(false);
     }

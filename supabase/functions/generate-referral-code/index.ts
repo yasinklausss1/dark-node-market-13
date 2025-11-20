@@ -11,12 +11,18 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Create client with user's auth token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
@@ -28,8 +34,11 @@ Deno.serve(async (req) => {
     } = await supabaseClient.auth.getUser();
 
     if (authError || !user) {
+      console.error('Auth error:', authError);
       throw new Error('Unauthorized');
     }
+
+    console.log('Authenticated user:', user.id);
 
     // Get user profile for username
     const { data: profile, error: profileError } = await supabaseClient
@@ -39,8 +48,11 @@ Deno.serve(async (req) => {
       .single();
 
     if (profileError || !profile) {
+      console.error('Profile error:', profileError);
       throw new Error('Profile not found');
     }
+
+    console.log('Found profile:', profile.username);
 
     // Check if user already has a referral code
     const { data: existingCode } = await supabaseClient
@@ -50,6 +62,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingCode) {
+      console.log('Existing code found:', existingCode.code);
       return new Response(
         JSON.stringify({
           code: existingCode.code,
@@ -89,6 +102,8 @@ Deno.serve(async (req) => {
       }
     }
 
+    console.log('Generated new code:', code);
+
     // Insert new referral code
     const { error: insertError } = await supabaseClient
       .from('referral_codes')
@@ -98,10 +113,11 @@ Deno.serve(async (req) => {
       });
 
     if (insertError) {
+      console.error('Insert error:', insertError);
       throw insertError;
     }
 
-    console.log(`Generated referral code ${code} for user ${user.id}`);
+    console.log(`Successfully created referral code ${code} for user ${user.id}`);
 
     return new Response(
       JSON.stringify({
