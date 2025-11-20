@@ -17,6 +17,7 @@ interface ReferralStats {
   }>;
   uses_count: number;
   max_uses: number;
+  is_expired: boolean;
 }
 const ReferralProgram = () => {
   const {
@@ -31,7 +32,8 @@ const ReferralProgram = () => {
     total_credits_earned: 0,
     recent_referrals: [],
     uses_count: 0,
-    max_uses: 3
+    max_uses: 3,
+    is_expired: false
   });
   useEffect(() => {
     if (user && profile) {
@@ -104,7 +106,8 @@ const ReferralProgram = () => {
         total_credits_earned,
         recent_referrals: recentWithUsernames,
         uses_count: data.uses_count || 0,
-        max_uses: data.max_uses || 3
+        max_uses: data.max_uses || 3,
+        is_expired: data.is_expired || false
       });
     } catch (error: any) {
       console.error('Error loading referral data:', error);
@@ -181,17 +184,18 @@ const ReferralProgram = () => {
             <CardHeader>
               <CardTitle>Your Referral Link</CardTitle>
               <CardDescription>
-                {stats.uses_count >= stats.max_uses 
-                  ? 'Your referral link has reached its maximum usage limit'
+                {stats.is_expired
+                  ? 'Your referral link has reached its maximum usage limit (3/3 uses)'
                   : 'Share this link with friends to invite them'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {stats.uses_count >= stats.max_uses ? (
+              {stats.is_expired ? (
                 <div className="p-4 bg-muted rounded-lg border border-border">
                   <p className="text-sm text-muted-foreground text-center">
-                    Your referral code has been used {stats.max_uses} times and has reached its limit. 
-                    You can no longer use this link to invite new users.
+                    <strong>Referral Code Limit Reached</strong><br/>
+                    Your referral code has been used {stats.max_uses} times and is no longer valid for new signups. 
+                    All {stats.max_uses} users who signed up with your link have successfully received their bonuses.
                   </p>
                 </div>
               ) : (
