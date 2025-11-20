@@ -39,8 +39,18 @@ const ReferralProgram = () => {
     try {
       setLoading(true);
 
+      // Get current session for auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
       // Generate or get referral code
-      const { data, error } = await supabase.functions.invoke('generate-referral-code');
+      const { data, error } = await supabase.functions.invoke('generate-referral-code', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
       if (error) throw error;
 
