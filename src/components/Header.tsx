@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, LogOut, Wallet, Settings, ShoppingBag, MessageCircle, LayoutDashboard, Shield } from 'lucide-react';
+import { Menu, LogOut, Wallet, Settings, ShoppingBag, MessageCircle, LayoutDashboard, Shield, Gift } from 'lucide-react';
 import { useState } from 'react';
 
 export const Header = () => {
@@ -72,6 +72,13 @@ export const Header = () => {
                     <Button variant="ghost" className="w-full justify-start">
                       <MessageCircle className="mr-2 h-4 w-4" />
                       Messages
+                    </Button>
+                  </Link>
+
+                  <Link to="/referral" onClick={() => setOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">
+                      <Gift className="mr-2 h-4 w-4" />
+                      Referral Program
                     </Button>
                   </Link>
 

@@ -20,6 +20,8 @@ import Settings from "./pages/Settings";
 import Orders from "./pages/Orders";
 import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
+import InviteRedirect from "./pages/InviteRedirect";
+import ReferralProgram from "./pages/ReferralProgram";
 import Imprint from "./pages/Legal/Imprint";
 import Privacy from "./pages/Legal/Privacy";
 import Terms from "./pages/Legal/Terms";
@@ -46,8 +48,10 @@ const App = () => (
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/invite/:username" element={<InviteRedirect />} />
                     <Route path="/marketplace" element={<Marketplace />} />
                     <Route path="/messages" element={<Messages />} />
+                    <Route path="/referral" element={<ReferralProgram />} />
                     <Route path="/admin" element={<AdminPanel />} />
                     <Route path="/seller" element={<SellerDashboard />} />
                     <Route path="/wallet" element={<Wallet />} />
