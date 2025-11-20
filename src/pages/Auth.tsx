@@ -9,6 +9,7 @@ import { ShoppingBag, ArrowLeft } from 'lucide-react';
 import SignInForm from '@/components/auth/SignInForm';
 import SignUpForm from '@/components/auth/SignUpForm';
 import EmailVerificationModal from '@/components/auth/EmailVerificationModal';
+import PasswordResetModal from '@/components/auth/PasswordResetModal';
 
 const Auth = () => {
   const { user, signIn, signUp, loading } = useAuth();
@@ -19,6 +20,7 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState('signin');
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
+  const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -136,6 +138,7 @@ const Auth = () => {
             <SignInForm 
               onSubmit={handleSignIn}
               isLoading={isLoading}
+              onForgotPassword={() => setShowPasswordResetModal(true)}
             />
           </TabsContent>
 
@@ -176,6 +179,11 @@ const Auth = () => {
           setShowVerificationModal(false);
           setActiveTab('signin');
         }}
+      />
+
+      <PasswordResetModal
+        isOpen={showPasswordResetModal}
+        onClose={() => setShowPasswordResetModal(false)}
       />
     </div>
   );

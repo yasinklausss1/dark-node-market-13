@@ -8,9 +8,10 @@ import { Eye, EyeOff } from 'lucide-react';
 interface SignInFormProps {
   onSubmit: (identifier: string, password: string, isEmail: boolean) => Promise<void>;
   isLoading: boolean;
+  onForgotPassword?: () => void;
 }
 
-const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading }) => {
+const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading, onForgotPassword }) => {
   const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -77,9 +78,21 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading }) => {
                 )}
               </Button>
             </div>
+            {onForgotPassword && (
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="link"
+                  className="px-0 text-sm h-auto"
+                  onClick={onForgotPassword}
+                >
+                  Forgot password?
+                </Button>
+              </div>
+            )}
           </div>
           
-          <Button 
+          <Button
             type="submit" 
             className="w-full" 
             disabled={isLoading}
