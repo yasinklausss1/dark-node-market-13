@@ -32,12 +32,11 @@ const handler = async (req: Request): Promise<Response> => {
     const userExists = existingUser?.users.some(u => u.email === email);
 
     if (!userExists) {
-      // Return success even if user doesn't exist (security best practice)
-      console.log("User not found, but returning success for security");
+      console.log("User not found with email:", email);
       return new Response(
-        JSON.stringify({ success: true, message: "If an account exists with this email, a reset code has been sent." }),
+        JSON.stringify({ error: "No account found with this email address." }),
         {
-          status: 200,
+          status: 404,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );
