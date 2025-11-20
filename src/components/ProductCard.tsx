@@ -70,7 +70,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     e.stopPropagation();
     onStartChat(product);
   };
-  return <Card className="group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 cursor-pointer bg-[hsl(240,55%,25%)] border-[hsl(240,55%,30%)] hover:shadow-2xl" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} onClick={() => onProductClick(product)}>
+  return <Card className="group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 cursor-pointer bg-gradient-to-b from-[hsl(240,50%,8%)] to-[hsl(240,50%,6%)] border-[hsl(240,40%,18%)] hover:shadow-2xl hover:border-[hsl(280,70%,55%)]" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} onClick={() => onProductClick(product)}>
       {/* Title Section */}
       <CardHeader className="pb-3 px-6 pt-6 text-center">
         <div className="relative">
@@ -79,7 +79,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </CardTitle>
           {/* SALE Badge */}
           {product.stock > 0 && product.stock <= 5 && (
-            <Badge className="absolute -top-2 -right-2 bg-gradient-to-r from-[hsl(290,80%,65%)] to-[hsl(280,70%,60%)] text-white border-0 px-3 py-1 text-xs font-bold shadow-lg">
+            <Badge className="absolute -top-2 -right-2 bg-gradient-to-r from-[hsl(280,80%,65%)] to-[hsl(270,80%,60%)] text-white border-0 px-3 py-1 text-xs font-bold shadow-lg animate-pulse">
               SALE!
             </Badge>
           )}
@@ -87,7 +87,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </CardHeader>
 
       {/* Image Section with Carousel */}
-      <div className="relative aspect-square overflow-hidden mx-4 mb-4 rounded-lg">
+      <div className="relative aspect-square overflow-hidden mx-4 mb-4 rounded-lg border border-[hsl(240,40%,18%)] bg-gradient-to-br from-[hsl(240,45%,10%)] to-[hsl(240,45%,8%)]">
         {productImages.length > 0 ? productImages.length === 1 ?
       // Single image - no carousel needed
       <WatermarkedImage src={productImages[0]} alt={product.title} className={`w-full h-full object-cover ${isGuest ? 'blur-xl' : ''}`} onError={e => {
@@ -103,17 +103,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   </CarouselItem>)}
               </CarouselContent>
               {!isGuest && <>
-                  <CarouselPrevious className="left-2 bg-[hsl(240,55%,35%)] border-[hsl(240,55%,45%)] text-white hover:bg-[hsl(240,55%,40%)]" />
-                  <CarouselNext className="right-2 bg-[hsl(240,55%,35%)] border-[hsl(240,55%,45%)] text-white hover:bg-[hsl(240,55%,40%)]" />
+                  <CarouselPrevious className="left-2 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white hover:bg-[hsl(240,45%,20%)]" />
+                  <CarouselNext className="right-2 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white hover:bg-[hsl(240,45%,20%)]" />
                 </>}
-            </Carousel> : <div className="w-full h-full bg-gradient-to-br from-[hsl(240,55%,20%)] to-[hsl(240,55%,30%)] flex items-center justify-center">
-            <ShoppingCart className="h-16 w-16 text-white/30" />
+            </Carousel> : <div className="w-full h-full bg-gradient-to-br from-[hsl(240,45%,10%)] to-[hsl(240,45%,8%)] flex items-center justify-center">
+            <ShoppingCart className="h-16 w-16 text-white/20" />
           </div>}
         
-        {isGuest && <div className="absolute inset-0 flex items-center justify-center bg-[hsl(240,55%,25%)]/90 backdrop-blur-sm">
+        {isGuest && <div className="absolute inset-0 flex items-center justify-center bg-[hsl(240,50%,8%)]/90 backdrop-blur-sm">
             <div className="text-center p-4">
               <p className="text-sm font-semibold mb-2 text-white">Login to view</p>
-              <a href="/auth?tab=signin" className="text-xs text-[hsl(290,80%,65%)] hover:underline">
+              <a href="/auth?tab=signin" className="text-xs text-[hsl(280,80%,70%)] hover:underline">
                 Sign in now
               </a>
             </div>
@@ -121,30 +121,30 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Stock Badge */}
         {product.stock === 0 && <div className="absolute top-3 left-3">
-            <Badge variant="destructive">Out of Stock</Badge>
+            <Badge variant="destructive" className="shadow-lg">Out of Stock</Badge>
           </div>}
       </div>
 
       <CardContent className="px-6 pb-6 text-center space-y-4">
         {/* Delivery Info */}
-        <p className="text-white/90 text-sm">
-          Average Delivery: 3 days
+        <p className="text-[hsl(240,30%,70%)] text-sm font-medium">
+          Average Delivery: <span className="text-white">3 days</span>
         </p>
 
         {/* Price Section */}
-        <div className="space-y-1">
-          <p className="text-white/80 text-sm">
+        <div className="space-y-2 bg-gradient-to-br from-[hsl(240,45%,10%)] to-[hsl(240,45%,8%)] p-4 rounded-lg border border-[hsl(240,40%,18%)]">
+          <p className="text-[hsl(240,30%,70%)] text-sm">
             Starting from:
           </p>
           <div className="flex items-center justify-center gap-2">
-            <span className="text-3xl font-bold text-[hsl(45,100%,60%)]">
+            <span className="text-3xl font-bold bg-gradient-to-r from-[hsl(45,100%,65%)] to-[hsl(40,100%,60%)] bg-clip-text text-transparent">
               💳 {product.price} Credits
             </span>
           </div>
         </div>
 
         {/* Action Button */}
-        <Button onClick={handleAddToCart} className="w-full bg-gradient-to-r from-[hsl(290,80%,65%)] to-[hsl(280,70%,60%)] hover:from-[hsl(290,80%,60%)] hover:to-[hsl(280,70%,55%)] text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 py-6 text-lg font-semibold" disabled={product.stock === 0 || isOwner || isGuest}>
+        <Button onClick={handleAddToCart} className="w-full bg-gradient-to-r from-[hsl(280,70%,60%)] to-[hsl(270,70%,55%)] hover:from-[hsl(280,70%,65%)] hover:to-[hsl(270,70%,60%)] text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 py-6 text-lg font-semibold" disabled={product.stock === 0 || isOwner || isGuest}>
           {isGuest ? 'Login to Purchase' : isOwner ? 'Your Product' : product.stock === 0 ? 'Out of Stock' : 'More Info'}
         </Button>
       </CardContent>
