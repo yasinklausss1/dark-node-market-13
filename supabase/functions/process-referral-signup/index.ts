@@ -84,10 +84,16 @@ Deno.serve(async (req) => {
       throw new Error('User has already been referred');
     }
 
-    // Get referrer's LATEST referral code and check usage limit
-    const { data: referralCodes, error: codeError } = await supabaseClient
+    // Use service role key for atomic operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Get referrer's LATEST referral code
+    const { data: referralCodes, error: codeError } = await supabaseAdmin
       .from('referral_codes')
-      .select('code, uses_count')
+      .select('id, code, uses_count')
       .eq('user_id', referrerProfile.user_id)
       .order('created_at', { ascending: false })
       .limit(1);
@@ -99,13 +105,26 @@ Deno.serve(async (req) => {
 
     const referralCode = referralCodes[0];
 
-    // Check if referral code has reached its limit (3 uses)
-    if (referralCode.uses_count >= 3) {
+    // ATOMIC: Try to increment uses_count ONLY if it's still below 3
+    // This prevents race conditions when multiple people use the link simultaneously
+    const { data: updatedCode, error: updateError } = await supabaseAdmin
+      .from('referral_codes')
+      .update({ uses_count: referralCode.uses_count + 1 })
+      .eq('id', referralCode.id)
+      .eq('uses_count', referralCode.uses_count) // Only update if count hasn't changed
+      .lt('uses_count', 3) // Only if still below limit
+      .select('uses_count')
+      .single();
+
+    if (updateError || !updatedCode) {
+      console.error('Failed to increment referral code - limit reached or race condition:', updateError);
       throw new Error('This referral code has reached its maximum usage limit');
     }
 
+    console.log(`Incremented uses_count to ${updatedCode.uses_count} for code ${referralCode.code}`);
+
     // Create referral reward entry
-    const { error: rewardError } = await supabaseClient
+    const { error: rewardError } = await supabaseAdmin
       .from('referral_rewards')
       .insert({
         referrer_id: referrerProfile.user_id,
@@ -117,14 +136,13 @@ Deno.serve(async (req) => {
 
     if (rewardError) {
       console.error('Reward insert error:', rewardError);
+      // Rollback the increment if reward creation fails
+      await supabaseAdmin
+        .from('referral_codes')
+        .update({ uses_count: referralCode.uses_count })
+        .eq('id', referralCode.id);
       throw rewardError;
     }
-
-    // Use service role key for updating balances
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     // Get current balances
     const { data: referrerBalance } = await supabaseAdmin
@@ -170,16 +188,7 @@ Deno.serve(async (req) => {
       },
     ]);
 
-    // Update the specific referral code usage count (the one we're actually using)
-    await supabaseAdmin
-      .from('referral_codes')
-      .update({
-        uses_count: referralCode.uses_count + 1,
-      })
-      .eq('code', referralCode.code)
-      .eq('user_id', referrerProfile.user_id);
-
-    console.log(`Successfully processed referral: ${referrerProfile.username} -> ${user.email}`);
+    console.log(`Successfully processed referral: ${referrerProfile.username} -> ${user.email} (uses: ${updatedCode.uses_count}/3)`);
 
     return new Response(
       JSON.stringify({
