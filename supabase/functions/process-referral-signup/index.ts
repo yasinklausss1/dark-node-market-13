@@ -84,17 +84,20 @@ Deno.serve(async (req) => {
       throw new Error('User has already been referred');
     }
 
-    // Get referrer's referral code and check usage limit
-    const { data: referralCode, error: codeError } = await supabaseClient
+    // Get referrer's LATEST referral code and check usage limit
+    const { data: referralCodes, error: codeError } = await supabaseClient
       .from('referral_codes')
       .select('code, uses_count')
       .eq('user_id', referrerProfile.user_id)
-      .maybeSingle();
+      .order('created_at', { ascending: false })
+      .limit(1);
 
-    if (codeError || !referralCode) {
+    if (codeError || !referralCodes || referralCodes.length === 0) {
       console.error('Referral code not found:', codeError);
       throw new Error('Referral code not found');
     }
+
+    const referralCode = referralCodes[0];
 
     // Check if referral code has reached its limit (3 uses)
     if (referralCode.uses_count >= 3) {
