@@ -172,8 +172,8 @@ export default function Messages() {
         
         <div className="flex gap-4 h-[calc(100vh-180px)]">
           {/* Conversations List */}
-          <div className={`${selectedConversation ? 'hidden md:block' : 'block'} w-full md:w-80 bg-gradient-to-b from-[hsl(240,45%,12%)] to-[hsl(240,45%,10%)] border border-[hsl(240,40%,20%)] rounded-lg overflow-hidden`}>
-            <div className="p-4 border-b border-[hsl(240,40%,20%)]">
+          <div className={`${selectedConversation ? 'hidden md:flex' : 'flex'} w-full md:w-80 bg-gradient-to-b from-[hsl(240,45%,12%)] to-[hsl(240,45%,10%)] border border-[hsl(240,40%,20%)] rounded-lg flex-col`}>
+            <div className="p-4 border-b border-[hsl(240,40%,20%)] flex-shrink-0">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <MessageCircle className="h-5 w-5" />
                 Messages
@@ -190,7 +190,7 @@ export default function Messages() {
               </div>
             </div>
 
-            <ScrollArea className="h-[calc(100%-140px)]">
+            <ScrollArea className="flex-1 min-h-0">
               {loading ? (
                 <div className="p-8 text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[hsl(280,70%,60%)] mx-auto"></div>
@@ -263,7 +263,7 @@ export default function Messages() {
               )}
             </ScrollArea>
 
-            <div className="p-4 border-t border-[hsl(240,40%,20%)]">
+            <div className="p-4 border-t border-[hsl(240,40%,20%)] flex-shrink-0">
               <p className="text-xs text-[hsl(240,30%,70%)] text-center">
                 {filteredConversations.length} conversation{filteredConversations.length !== 1 ? 's' : ''}
               </p>
@@ -271,11 +271,11 @@ export default function Messages() {
           </div>
 
           {/* Chat Area */}
-          <div className={`${selectedConversation ? 'block' : 'hidden md:flex'} flex-1 bg-gradient-to-b from-[hsl(240,45%,12%)] to-[hsl(240,45%,10%)] border border-[hsl(240,40%,20%)] rounded-lg overflow-hidden flex-col`}>
+          <div className={`${selectedConversation ? 'flex' : 'hidden md:flex'} flex-1 bg-gradient-to-b from-[hsl(240,45%,12%)] to-[hsl(240,45%,10%)] border border-[hsl(240,40%,20%)] rounded-lg flex-col`}>
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b border-[hsl(240,40%,20%)] flex items-center justify-between">
+                <div className="p-4 border-b border-[hsl(240,40%,20%)] flex items-center justify-between flex-shrink-0">
                   <div className="flex items-center gap-3">
                     <Button
                       variant="ghost"
@@ -300,7 +300,7 @@ export default function Messages() {
                 </div>
 
                 {/* Messages */}
-                <ScrollArea className="flex-1 p-4">
+                <ScrollArea className="flex-1 p-4 min-h-0">
                   <div className="space-y-4">
                     {messages.length === 0 ? (
                       <div className="text-center py-12">
@@ -348,7 +348,7 @@ export default function Messages() {
                 </ScrollArea>
 
                 {/* Message Input */}
-                <div className="p-4 border-t border-[hsl(240,40%,20%)]">
+                <div className="p-4 border-t border-[hsl(240,40%,20%)] flex-shrink-0">
                   <div className="flex items-center gap-2">
                     <Input
                       placeholder="Type a message..."
