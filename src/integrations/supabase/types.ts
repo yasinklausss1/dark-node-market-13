@@ -1376,6 +1376,13 @@ export type Database = {
         Returns: boolean
       }
       cleanup_expired_verification_codes: { Args: never; Returns: undefined }
+      cleanup_old_referral_codes: {
+        Args: never
+        Returns: {
+          deleted_count: number
+          user_id: string
+        }[]
+      }
       close_conversation: {
         Args: { conversation_uuid: string }
         Returns: boolean
