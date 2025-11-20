@@ -479,6 +479,7 @@ export type Database = {
           is_email_registration: boolean
           password_hash: string
           username: string
+          verification_type: string
           verified: boolean
         }
         Insert: {
@@ -491,6 +492,7 @@ export type Database = {
           is_email_registration?: boolean
           password_hash: string
           username: string
+          verification_type?: string
           verified?: boolean
         }
         Update: {
@@ -503,6 +505,7 @@ export type Database = {
           is_email_registration?: boolean
           password_hash?: string
           username?: string
+          verification_type?: string
           verified?: boolean
         }
         Relationships: []
