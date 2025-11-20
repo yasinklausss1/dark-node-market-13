@@ -45,8 +45,7 @@ export const ModernHeroSection: React.FC<ModernHeroSectionProps> = ({
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground mb-8 animate-fade-in delay-300">
-            Secure crypto marketplace with advanced verification, real-time chat, and instant transactions.
-            Shop with confidence using Bitcoin and Litecoin.
+            Secure crypto marketplace with advanced verification, real-time chat, and instant transactions.       
           </p>
 
           
