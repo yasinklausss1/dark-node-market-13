@@ -137,8 +137,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             Starting from:
           </p>
           <div className="flex items-center justify-center gap-2">
+            <Coins className="h-7 w-7 text-[hsl(45,100%,65%)]" />
             <span className="text-3xl font-bold bg-gradient-to-r from-[hsl(45,100%,65%)] to-[hsl(40,100%,60%)] bg-clip-text text-transparent">
-              💳 {product.price} Credits
+              {product.price} Credits
             </span>
           </div>
         </div>

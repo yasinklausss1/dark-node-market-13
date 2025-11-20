@@ -171,8 +171,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
         <div className="space-y-1 sm:space-y-2 p-4 bg-gradient-to-br from-[hsl(240,45%,12%)] to-[hsl(240,45%,10%)] rounded-lg border border-[hsl(240,40%,20%)]">
           <div className="flex items-center gap-2">
+            <Coins className="h-7 w-7 sm:h-8 sm:w-8 text-[hsl(45,100%,65%)]" />
             <span className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[hsl(45,100%,65%)] to-[hsl(40,100%,60%)] bg-clip-text text-transparent">
-              💳 {(product.price * quantity + addonsTotalPrice)} Credits
+              {(product.price * quantity + addonsTotalPrice)} Credits
             </span>
           </div>
           <p className="text-[hsl(240,30%,70%)] text-sm">
