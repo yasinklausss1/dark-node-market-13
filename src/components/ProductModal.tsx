@@ -105,7 +105,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const productContent = <div className="space-y-3 sm:space-y-6">
       {/* Product Images Carousel */}
       {productImages.length > 0 && (
-        <div className="relative w-full h-48 sm:h-96 bg-[hsl(240,55%,20%)] rounded-lg overflow-hidden border border-[hsl(240,55%,35%)]">
+        <div className="relative w-full h-48 sm:h-96 bg-gradient-to-br from-[hsl(240,45%,12%)] to-[hsl(240,45%,8%)] rounded-lg overflow-hidden border border-[hsl(240,40%,20%)]">
           {productImages.length === 1 ? (
             <WatermarkedImage 
               src={productImages[0]} 
@@ -137,9 +137,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
               </CarouselContent>
               {!isGuest && (
                 <>
-                  <CarouselPrevious className="left-2 bg-[hsl(240,55%,35%)] border-[hsl(240,55%,45%)] text-white hover:bg-[hsl(240,55%,40%)]" />
-                  <CarouselNext className="right-2 bg-[hsl(240,55%,35%)] border-[hsl(240,55%,45%)] text-white hover:bg-[hsl(240,55%,40%)]" />
-                  <div className="absolute bottom-3 right-3 bg-[hsl(240,55%,30%)]/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-white">
+                  <CarouselPrevious className="left-2 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white hover:bg-[hsl(240,45%,20%)]" />
+                  <CarouselNext className="right-2 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white hover:bg-[hsl(240,45%,20%)]" />
+                  <div className="absolute bottom-3 right-3 bg-[hsl(240,45%,15%)]/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-white border border-[hsl(240,40%,25%)]">
                     {productImages.length} Bilder
                   </div>
                 </>
@@ -147,10 +147,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </Carousel>
           )}
           {isGuest && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[hsl(240,55%,25%)]/90 backdrop-blur-sm">
+            <div className="absolute inset-0 flex items-center justify-center bg-[hsl(240,45%,10%)]/95 backdrop-blur-sm">
               <div className="text-center p-4">
                 <p className="text-sm font-semibold mb-2 text-white">Login to view</p>
-                <a href="/auth?tab=signin" className="text-xs text-[hsl(290,80%,65%)] hover:underline">
+                <a href="/auth?tab=signin" className="text-xs text-[hsl(280,80%,70%)] hover:underline">
                   Sign in now
                 </a>
               </div>
@@ -162,46 +162,46 @@ const ProductModal: React.FC<ProductModalProps> = ({
       {/* Product Info */}
       <div className="space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <Badge className="w-fit bg-gradient-to-r from-[hsl(290,80%,65%)] to-[hsl(280,70%,60%)] text-white border-0">{product.category}</Badge>
-          <div className="flex items-center space-x-1 text-xs sm:text-sm text-white/80">
+          <Badge className="w-fit bg-gradient-to-r from-[hsl(280,70%,60%)] to-[hsl(270,70%,55%)] text-white border-0 shadow-md">{product.category}</Badge>
+          <div className="flex items-center space-x-1 text-xs sm:text-sm text-[hsl(240,30%,75%)]">
             <User className="h-3 w-3 sm:h-4 sm:w-4" />
             <span>Seller: {sellerUsername}</span>
           </div>
         </div>
 
-        <div className="space-y-1 sm:space-y-2">
+        <div className="space-y-1 sm:space-y-2 p-4 bg-gradient-to-br from-[hsl(240,45%,12%)] to-[hsl(240,45%,10%)] rounded-lg border border-[hsl(240,40%,20%)]">
           <div className="flex items-center gap-2">
-            <span className="text-xl sm:text-2xl font-bold text-[hsl(45,100%,60%)]">
+            <span className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[hsl(45,100%,65%)] to-[hsl(40,100%,60%)] bg-clip-text text-transparent">
               💳 {(product.price * quantity + addonsTotalPrice)} Credits
             </span>
           </div>
-          <p className="text-white/70 text-sm">
-            ({(product.price * quantity + addonsTotalPrice)}€)
+          <p className="text-[hsl(240,30%,70%)] text-sm">
+            ≈ {(product.price * quantity + addonsTotalPrice)}€
           </p>
         </div>
 
-        <div>
-          <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-2 text-white">Description</h3>
-          <p className="text-white/80 text-sm sm:text-base">
+        <div className="bg-[hsl(240,45%,12%)] p-4 rounded-lg border border-[hsl(240,40%,20%)]">
+          <h3 className="text-base sm:text-lg font-semibold mb-2 text-white">Description</h3>
+          <p className="text-[hsl(240,30%,75%)] text-sm sm:text-base leading-relaxed">
             {product.description || 'No description available.'}
           </p>
         </div>
 
-        <Separator className="bg-[hsl(240,55%,35%)]" />
+        <Separator className="bg-[hsl(240,40%,20%)]" />
 
         {/* Quantity */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-white">Quantity</span>
-          <Button variant="outline" size="icon" onClick={() => setQuantity(q => Math.max(1, q - 1))} aria-label="Decrease quantity" className="h-8 w-8 sm:h-10 sm:w-10 bg-[hsl(240,55%,30%)] border-[hsl(240,55%,40%)] text-white hover:bg-[hsl(240,55%,35%)]">
-            <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
+        <div className="flex items-center gap-3 bg-[hsl(240,45%,12%)] p-3 rounded-lg border border-[hsl(240,40%,20%)]">
+          <span className="text-sm text-white font-medium">Quantity</span>
+          <Button variant="outline" size="icon" onClick={() => setQuantity(q => Math.max(1, q - 1))} aria-label="Decrease quantity" className="h-9 w-9 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white hover:bg-[hsl(240,45%,20%)] hover:border-[hsl(280,70%,55%)] transition-all">
+            <Minus className="h-4 w-4" />
           </Button>
           <Input type="number" min={1} max={product.stock ?? 99} value={quantity} onChange={e => {
           const val = Number(e.target.value);
           if (Number.isNaN(val)) return;
           setQuantity(Math.max(1, Math.min(val, product.stock ?? 99)));
-        }} className="w-16 sm:w-20 text-center h-8 sm:h-10 bg-[hsl(240,55%,30%)] border-[hsl(240,55%,40%)] text-white" />
-          <Button variant="outline" size="icon" onClick={() => setQuantity(q => Math.min(product.stock ?? 99, q + 1))} aria-label="Increase quantity" className="h-8 w-8 sm:h-10 sm:w-10 bg-[hsl(240,55%,30%)] border-[hsl(240,55%,40%)] text-white hover:bg-[hsl(240,55%,35%)]">
-            <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+        }} className="w-16 sm:w-20 text-center h-9 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white font-bold text-lg" />
+          <Button variant="outline" size="icon" onClick={() => setQuantity(q => Math.min(product.stock ?? 99, q + 1))} aria-label="Increase quantity" className="h-9 w-9 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white hover:bg-[hsl(240,45%,20%)] hover:border-[hsl(280,70%,55%)] transition-all">
+            <Plus className="h-4 w-4" />
           </Button>
         </div>
 
@@ -215,80 +215,89 @@ const ProductModal: React.FC<ProductModalProps> = ({
         />
 
         {/* Telegram Integration */}
-        <Separator className="bg-[hsl(240,55%,35%)]" />
+        <Separator className="bg-[hsl(240,40%,20%)]" />
         <div>
           
           <TelegramIntegration productId={product.id} productTitle={product.title} productPrice={product.price} productImage={product.image_url} sellerUsername={sellerUsername} />
         </div>
 
-        <Separator className="bg-[hsl(240,55%,35%)]" />
+        <Separator className="bg-[hsl(240,40%,20%)]" />
 
         {/* Action Buttons */}
-        <div className="flex flex-col space-y-2">
-          {/* Top Row - Share, Contact */}
-          <div className="flex space-x-2">
-            
-            
-            {/* Contact Seller Button - only show if not the owner and onStartChat is provided */}
-            {user && product.seller_id !== user.id && onStartChat && <Button variant="outline" onClick={() => onStartChat(product)} className="flex-1 h-10 bg-[hsl(240,55%,30%)] border-[hsl(240,55%,40%)] text-white hover:bg-[hsl(240,55%,35%)]">
-                <MessageCircle className="h-4 w-4 mr-2" />
-                <span className="text-sm">Contact</span>
-              </Button>}
-          </div>
+        <div className="flex flex-col space-y-3">
+          {/* Contact Seller Button - only show if not the owner and onStartChat is provided */}
+          {user && product.seller_id !== user.id && onStartChat && (
+            <Button 
+              variant="outline" 
+              onClick={() => onStartChat(product)} 
+              className="w-full h-11 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white hover:bg-[hsl(240,45%,20%)] hover:border-[hsl(280,70%,55%)] transition-all"
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              <span>Contact Seller</span>
+            </Button>
+          )}
           
           {/* Bottom Row - Back and Buy */}
-          <div className="flex space-x-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:flex-1 h-10 bg-[hsl(240,55%,30%)] border-[hsl(240,55%,40%)] text-white hover:bg-[hsl(240,55%,35%)]">
+          <div className="flex space-x-3">
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)} 
+              className="flex-1 h-12 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white hover:bg-[hsl(240,45%,20%)] hover:border-[hsl(240,40%,30%)] transition-all font-medium"
+            >
               Back
             </Button>
-            <Button className="w-full sm:flex-1 h-10 bg-gradient-to-r from-[hsl(290,80%,65%)] to-[hsl(280,70%,60%)] hover:from-[hsl(290,80%,60%)] hover:to-[hsl(280,70%,55%)] text-white border-0 shadow-lg" disabled={product.stock === 0} onClick={() => {
-            // Check if user is logged in
-            if (!user) {
-              toast({
-                title: "Login Required",
-                description: "Please sign in to add items to your cart.",
-                variant: "destructive"
-              });
-              return;
-            }
-            
-            // Prevent purchasing own product if logged in
-            if (user && product.seller_id === user.id) {
-              toast({
-                title: "Cannot Add to Cart",
-                description: "You cannot purchase your own product.",
-                variant: "destructive"
-              });
-              return;
-            }
-            addToCart({
-              id: product.id,
-              title: product.title,
-              price: product.price,
-              category: product.category,
-              image_url: product.image_url
-            }, quantity);
-            toast({
-              title: "Added to Cart",
-              description: `${product.title} has been added to your cart.`
-            });
-            onOpenChange(false);
-          }}>
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              <span className="text-sm">Buy Now</span>
+            <Button 
+              className="flex-1 h-12 bg-gradient-to-r from-[hsl(280,70%,60%)] to-[hsl(270,70%,55%)] hover:from-[hsl(280,70%,65%)] hover:to-[hsl(270,70%,60%)] text-white border-0 shadow-lg hover:shadow-xl transition-all font-semibold" 
+              disabled={product.stock === 0} 
+              onClick={() => {
+                // Check if user is logged in
+                if (!user) {
+                  toast({
+                    title: "Login Required",
+                    description: "Please sign in to add items to your cart.",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                
+                // Prevent purchasing own product if logged in
+                if (user && product.seller_id === user.id) {
+                  toast({
+                    title: "Cannot Add to Cart",
+                    description: "You cannot purchase your own product.",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                addToCart({
+                  id: product.id,
+                  title: product.title,
+                  price: product.price,
+                  category: product.category,
+                  image_url: product.image_url
+                }, quantity);
+                toast({
+                  title: "Added to Cart",
+                  description: `${product.title} has been added to your cart.`
+                });
+                onOpenChange(false);
+              }}
+            >
+              <ShoppingCart className="h-5 w-5 mr-2" />
+              <span>Buy Now</span>
             </Button>
           </div>
         </div>
 
         {/* Product Meta */}
-        <div className="text-xs text-white/60">
+        <div className="text-xs text-[hsl(240,30%,60%)] text-center pt-2">
           Added on: {new Date(product.created_at).toLocaleDateString('en-US')}
         </div>
       </div>
     </div>;
   if (isMobile) {
     return <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto bg-[hsl(240,55%,25%)] border-[hsl(240,55%,35%)]">
+        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto bg-gradient-to-b from-[hsl(240,50%,8%)] to-[hsl(240,50%,6%)] border-[hsl(240,40%,20%)]">
           <SheetHeader className="pb-2">
             <SheetTitle className="flex items-center space-x-2 text-sm text-white">
               <ShoppingCart className="h-4 w-4" />
@@ -300,10 +309,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
       </Sheet>;
   }
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[95vh] overflow-y-auto sm:max-w-2xl w-[95vw] sm:w-full p-3 sm:p-6 bg-[hsl(240,55%,25%)] border-[hsl(240,55%,35%)]">
-        <DialogHeader className="pb-2">
-          <DialogTitle className="flex items-center space-x-2 text-sm sm:text-base text-white">
-            <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+      <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[95vh] overflow-y-auto sm:max-w-2xl w-[95vw] sm:w-full p-4 sm:p-6 bg-gradient-to-b from-[hsl(240,50%,8%)] to-[hsl(240,50%,6%)] border-[hsl(240,40%,20%)]">
+        <DialogHeader className="pb-3">
+          <DialogTitle className="flex items-center space-x-2 text-base sm:text-lg text-white">
+            <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
             <span className="line-clamp-2">{product.title}</span>
           </DialogTitle>
         </DialogHeader>
