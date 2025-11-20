@@ -149,10 +149,12 @@ export type Database = {
           attachment_url: string | null
           conversation_id: string
           created_at: string
+          delivered_at: string | null
           id: string
           is_read: boolean
           message: string
           message_type: string
+          read_at: string | null
           sender_id: string
           updated_at: string
         }
@@ -160,10 +162,12 @@ export type Database = {
           attachment_url?: string | null
           conversation_id: string
           created_at?: string
+          delivered_at?: string | null
           id?: string
           is_read?: boolean
           message: string
           message_type?: string
+          read_at?: string | null
           sender_id: string
           updated_at?: string
         }
@@ -171,10 +175,12 @@ export type Database = {
           attachment_url?: string | null
           conversation_id?: string
           created_at?: string
+          delivered_at?: string | null
           id?: string
           is_read?: boolean
           message?: string
           message_type?: string
+          read_at?: string | null
           sender_id?: string
           updated_at?: string
         }
