@@ -62,21 +62,40 @@ Deno.serve(async (req) => {
 
     console.log('Found profile:', profile.username);
 
-    // Check if user already has a referral code
-    const { data: existingCode } = await supabaseClient
+    // Get user's latest referral code
+    const { data: existingCodes } = await supabaseClient
       .from('referral_codes')
       .select('code, uses_count')
       .eq('user_id', user.id)
-      .maybeSingle();
+      .order('created_at', { ascending: false })
+      .limit(1);
 
-    if (existingCode) {
+    if (existingCodes && existingCodes.length > 0) {
+      const existingCode = existingCodes[0];
       console.log('Existing code found:', existingCode.code, 'uses:', existingCode.uses_count);
+      
+      // Check if the code has reached its limit
+      if (existingCode.uses_count >= 3) {
+        console.log('Code has reached maximum uses');
+        return new Response(
+          JSON.stringify({
+            code: existingCode.code,
+            link: `https://oracle-market.store/invite/${profile.username}`,
+            uses_count: existingCode.uses_count,
+            max_uses: 3,
+            is_expired: true,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({
           code: existingCode.code,
           link: `https://oracle-market.store/invite/${profile.username}`,
           uses_count: existingCode.uses_count,
           max_uses: 3,
+          is_expired: false,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -135,6 +154,7 @@ Deno.serve(async (req) => {
         link: `https://oracle-market.store/invite/${profile.username}`,
         uses_count: 0,
         max_uses: 3,
+        is_expired: false,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
