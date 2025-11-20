@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,12 +33,22 @@ export default function Messages() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   // Filter conversations based on search
   const filteredConversations = conversations.filter(conv =>
     conv.other_user_username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     conv.product_title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Auto-scroll when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   // Load messages for selected conversation
   useEffect(() => {
@@ -344,6 +354,7 @@ export default function Messages() {
                         </div>
                       ))
                     )}
+                    <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
 
