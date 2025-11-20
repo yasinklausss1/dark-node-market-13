@@ -16,6 +16,8 @@ interface ReferralStats {
     created_at: string;
     credits_awarded: number;
   }>;
+  uses_count: number;
+  max_uses: number;
 }
 
 const ReferralProgram = () => {
@@ -27,6 +29,8 @@ const ReferralProgram = () => {
     total_referrals: 0,
     total_credits_earned: 0,
     recent_referrals: [],
+    uses_count: 0,
+    max_uses: 3,
   });
 
   useEffect(() => {
@@ -104,6 +108,8 @@ const ReferralProgram = () => {
         total_referrals,
         total_credits_earned,
         recent_referrals: recentWithUsernames,
+        uses_count: data.uses_count || 0,
+        max_uses: data.max_uses || 3,
       });
     } catch (error: any) {
       console.error('Error loading referral data:', error);
@@ -154,7 +160,7 @@ const ReferralProgram = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Referral Program</h1>
           <p className="text-muted-foreground">
-            Invite friends and earn credits together! Both you and your friend get 3 credits when they sign up.
+            Invite friends and earn credits together! Both you and your friend get 3 credits when they sign up. Maximum 3 invites per referral code (9 credits total).
           </p>
         </div>
 
@@ -183,12 +189,16 @@ const ReferralProgram = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Reward Per Invite</CardTitle>
+              <CardTitle className="text-sm font-medium">Remaining Uses</CardTitle>
               <Gift className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">3 Credits</div>
-              <p className="text-xs text-muted-foreground">For you and your friend</p>
+              <div className="text-2xl font-bold">
+                {stats.max_uses - stats.uses_count} / {stats.max_uses}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stats.uses_count >= stats.max_uses ? 'Limit reached' : '3 credits per invite'}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -197,7 +207,14 @@ const ReferralProgram = () => {
           <Card>
             <CardHeader>
               <CardTitle>Your Referral Link</CardTitle>
-              <CardDescription>Share this link with friends to invite them</CardDescription>
+              <CardDescription>
+                Share this link with friends to invite them
+                {stats.uses_count >= stats.max_uses && (
+                  <span className="block mt-1 text-destructive">
+                    This code has reached its maximum usage limit
+                  </span>
+                )}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
