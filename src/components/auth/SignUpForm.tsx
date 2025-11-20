@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Gift } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,15 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
   const [birthYear, setBirthYear] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [referrerUsername, setReferrerUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check if user was invited
+    const storedReferrer = localStorage.getItem('referrer_username');
+    if (storedReferrer) {
+      setReferrerUsername(storedReferrer);
+    }
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -119,6 +129,15 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
+        {referrerUsername && (
+          <Alert className="mb-4 bg-primary/10 border-primary/20">
+            <Gift className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-sm">
+              🎉 You've been invited by <span className="font-semibold">{referrerUsername}</span>! 
+              You'll both receive <span className="font-semibold">3 credits</span> when you complete registration.
+            </AlertDescription>
+          </Alert>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs value={registrationType} onValueChange={(v) => setRegistrationType(v as 'username' | 'email')}>
             <TabsList className="grid w-full grid-cols-2">

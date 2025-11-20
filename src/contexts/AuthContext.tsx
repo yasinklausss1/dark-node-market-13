@@ -120,6 +120,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let email = identifier;
     let username = identifier;
     
+    // Check for referral
+    const referrerUsername = localStorage.getItem('referrer_username');
+    
     if (!isEmail) {
       email = `${identifier}@example.com`;
     } else {
@@ -191,6 +194,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     });
+    
+    // Process referral if exists
+    if (!error && referrerUsername) {
+      try {
+        await supabase.functions.invoke('process-referral-signup', {
+          body: { referrerUsername }
+        });
+        localStorage.removeItem('referrer_username');
+        toast.success('Referral bonus applied! You and your friend received 3 credits.');
+      } catch (referralError) {
+        console.error('Error processing referral:', referralError);
+      }
+    }
+    
     return { error };
   };
 
