@@ -10,6 +10,7 @@ import SignInForm from '@/components/auth/SignInForm';
 import SignUpForm from '@/components/auth/SignUpForm';
 import EmailVerificationModal from '@/components/auth/EmailVerificationModal';
 import PasswordResetModal from '@/components/auth/PasswordResetModal';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const { user, signIn, signUp, loading } = useAuth();
@@ -28,6 +29,49 @@ const Auth = () => {
       setActiveTab(tab);
     }
   }, [searchParams]);
+
+  // Process referral after successful authentication
+  useEffect(() => {
+    const processReferral = async () => {
+      if (user && !loading) {
+        const referrerUsername = localStorage.getItem('referrer_username');
+        if (referrerUsername) {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              const { data, error } = await supabase.functions.invoke('process-referral-signup', {
+                body: { referrerUsername },
+                headers: {
+                  Authorization: `Bearer ${session.access_token}`
+                }
+              });
+
+              if (error) {
+                console.error('Referral processing error:', error);
+                toast({
+                  title: "Referral Processing Failed",
+                  description: error.message || "Could not process referral bonus",
+                  variant: "destructive"
+                });
+              } else if (data?.success) {
+                toast({
+                  title: "🎉 Referral Bonus Applied!",
+                  description: data.message || "You and your referrer both received 3 credits!",
+                  duration: 5000
+                });
+                // Clear the referrer username after successful processing
+                localStorage.removeItem('referrer_username');
+              }
+            }
+          } catch (err) {
+            console.error('Error processing referral:', err);
+          }
+        }
+      }
+    };
+
+    processReferral();
+  }, [user, loading, toast]);
 
   if (user && !loading && !showVerificationModal) {
     return <Navigate to="/marketplace" replace />;
