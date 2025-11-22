@@ -21,6 +21,7 @@ import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { ModernHeroSection } from '@/components/ModernHeroSection';
 import { ProductCard } from '@/components/ProductCard';
 import { ChatModal } from '@/components/ChatModal';
+import { ProductCardSkeleton } from '@/components/skeletons/ProductCardSkeleton';
 
 import { ConversationsModal } from '@/components/ConversationsModal';
 import { useChat } from '@/hooks/useChat';
@@ -59,6 +60,7 @@ const Marketplace = () => {
   const [selectedChatProduct, setSelectedChatProduct] = useState<Product | null>(null);
   const [conversationsModalOpen, setConversationsModalOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<any>(null);
+  const [productsLoading, setProductsLoading] = useState(true);
   
   // Chat functionality
   const { conversations, fetchConversations } = useChat();
@@ -204,6 +206,7 @@ const Marketplace = () => {
   };
 
   const fetchProducts = async () => {
+    setProductsLoading(true);
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -217,6 +220,7 @@ const Marketplace = () => {
         description: "Products could not be loaded.",
         variant: "destructive"
       });
+      setProductsLoading(false);
       return;
     }
 
@@ -242,6 +246,7 @@ const Marketplace = () => {
       });
       setLtcPrices(ltcPricesMap);
     }
+    setProductsLoading(false);
   };
 
   const calculateCategoryCounts = () => {
@@ -420,8 +425,13 @@ const Marketplace = () => {
 
         {/* Products Grid with Modern Cards */}
         <div id="products-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {currentItems.map((product) => (
-            <ProductCard
+          {productsLoading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))
+          ) : (
+            currentItems.map((product) => (
+              <ProductCard
               key={product.id}
               product={product}
               sellerRating={sellerRatings[product.seller_id]}
@@ -435,7 +445,8 @@ const Marketplace = () => {
               isOwner={user?.id === product.seller_id}
               isGuest={!user}
             />
-          ))}
+            ))
+          )}
         </div>
 
         {/* Pagination */}
