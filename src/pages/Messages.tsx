@@ -11,6 +11,7 @@ import { MessageCircle, Search, Send, ArrowLeft, Check, CheckCheck } from 'lucid
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { ConversationSkeleton } from '@/components/skeletons/ConversationSkeleton';
 
 interface ChatMessage {
   id: string;
@@ -206,9 +207,10 @@ export default function Messages() {
 
             <ScrollArea className="flex-1 min-h-0">
               {loading ? (
-                <div className="p-8 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[hsl(280,70%,60%)] mx-auto"></div>
-                  <p className="text-[hsl(240,30%,70%)] mt-4 text-sm">Loading...</p>
+                <div className="p-2">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <ConversationSkeleton key={i} />
+                  ))}
                 </div>
               ) : filteredConversations.length === 0 ? (
                 <div className="p-8 text-center">

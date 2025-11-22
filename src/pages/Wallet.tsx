@@ -1,12 +1,25 @@
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { CreditBalance } from "@/components/CreditBalance";
 import { CreditPurchase } from "@/components/CreditPurchase";
 import { CreditTransactionHistory } from "@/components/CreditTransactionHistory";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { WalletSkeleton } from "@/components/skeletons/WalletSkeleton";
 
 export default function Wallet() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate initial loading
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return <WalletSkeleton />;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Star, Package, Truck, CheckCircle, ExternalLink, ArrowLeft } from 'lucide-react';
 import ReviewModal from '@/components/ReviewModal';
 import SellerProfileModal from '@/components/SellerProfileModal';
+import { OrderCardSkeleton } from '@/components/skeletons/OrderCardSkeleton';
 
 interface Order {
   id: string;
@@ -217,7 +218,11 @@ const Orders: React.FC = () => {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <p className="text-muted-foreground">Loading orders...</p>
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <OrderCardSkeleton key={i} />
+                ))}
+              </div>
             ) : orders.length === 0 ? (
               <p className="text-muted-foreground">You have not placed any orders yet.</p>
             ) : (
