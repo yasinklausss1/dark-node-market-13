@@ -57,6 +57,11 @@
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
+    /* Shimmer Effect */
+    --shimmer-from: hsl(var(--muted));
+    --shimmer-via: hsl(var(--muted-foreground) / 0.1);
+    --shimmer-to: hsl(var(--muted));
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -197,5 +202,14 @@
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
   }
 }
