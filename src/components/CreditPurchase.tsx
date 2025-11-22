@@ -5,53 +5,52 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ShoppingCart, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
 const PRESET_AMOUNTS = [10, 25, 50, 100, 250, 500];
-
 export const CreditPurchase = () => {
   const [customAmount, setCustomAmount] = useState<string>("");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   const handlePurchase = async (amount: number) => {
     try {
       setLoading(true);
-
-      const { data, error } = await supabase.functions.invoke('create-credit-purchase', {
-        body: { creditsAmount: amount }
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('create-credit-purchase', {
+        body: {
+          creditsAmount: amount
+        }
       });
-
-      console.log('Full purchase response:', { data, error });
-
+      console.log('Full purchase response:', {
+        data,
+        error
+      });
       if (error) {
         console.error('Supabase function error:', error);
         throw new Error(error.message || 'Failed to create payment');
       }
-
       const responseData = data;
       console.log('Response data:', responseData);
-
       if (!responseData?.paymentUrl) {
         console.error('Invalid response structure:', responseData);
         throw new Error('No payment URL received from server');
       }
-
       const paymentUrl = responseData.paymentUrl;
       console.log('Opening payment URL:', paymentUrl);
       window.open(paymentUrl, '_blank');
-      
       toast({
         title: "Payment initiated",
-        description: `Opening payment page for ${amount} credits (€${amount})`,
+        description: `Opening payment page for ${amount} credits (€${amount})`
       });
     } catch (error: any) {
       console.error('Error creating purchase:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to create payment. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -59,9 +58,7 @@ export const CreditPurchase = () => {
       setCustomAmount("");
     }
   };
-
-  return (
-    <Card>
+  return <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ShoppingCart className="h-5 w-5" />
@@ -75,21 +72,14 @@ export const CreditPurchase = () => {
         <div>
           <p className="text-sm font-medium mb-3">Quick select:</p>
           <div className="grid grid-cols-3 gap-2">
-            {PRESET_AMOUNTS.map((amount) => (
-              <Button
-                key={amount}
-                variant={selectedAmount === amount ? "default" : "outline"}
-                onClick={() => {
-                  setSelectedAmount(amount);
-                  setCustomAmount("");
-                }}
-                disabled={loading}
-              >
+            {PRESET_AMOUNTS.map(amount => <Button key={amount} variant={selectedAmount === amount ? "default" : "outline"} onClick={() => {
+            setSelectedAmount(amount);
+            setCustomAmount("");
+          }} disabled={loading}>
                 {amount} Credits
                 <br />
-                <span className="text-xs">€{amount}</span>
-              </Button>
-            ))}
+                
+              </Button>)}
           </div>
         </div>
 
@@ -104,46 +94,27 @@ export const CreditPurchase = () => {
 
         <div>
           <p className="text-sm font-medium mb-2">Custom amount:</p>
-          <Input
-            type="number"
-            min="1"
-            placeholder="Enter amount"
-            value={customAmount}
-            onChange={(e) => {
-              setCustomAmount(e.target.value);
-              const amount = parseInt(e.target.value);
-              if (amount && amount > 0) {
-                setSelectedAmount(amount);
-              } else {
-                setSelectedAmount(null);
-              }
-            }}
-            disabled={loading}
-          />
+          <Input type="number" min="1" placeholder="Enter amount" value={customAmount} onChange={e => {
+          setCustomAmount(e.target.value);
+          const amount = parseInt(e.target.value);
+          if (amount && amount > 0) {
+            setSelectedAmount(amount);
+          } else {
+            setSelectedAmount(null);
+          }
+        }} disabled={loading} />
         </div>
 
-        {selectedAmount && (
-          <Button
-            onClick={() => handlePurchase(selectedAmount)}
-            disabled={loading}
-            className="w-full"
-            size="lg"
-          >
-            {loading ? (
-              "Processing..."
-            ) : (
-              <>
+        {selectedAmount && <Button onClick={() => handlePurchase(selectedAmount)} disabled={loading} className="w-full" size="lg">
+            {loading ? "Processing..." : <>
                 Pay €{selectedAmount} for {selectedAmount} Credits
                 <ExternalLink className="ml-2 h-4 w-4" />
-              </>
-            )}
-          </Button>
-        )}
+              </>}
+          </Button>}
 
         <p className="text-xs text-muted-foreground text-center">
           You will be redirected to a secure payment page where you can pay with cryptocurrency
         </p>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
