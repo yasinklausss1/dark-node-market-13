@@ -70,7 +70,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     e.stopPropagation();
     onStartChat(product);
   };
-  return <Card className="group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-b from-[hsl(240,50%,8%)] to-[hsl(240,50%,6%)] border-[hsl(240,40%,18%)] hover:shadow-2xl hover:border-[hsl(280,70%,55%)]" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+  return <Card onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} className="group relative overflow-hidden transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-b from-[hsl(240,50%,8%)] to-[hsl(240,50%,6%)] border-[hsl(240,40%,18%)] hover:shadow-2xl hover:border-[hsl(280,70%,55%)] rounded">
       {/* Title Section */}
       <CardHeader className="pb-3 px-6 pt-6 text-center">
         <div className="relative">
@@ -78,11 +78,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {product.title}
           </CardTitle>
           {/* SALE Badge */}
-          {product.stock > 0 && product.stock <= 5 && (
-            <Badge className="absolute -top-2 -right-2 bg-gradient-to-r from-[hsl(280,80%,65%)] to-[hsl(270,80%,60%)] text-white border-0 px-3 py-1 text-xs font-bold shadow-lg animate-pulse">
+          {product.stock > 0 && product.stock <= 5 && <Badge className="absolute -top-2 -right-2 bg-gradient-to-r from-[hsl(280,80%,65%)] to-[hsl(270,80%,60%)] text-white border-0 px-3 py-1 text-xs font-bold shadow-lg animate-pulse">
               SALE!
-            </Badge>
-          )}
+            </Badge>}
         </div>
       </CardHeader>
 
@@ -145,10 +143,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Action Button */}
-        <Button onClick={(e) => {
-          e.stopPropagation();
-          onProductClick(product);
-        }} className="w-full bg-gradient-to-r from-[hsl(280,70%,60%)] to-[hsl(270,70%,55%)] hover:from-[hsl(280,70%,65%)] hover:to-[hsl(270,70%,60%)] text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 py-6 text-lg font-semibold" disabled={product.stock === 0 || isOwner || isGuest}>
+        <Button onClick={e => {
+        e.stopPropagation();
+        onProductClick(product);
+      }} className="w-full bg-gradient-to-r from-[hsl(280,70%,60%)] to-[hsl(270,70%,55%)] hover:from-[hsl(280,70%,65%)] hover:to-[hsl(270,70%,60%)] text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 py-6 text-lg font-semibold" disabled={product.stock === 0 || isOwner || isGuest}>
           {isGuest ? 'Login to Purchase' : isOwner ? 'Your Product' : product.stock === 0 ? 'Out of Stock' : 'More Info'}
         </Button>
       </CardContent>
