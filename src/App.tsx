@@ -3,7 +3,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+import { PageTransition } from "./components/PageTransition";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./hooks/useCart";
@@ -32,6 +34,37 @@ import AgeVerification from "./pages/Legal/AgeVerification";
 
 const queryClient = new QueryClient();
 
+const AnimatedRoutes = () => {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<PageTransition><Index /></PageTransition>} />
+        <Route path="/auth" element={<PageTransition><Auth /></PageTransition>} />
+        <Route path="/invite/:username" element={<PageTransition><InviteRedirect /></PageTransition>} />
+        <Route path="/marketplace" element={<PageTransition><Marketplace /></PageTransition>} />
+        <Route path="/messages" element={<PageTransition><Messages /></PageTransition>} />
+        <Route path="/referral" element={<PageTransition><ReferralProgram /></PageTransition>} />
+        <Route path="/admin" element={<PageTransition><AdminPanel /></PageTransition>} />
+        <Route path="/seller" element={<PageTransition><SellerDashboard /></PageTransition>} />
+        <Route path="/wallet" element={<PageTransition><Wallet /></PageTransition>} />
+        <Route path="/settings" element={<PageTransition><Settings /></PageTransition>} />
+        <Route path="/orders" element={<PageTransition><Orders /></PageTransition>} />
+        <Route path="/legal/imprint" element={<PageTransition><Imprint /></PageTransition>} />
+        <Route path="/legal/privacy" element={<PageTransition><Privacy /></PageTransition>} />
+        <Route path="/legal/terms" element={<PageTransition><Terms /></PageTransition>} />
+        <Route path="/legal/buyer-seller-terms" element={<PageTransition><BuyerSellerTerms /></PageTransition>} />
+        <Route path="/legal/withdrawal" element={<PageTransition><Withdrawal /></PageTransition>} />
+        <Route path="/legal/disclaimer" element={<PageTransition><Disclaimer /></PageTransition>} />
+        <Route path="/legal/age-verification" element={<PageTransition><AgeVerification /></PageTransition>} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
+      </Routes>
+    </AnimatePresence>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -45,28 +78,7 @@ const App = () => (
                 <AgeVerificationModal />
                 <CookieBanner />
                 <div className="flex-1">
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/invite/:username" element={<InviteRedirect />} />
-                    <Route path="/marketplace" element={<Marketplace />} />
-                    <Route path="/messages" element={<Messages />} />
-                    <Route path="/referral" element={<ReferralProgram />} />
-                    <Route path="/admin" element={<AdminPanel />} />
-                    <Route path="/seller" element={<SellerDashboard />} />
-                    <Route path="/wallet" element={<Wallet />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/orders" element={<Orders />} />
-                    <Route path="/legal/imprint" element={<Imprint />} />
-                    <Route path="/legal/privacy" element={<Privacy />} />
-                    <Route path="/legal/terms" element={<Terms />} />
-                    <Route path="/legal/buyer-seller-terms" element={<BuyerSellerTerms />} />
-                    <Route path="/legal/withdrawal" element={<Withdrawal />} />
-                    <Route path="/legal/disclaimer" element={<Disclaimer />} />
-                    <Route path="/legal/age-verification" element={<AgeVerification />} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                  <AnimatedRoutes />
                 </div>
                 <Footer />
               </div>
