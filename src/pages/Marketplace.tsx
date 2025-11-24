@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, LogOut, Bitcoin, Wallet, Settings, Users, Star, Share2, Menu, ShoppingBag, MessageCircle } from 'lucide-react';
+import { Search, LogOut, Bitcoin, Wallet, Settings, Users, Star, Share2, Menu, ShoppingBag, MessageCircle, ChevronLeft, Newspaper } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import ProductModal from '@/components/ProductModal';
 import ShoppingCart from '@/components/ShoppingCart';
 import SellerProfileModal from '@/components/SellerProfileModal';
@@ -62,6 +63,7 @@ const Marketplace = () => {
   const [conversationsModalOpen, setConversationsModalOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<any>(null);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [newsDrawerOpen, setNewsDrawerOpen] = useState(false);
   
   // Chat functionality
   const { conversations, fetchConversations } = useChat();
@@ -369,18 +371,6 @@ const Marketplace = () => {
             </p>
           </div>
         )}
-        
-        {/* News Section */}
-        <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <NewsPanel />
-          </div>
-          {profile?.role === 'admin' && (
-            <div className="lg:col-span-1">
-              <NewsEditor />
-            </div>
-          )}
-        </div>
 
         {/* Modern Hero Section */}
         <ModernHeroSection 
@@ -535,6 +525,34 @@ const Marketplace = () => {
           </Badge>
         )}
       </Button>
+
+      {/* News Drawer Toggle Button */}
+      <Sheet open={newsDrawerOpen} onOpenChange={setNewsDrawerOpen}>
+        <SheetTrigger asChild>
+          <Button
+            className="fixed top-20 right-0 z-50 h-12 rounded-l-lg rounded-r-none shadow-lg bg-primary hover:bg-primary/90"
+            size="icon"
+          >
+            <Newspaper className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+          <div className="space-y-6 pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Newspaper className="h-6 w-6" />
+              <h2 className="text-2xl font-bold">News & Updates</h2>
+            </div>
+            
+            <NewsPanel />
+            
+            {profile?.role === 'admin' && (
+              <div className="mt-6 pt-6 border-t">
+                <NewsEditor />
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Shopping Cart */}
       <ShoppingCart
