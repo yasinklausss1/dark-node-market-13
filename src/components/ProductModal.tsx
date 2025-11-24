@@ -243,50 +243,45 @@ const ProductModal: React.FC<ProductModalProps> = ({
             <Button 
               variant="outline" 
               onClick={() => onOpenChange(false)} 
-              className="flex-1 h-12 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white hover:bg-[hsl(240,45%,20%)] hover:border-[hsl(240,40%,30%)] transition-all font-medium"
+              className={`${user && product.seller_id === user.id ? 'w-full' : 'flex-1'} h-12 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white hover:bg-[hsl(240,45%,20%)] hover:border-[hsl(240,40%,30%)] transition-all font-medium`}
             >
               Back
             </Button>
-            <Button 
-              className="flex-1 h-12 bg-gradient-to-r from-[hsl(280,70%,60%)] to-[hsl(270,70%,55%)] hover:from-[hsl(280,70%,65%)] hover:to-[hsl(270,70%,60%)] text-white border-0 shadow-lg hover:shadow-xl transition-all font-semibold" 
-              disabled={product.stock === 0} 
-              onClick={() => {
-                // Check if user is logged in
-                if (!user) {
+            
+            {/* Only show Buy Now button if user is not the owner */}
+            {(!user || product.seller_id !== user.id) && (
+              <Button 
+                className="flex-1 h-12 bg-gradient-to-r from-[hsl(280,70%,60%)] to-[hsl(270,70%,55%)] hover:from-[hsl(280,70%,65%)] hover:to-[hsl(270,70%,60%)] text-white border-0 shadow-lg hover:shadow-xl transition-all font-semibold" 
+                disabled={product.stock === 0} 
+                onClick={() => {
+                  // Check if user is logged in
+                  if (!user) {
+                    toast({
+                      title: "Login Required",
+                      description: "Please sign in to add items to your cart.",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  
+                  addToCart({
+                    id: product.id,
+                    title: product.title,
+                    price: product.price,
+                    category: product.category,
+                    image_url: product.image_url
+                  }, quantity);
                   toast({
-                    title: "Login Required",
-                    description: "Please sign in to add items to your cart.",
-                    variant: "destructive"
+                    title: "Added to Cart",
+                    description: `${product.title} has been added to your cart.`
                   });
-                  return;
-                }
-                
-                // Prevent purchasing own product if logged in
-                if (user && product.seller_id === user.id) {
-                  toast({
-                    title: "Cannot Add to Cart",
-                    description: "You cannot purchase your own product.",
-                    variant: "destructive"
-                  });
-                  return;
-                }
-                addToCart({
-                  id: product.id,
-                  title: product.title,
-                  price: product.price,
-                  category: product.category,
-                  image_url: product.image_url
-                }, quantity);
-                toast({
-                  title: "Added to Cart",
-                  description: `${product.title} has been added to your cart.`
-                });
-                onOpenChange(false);
-              }}
-            >
-              <ShoppingCart className="h-5 w-5 mr-2" />
-              <span>Buy Now</span>
-            </Button>
+                  onOpenChange(false);
+                }}
+              >
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                <span>Buy Now</span>
+              </Button>
+            )}
           </div>
         </div>
 
