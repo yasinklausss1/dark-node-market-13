@@ -26,7 +26,7 @@ export const WatermarkedImage: React.FC<WatermarkedImageProps> = ({
         className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
       >
         <div
-          className="text-white font-bold text-4xl md:text-6xl lg:text-7xl"
+          className="font-cinzel text-white font-bold text-4xl md:text-6xl lg:text-7xl"
           style={{
             opacity: 0.15,
             textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
