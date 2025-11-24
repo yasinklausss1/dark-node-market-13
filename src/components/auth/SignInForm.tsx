@@ -4,6 +4,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff } from 'lucide-react';
+import { z } from 'zod';
+import { toast } from 'sonner';
+
+// Validation schema
+const signInSchema = z.object({
+  identifier: z.string()
+    .trim()
+    .min(1, 'Username or email is required')
+    .refine(
+      (value) => {
+        // If contains @, validate as email
+        if (value.includes('@')) {
+          return z.string().email().safeParse(value).success;
+        }
+        // Otherwise validate as username (alphanumeric, underscore, 3-30 chars)
+        return /^[a-zA-Z0-9_]{3,30}$/.test(value);
+      },
+      'Invalid username or email format'
+    ),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+});
 
 interface SignInFormProps {
   onSubmit: (identifier: string, password: string, isEmail: boolean) => Promise<void>;
@@ -14,16 +36,41 @@ interface SignInFormProps {
 const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading, onForgotPassword }) => {
   const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<{ identifier?: string; password?: string }>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }));
+    // Clear error for this field
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+
+    // Validate with Zod
+    const validation = signInSchema.safeParse(formData);
+    
+    if (!validation.success) {
+      const fieldErrors: { identifier?: string; password?: string } = {};
+      validation.error.errors.forEach((error) => {
+        const field = error.path[0] as 'identifier' | 'password';
+        fieldErrors[field] = error.message;
+      });
+      setErrors(fieldErrors);
+      toast.error('Please fix the errors in the form');
+      return;
+    }
+
     // Check if identifier is an email
     const isEmail = formData.identifier.includes('@');
     await onSubmit(formData.identifier, formData.password, isEmail);
@@ -48,8 +95,11 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading, onForgotPa
               placeholder="Username or E-Mail"
               value={formData.identifier}
               onChange={handleInputChange}
-              required
+              className={errors.identifier ? 'border-destructive' : ''}
             />
+            {errors.identifier && (
+              <p className="text-sm text-destructive">{errors.identifier}</p>
+            )}
           </div>
           
           <div className="space-y-2">
@@ -62,7 +112,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading, onForgotPa
                 placeholder="Your password"
                 value={formData.password}
                 onChange={handleInputChange}
-                required
+                className={errors.password ? 'border-destructive' : ''}
               />
               <Button
                 type="button"
@@ -78,6 +128,9 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading, onForgotPa
                 )}
               </Button>
             </div>
+            {errors.password && (
+              <p className="text-sm text-destructive">{errors.password}</p>
+            )}
             {onForgotPassword && (
               <div className="flex justify-end">
                 <Button

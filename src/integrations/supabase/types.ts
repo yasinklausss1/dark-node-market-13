@@ -1160,6 +1160,30 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_verifications: {
         Row: {
           created_at: string
@@ -1421,9 +1445,20 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_user_primary_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
       is_user_verified: { Args: { user_uuid: string }; Returns: boolean }
       make_user_admin: { Args: { user_email: string }; Returns: undefined }
@@ -1446,6 +1481,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "seller" | "user"
       order_status:
         | "pending"
         | "confirmed"
@@ -1588,6 +1624,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "seller", "user"],
       order_status: [
         "pending",
         "confirmed",
