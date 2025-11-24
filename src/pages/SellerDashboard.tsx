@@ -22,6 +22,7 @@ import { Switch } from '@/components/ui/switch';
 import { useChat } from '@/hooks/useChat';
 import { ConversationsModal } from '@/components/ConversationsModal';
 import { ChatModal } from '@/components/ChatModal';
+import { FansignUpload } from '@/components/FansignUpload';
 interface Product {
   id: string;
   title: string;
@@ -49,12 +50,19 @@ interface Order {
   tracking_number: string | null;
   tracking_url: string | null;
   buyer_username: string;
+  fansign_image_url: string | null;
+  fansign_uploaded_at: string | null;
   items: {
     order_item_id: string;
     quantity: number;
     price_eur: number;
     product_title: string | null;
   }[] | null;
+  addons?: Array<{
+    addon_name: string;
+    custom_value: string | null;
+    price_eur: number;
+  }>;
 }
 const SellerDashboard = () => {
   const {
@@ -144,7 +152,25 @@ const SellerDashboard = () => {
       console.error('Error fetching seller orders:', error);
       return;
     }
-    setOrders(data as any || []);
+    
+    const ordersData = (data as any) || [];
+    
+    // Fetch add-ons for each order
+    const ordersWithAddons = await Promise.all(
+      ordersData.map(async (order: any) => {
+        const { data: addonsData } = await supabase
+          .from('order_addon_selections')
+          .select('addon_name, custom_value, price_eur')
+          .eq('order_id', order.id);
+        
+        return {
+          ...order,
+          addons: addonsData || []
+        };
+      })
+    );
+    
+    setOrders(ordersWithAddons);
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -682,19 +708,45 @@ const SellerDashboard = () => {
                               </p>)}
                           </div>
 
+                          {/* Add-ons Section */}
+                          {order.addons && order.addons.length > 0 && (
+                            <div className="mt-3 p-2 bg-muted/50 rounded">
+                              <h4 className="font-medium text-sm mb-1">Add-ons:</h4>
+                              {order.addons.map((addon, idx) => (
+                                <p key={idx} className="text-xs text-muted-foreground">
+                                  • {addon.addon_name}
+                                  {addon.custom_value && `: "${addon.custom_value}"`}
+                                  {addon.price_eur > 0 && ` (+€${addon.price_eur.toFixed(2)})`}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+
                           {/* Update Status Button */}
                           <Button variant="outline" size="sm" className="mt-3" onClick={() => handleUpdateOrderStatus(order.id, order.order_status)}>
                             Update Status
                           </Button>
                         </div>
                         
-                        <div>
-                          <h4 className="font-medium text-sm mb-2">Shipping Address:</h4>
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            <p>{order.shipping_first_name} {order.shipping_last_name}</p>
-                            <p>{order.shipping_street} {order.shipping_house_number}</p>
-                            <p>{order.shipping_postal_code} {order.shipping_city}</p>
-                            <p>{order.shipping_country}</p>
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-medium text-sm mb-2">Shipping Address:</h4>
+                            <div className="text-sm text-muted-foreground space-y-1">
+                              <p>{order.shipping_first_name} {order.shipping_last_name}</p>
+                              <p>{order.shipping_street} {order.shipping_house_number}</p>
+                              <p>{order.shipping_postal_code} {order.shipping_city}</p>
+                              <p>{order.shipping_country}</p>
+                            </div>
+                          </div>
+
+                          {/* Fansign Upload Section */}
+                          <div>
+                            <h4 className="font-medium text-sm mb-2">Fansign Image:</h4>
+                            <FansignUpload
+                              orderId={order.id}
+                              currentImageUrl={order.fansign_image_url}
+                              onUploadSuccess={() => fetchOrders()}
+                            />
                           </div>
                         </div>
                       </div>

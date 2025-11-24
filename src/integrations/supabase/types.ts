@@ -633,6 +633,8 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          fansign_image_url: string | null
+          fansign_uploaded_at: string | null
           id: string
           order_status: Database["public"]["Enums"]["order_status"] | null
           shipping_city: string | null
@@ -653,6 +655,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          fansign_image_url?: string | null
+          fansign_uploaded_at?: string | null
           id?: string
           order_status?: Database["public"]["Enums"]["order_status"] | null
           shipping_city?: string | null
@@ -673,6 +677,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          fansign_image_url?: string | null
+          fansign_uploaded_at?: string | null
           id?: string
           order_status?: Database["public"]["Enums"]["order_status"] | null
           shipping_city?: string | null

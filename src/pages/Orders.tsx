@@ -9,6 +9,7 @@ import { Star, Package, Truck, CheckCircle, ExternalLink, ArrowLeft } from 'luci
 import ReviewModal from '@/components/ReviewModal';
 import SellerProfileModal from '@/components/SellerProfileModal';
 import { OrderCardSkeleton } from '@/components/skeletons/OrderCardSkeleton';
+import { FansignImageDisplay } from '@/components/FansignImageDisplay';
 
 interface Order {
   id: string;
@@ -24,6 +25,8 @@ interface Order {
   shipping_postal_code: string | null;
   shipping_city: string | null;
   shipping_country: string | null;
+  fansign_image_url: string | null;
+  fansign_uploaded_at: string | null;
 }
 
 interface OrderWithSellers extends Order {
@@ -42,11 +45,19 @@ interface OrderItem {
   price_eur: number;
 }
 
+interface OrderAddon {
+  id: string;
+  addon_name: string;
+  custom_value: string | null;
+  price_eur: number;
+}
+
 const Orders: React.FC = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderWithSellers[]>([]);
   const [itemsByOrder, setItemsByOrder] = useState<Record<string, OrderItem[]>>({});
+  const [addonsByOrder, setAddonsByOrder] = useState<Record<string, OrderAddon[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState('');
@@ -129,8 +140,29 @@ const Orders: React.FC = () => {
             });
           });
           setItemsByOrder(grouped);
+
+          // Fetch add-ons for all orders
+          const { data: addonsData, error: addonsError } = await supabase
+            .from('order_addon_selections')
+            .select('*')
+            .in('order_id', orderIds);
+          
+          if (!addonsError && addonsData) {
+            const addonGrouped: Record<string, OrderAddon[]> = {};
+            addonsData.forEach((addon: any) => {
+              if (!addonGrouped[addon.order_id]) addonGrouped[addon.order_id] = [];
+              addonGrouped[addon.order_id].push({
+                id: addon.id,
+                addon_name: addon.addon_name,
+                custom_value: addon.custom_value,
+                price_eur: Number(addon.price_eur),
+              });
+            });
+            setAddonsByOrder(addonGrouped);
+          }
         } else {
           setItemsByOrder({});
+          setAddonsByOrder({});
         }
       } catch (e) {
         console.error('Error loading orders:', e);
@@ -281,6 +313,25 @@ const Orders: React.FC = () => {
                           ))}
                         </ul>
 
+                        {/* Add-ons */}
+                        {addonsByOrder[order.id] && addonsByOrder[order.id].length > 0 && (
+                          <div className="mt-3">
+                            <h4 className="font-medium text-sm mb-1">Add-ons</h4>
+                            <ul className="text-sm text-muted-foreground space-y-1">
+                              {addonsByOrder[order.id].map((addon) => (
+                                <li key={addon.id} className="flex items-start gap-2">
+                                  <span>•</span>
+                                  <span>
+                                    {addon.addon_name}
+                                    {addon.custom_value && `: "${addon.custom_value}"`}
+                                    {addon.price_eur > 0 && ` (+€${addon.price_eur.toFixed(2)})`}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
                         {/* Sellers and Reviews */}
                         {order.sellers.length > 0 && (
                           <div className="mt-3">
@@ -313,11 +364,23 @@ const Orders: React.FC = () => {
                         )}
                       </div>
 
-                      <div>
-                        <h4 className="font-medium text-sm">Shipping Address</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {order.shipping_first_name} {order.shipping_last_name}, {order.shipping_street} {order.shipping_house_number}, {order.shipping_postal_code} {order.shipping_city}, {order.shipping_country}
-                        </p>
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-medium text-sm">Shipping Address</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {order.shipping_first_name} {order.shipping_last_name}, {order.shipping_street} {order.shipping_house_number}, {order.shipping_postal_code} {order.shipping_city}, {order.shipping_country}
+                          </p>
+                        </div>
+
+                        {/* Fansign Image */}
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">Fansign</h4>
+                          <FansignImageDisplay
+                            imageUrl={order.fansign_image_url}
+                            uploadedAt={order.fansign_uploaded_at}
+                            orderId={order.id}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
