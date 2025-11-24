@@ -86,8 +86,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
       {/* Image Section with Carousel */}
       <div 
-        className="relative aspect-square overflow-hidden mx-4 mb-4 rounded-lg border border-[hsl(240,40%,18%)] bg-gradient-to-br from-[hsl(240,45%,10%)] to-[hsl(240,45%,8%)] cursor-pointer transition-opacity hover:opacity-90"
-        onClick={() => onProductClick(product)}
+        className={`relative aspect-square overflow-hidden mx-4 mb-4 rounded-lg border border-[hsl(240,40%,18%)] bg-gradient-to-br from-[hsl(240,45%,10%)] to-[hsl(240,45%,8%)] ${isGuest ? '' : 'cursor-pointer transition-opacity hover:opacity-90'}`}
+        onClick={() => {
+          if (!isGuest) {
+            onProductClick(product);
+          }
+        }}
       >
         {productImages.length > 0 ? productImages.length === 1 ?
       // Single image - no carousel needed
@@ -148,7 +152,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Action Button */}
         <Button onClick={e => {
         e.stopPropagation();
-        onProductClick(product);
+        if (!isGuest) {
+          onProductClick(product);
+        }
       }} className="w-full bg-gradient-to-r from-[hsl(280,70%,60%)] to-[hsl(270,70%,55%)] hover:from-[hsl(280,70%,65%)] hover:to-[hsl(270,70%,60%)] text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 py-6 text-lg font-semibold" disabled={product.stock === 0 || isOwner || isGuest}>
           {isGuest ? 'Login to Purchase' : isOwner ? 'Your Product' : product.stock === 0 ? 'Out of Stock' : 'More Info'}
         </Button>
