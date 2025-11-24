@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
 
 interface NewsItem {
+  id: string;
   content: string;
   created_at: string;
 }
@@ -15,17 +16,16 @@ const formatDate = (iso: string) => {
 };
 
 const NewsPanel: React.FC = () => {
-  const [news, setNews] = useState<NewsItem | null>(null);
+  const [news, setNews] = useState<NewsItem[]>([]);
 
   useEffect(() => {
     const fetchLatest = async () => {
       const { data, error } = await supabase
         .from('news')
-        .select('content, created_at')
+        .select('id, content, created_at')
         .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!error) setNews(data);
+        .limit(10);
+      if (!error && data) setNews(data);
     };
     fetchLatest();
 
@@ -41,17 +41,26 @@ const NewsPanel: React.FC = () => {
     };
   }, []);
 
-  if (!news) return null;
+  if (!news || news.length === 0) return null;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>News</CardTitle>
-        <CardDescription>Updated: {formatDate(news.created_at)}</CardDescription>
+        <CardDescription>Latest updates and announcements</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="prose prose-sm max-w-none dark:prose-invert">
-          <ReactMarkdown>{news.content}</ReactMarkdown>
+        <div className="space-y-4 max-h-96 overflow-y-auto">
+          {news.map((item) => (
+            <div key={item.id} className="border-b last:border-b-0 pb-4 last:pb-0">
+              <div className="text-xs text-muted-foreground mb-2">
+                {formatDate(item.created_at)}
+              </div>
+              <div className="prose prose-sm max-w-none dark:prose-invert">
+                <ReactMarkdown>{item.content}</ReactMarkdown>
+              </div>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
