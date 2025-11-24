@@ -8,6 +8,38 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { z } from 'zod';
+import { toast } from 'sonner';
+
+// Validation schemas
+const usernameSchema = z.string()
+  .trim()
+  .min(3, 'Username must be at least 3 characters')
+  .max(30, 'Username must be less than 30 characters')
+  .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores');
+
+const emailSchema = z.string()
+  .trim()
+  .email('Invalid email address')
+  .max(255, 'Email must be less than 255 characters');
+
+const passwordSchema = z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number');
+
+const signUpSchema = z.object({
+  identifier: z.string(),
+  password: passwordSchema,
+  confirmPassword: z.string(),
+  birthDay: z.string().min(1, 'Day is required'),
+  birthMonth: z.string().min(1, 'Month is required'),
+  birthYear: z.string().min(1, 'Year is required'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+});
 
 interface SignUpFormProps {
   onSubmit: (identifier: string, password: string, dateOfBirth: Date, isEmail: boolean) => Promise<void>;
@@ -112,6 +144,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
     e.preventDefault();
     
     if (!validateForm()) {
+      toast.error('Please fix the errors in the form');
       return;
     }
 
