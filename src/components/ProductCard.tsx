@@ -87,7 +87,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Image Section with Carousel */}
       <div 
         className="relative aspect-square overflow-hidden mx-4 mb-4 rounded-lg border border-[hsl(240,40%,18%)] bg-gradient-to-br from-[hsl(240,45%,10%)] to-[hsl(240,45%,8%)] cursor-pointer transition-opacity hover:opacity-90"
-        onClick={() => !isGuest && product.stock > 0 && !isOwner && onProductClick(product)}
+        onClick={() => onProductClick(product)}
       >
         {productImages.length > 0 ? productImages.length === 1 ?
       // Single image - no carousel needed
