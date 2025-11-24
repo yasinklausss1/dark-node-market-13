@@ -22,6 +22,7 @@ import { ModernHeroSection } from '@/components/ModernHeroSection';
 import { ProductCard } from '@/components/ProductCard';
 import { ChatModal } from '@/components/ChatModal';
 import { ProductCardSkeleton } from '@/components/skeletons/ProductCardSkeleton';
+import NewsEditor from '@/components/NewsEditor';
 
 import { ConversationsModal } from '@/components/ConversationsModal';
 import { useChat } from '@/hooks/useChat';
@@ -368,8 +369,17 @@ const Marketplace = () => {
             </p>
           </div>
         )}
-        <div className="mb-6">
-          <NewsPanel />
+        
+        {/* News Section */}
+        <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <NewsPanel />
+          </div>
+          {profile?.role === 'admin' && (
+            <div className="lg:col-span-1">
+              <NewsEditor />
+            </div>
+          )}
         </div>
 
         {/* Modern Hero Section */}
