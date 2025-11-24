@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import { Coins, ShoppingCart, User, Minus, Plus, MessageCircle, Share2 } from 'lucide-react';
+import { Coins, ShoppingCart, User, Minus, Plus, MessageCircle, Share2, Edit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { WatermarkedImage } from '@/components/ui/watermarked-image';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,10 +47,12 @@ const ProductModal: React.FC<ProductModalProps> = ({
     user
   } = useAuth();
   const isGuest = !user;
+  const isOwner = user && product && product.seller_id === user.id;
   const {
     toast
   } = useToast();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [quantity, setQuantity] = useState<number>(1);
   const [sellerUsername, setSellerUsername] = useState<string>('');
   const [addonSelections, setAddonSelections] = useState<AddonSelection[]>([]);
@@ -238,18 +241,30 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </Button>
           )}
           
-          {/* Bottom Row - Back and Buy */}
+          {/* Bottom Row - Back and Edit/Buy */}
           <div className="flex space-x-3">
             <Button 
               variant="outline" 
               onClick={() => onOpenChange(false)} 
-              className={`${user && product.seller_id === user.id ? 'w-full' : 'flex-1'} h-12 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white hover:bg-[hsl(240,45%,20%)] hover:border-[hsl(240,40%,30%)] transition-all font-medium`}
+              className={`${isOwner ? 'w-full' : 'flex-1'} h-12 bg-[hsl(240,45%,15%)] border-[hsl(240,40%,25%)] text-white hover:bg-[hsl(240,45%,20%)] hover:border-[hsl(240,40%,30%)] transition-all font-medium`}
             >
               Back
             </Button>
             
-            {/* Only show Buy Now button if user is not the owner */}
-            {(!user || product.seller_id !== user.id) && (
+            {/* Show Edit Product button if user is the owner */}
+            {isOwner ? (
+              <Button 
+                className="flex-1 h-12 bg-gradient-to-r from-[hsl(200,70%,50%)] to-[hsl(210,70%,55%)] hover:from-[hsl(200,70%,55%)] hover:to-[hsl(210,70%,60%)] text-white border-0 shadow-lg hover:shadow-xl transition-all font-semibold" 
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate('/seller-dashboard');
+                }}
+              >
+                <Edit className="h-5 w-5 mr-2" />
+                <span>Edit Product</span>
+              </Button>
+            ) : (
+              /* Show Buy Now button for non-owners */
               <Button 
                 className="flex-1 h-12 bg-gradient-to-r from-[hsl(280,70%,60%)] to-[hsl(270,70%,55%)] hover:from-[hsl(280,70%,65%)] hover:to-[hsl(270,70%,60%)] text-white border-0 shadow-lg hover:shadow-xl transition-all font-semibold" 
                 disabled={product.stock === 0} 
