@@ -1,18 +1,15 @@
 import { Link } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
-
 const Footer = () => {
   const currentYear = new Date().getFullYear();
-
-  return (
-    <footer className="border-t bg-background mt-auto">
+  return <footer className="border-t bg-background mt-auto">
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-6">
           {/* About Section */}
           <div>
             <h3 className="font-semibold text-foreground mb-4">About</h3>
             <p className="text-sm text-muted-foreground">
-              A secure marketplace for digital content creators and buyers.
+              A marketplace for digital content creators and buyers.
             </p>
           </div>
 
@@ -97,8 +94,6 @@ const Footer = () => {
           </p>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;
