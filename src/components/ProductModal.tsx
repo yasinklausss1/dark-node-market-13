@@ -16,18 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { TelegramIntegration } from '@/components/TelegramIntegration';
 import { ProductAddonsSelection, AddonSelection } from '@/components/ProductAddonsSelection';
 import { useIsMobile } from '@/hooks/use-mobile';
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  category: string;
-  image_url: string | null;
-  is_active: boolean;
-  created_at: string;
-  seller_id: string;
-  stock: number;
-}
+import { Product } from '@/types/Product';
+
 interface ProductModalProps {
   product: Product | null;
   open: boolean;

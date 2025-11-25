@@ -23,17 +23,8 @@ import { useChat } from '@/hooks/useChat';
 import { ConversationsModal } from '@/components/ConversationsModal';
 import { ChatModal } from '@/components/ChatModal';
 import { FansignUpload } from '@/components/FansignUpload';
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  category: string;
-  image_url: string;
-  is_active: boolean;
-  created_at: string;
-  stock: number;
-}
+import { Product } from '@/types/Product';
+
 interface Order {
   id: string;
   user_id: string;
@@ -83,7 +74,8 @@ const SellerDashboard = () => {
     price: '',
     category: '',
     imageUrl: '',
-    stock: ''
+    stock: '',
+    fansignDeliveryDays: '1-2' as '1-2' | '3' | '1-4'
   });
   const [productImages, setProductImages] = useState<string[]>([]);
   const [enableBulkDiscount, setEnableBulkDiscount] = useState(false);
@@ -138,7 +130,7 @@ const SellerDashboard = () => {
       console.error('Error fetching products:', error);
       return;
     }
-    setProducts(data || []);
+    setProducts((data || []) as Product[]);
   };
   const fetchOrders = async () => {
     if (!user) return;
@@ -197,7 +189,8 @@ const SellerDashboard = () => {
       image_url: formData.imageUrl || null,
       seller_id: user.id,
       is_active: true,
-      stock: parseInt(formData.stock)
+      stock: parseInt(formData.stock),
+      fansign_delivery_days: formData.fansignDeliveryDays
     }).select().single();
     if (error) {
       toast({
@@ -271,7 +264,8 @@ const SellerDashboard = () => {
         price: '',
         category: '',
         imageUrl: '',
-        stock: ''
+        stock: '',
+        fansignDeliveryDays: '1-2' as '1-2' | '3' | '1-4'
       });
       setEnableBulkDiscount(false);
       setBulkDiscountData({
@@ -502,6 +496,23 @@ const SellerDashboard = () => {
                       ...formData,
                       stock: e.target.value
                     })} required />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="fansignDeliveryDays">Fansign Lieferzeit (Tage)</Label>
+                      <Select value={formData.fansignDeliveryDays} onValueChange={value => setFormData({
+                      ...formData,
+                      fansignDeliveryDays: value as '1-2' | '3' | '1-4'
+                    })} required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Wähle Lieferzeit" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1-2">1-2 Tage</SelectItem>
+                          <SelectItem value="3">3 Tage</SelectItem>
+                          <SelectItem value="1-4">1-4 Tage</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div>
