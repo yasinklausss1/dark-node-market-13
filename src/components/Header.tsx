@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, LogOut, Wallet, Settings, ShoppingBag, MessageCircle, LayoutDashboard, Shield, Gift } from 'lucide-react';
 import { useState } from 'react';
-import oracleLogo from '@/assets/oracle-market-logo.png';
 
 export const Header = () => {
   const { user, profile, signOut } = useAuth();
@@ -19,11 +18,9 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
         <Link to="/marketplace" className="flex items-center space-x-2">
-          <img 
-            src={oracleLogo} 
-            alt="Oracle Market" 
-            className="h-12 w-auto drop-shadow-[0_0_20px_rgba(168,85,247,0.6)] hover:drop-shadow-[0_0_25px_rgba(168,85,247,0.8)] transition-all"
-          />
+          <h1 className="text-2xl font-bold font-cinzel bg-gradient-to-r from-primary via-secondary to-pink bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]">
+            Oracle Market
+          </h1>
         </Link>
 
         <Sheet open={open} onOpenChange={setOpen}>
