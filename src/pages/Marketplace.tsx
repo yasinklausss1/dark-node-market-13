@@ -227,7 +227,7 @@ const Marketplace = () => {
       return;
     }
 
-    setProducts(data || []);
+    setProducts((data || []) as Product[]);
     const sellerIds = Array.from(new Set((data || []).map((p: any) => p.seller_id)));
     if (sellerIds.length) {
       fetchSellerRatings(sellerIds);
@@ -502,7 +502,7 @@ const Marketplace = () => {
 
       {/* Product Modal */}
       <ProductModal
-        product={selectedProduct}
+        product={selectedProduct as Product}
         open={modalOpen}
         onOpenChange={setModalOpen}
         onStartChat={(product) => {

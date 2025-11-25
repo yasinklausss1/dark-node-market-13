@@ -780,6 +780,7 @@ export type Database = {
           category: string
           created_at: string
           description: string | null
+          fansign_delivery_days: string
           id: string
           image_url: string | null
           is_active: boolean
@@ -795,6 +796,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          fansign_delivery_days?: string
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -810,6 +812,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          fansign_delivery_days?: string
           id?: string
           image_url?: string | null
           is_active?: boolean
