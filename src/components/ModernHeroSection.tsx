@@ -37,7 +37,7 @@ export const ModernHeroSection: React.FC<ModernHeroSectionProps> = ({
             </Badge>
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-bold font-cinzel bg-gradient-to-r from-primary via-secondary to-pink bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(168,85,247,0.5)] mb-6 animate-fade-in delay-200">
+          <h1 className="text-4xl md:text-6xl font-bold font-cinzel text-white mb-6 animate-fade-in delay-200">
             Oracle Market
           </h1>
 
