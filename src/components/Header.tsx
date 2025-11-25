@@ -20,10 +20,10 @@ export const Header = () => {
       <div className="container flex h-16 items-center justify-between px-4">
         <Link to="/marketplace" className="flex items-center space-x-2">
           <div className="flex flex-col leading-tight">
-            <span className="text-2xl font-bold font-cinzel bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold font-cinzel text-white">
               Oracle
             </span>
-            <span className="text-2xl font-bold font-cinzel bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold font-cinzel text-white">
               Market
             </span>
           </div>
