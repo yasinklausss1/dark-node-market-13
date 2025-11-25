@@ -5,25 +5,21 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, LogOut, Wallet, Settings, ShoppingBag, MessageCircle, LayoutDashboard, Shield, Gift } from 'lucide-react';
 import { useState } from 'react';
 import oracleLogo from '@/assets/oracle-logo.png';
-
 export const Header = () => {
-  const { user, profile, signOut } = useAuth();
+  const {
+    user,
+    profile,
+    signOut
+  } = useAuth();
   const [open, setOpen] = useState(false);
-
   const handleSignOut = async () => {
     await signOut();
     setOpen(false);
   };
-
-  return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+  return <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
         <Link to="/marketplace" className="flex items-center space-x-2">
-          <img 
-            src={oracleLogo} 
-            alt="Oracle Market" 
-            className="h-12 w-auto drop-shadow-[0_0_20px_rgba(168,85,247,0.6)]"
-          />
+          
         </Link>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -34,8 +30,7 @@ export const Header = () => {
           </SheetTrigger>
           <SheetContent>
             <div className="flex flex-col gap-4 mt-8">
-              {!user ? (
-                <>
+              {!user ? <>
                   <Link to="/auth?tab=signin" onClick={() => setOpen(false)}>
                     <Button className="w-full" variant="default">
                       Login
@@ -46,15 +41,11 @@ export const Header = () => {
                       Sign Up
                     </Button>
                   </Link>
-                </>
-              ) : (
-                <>
+                </> : <>
                   <div className="pb-4 border-b">
                     <p className="text-sm text-muted-foreground">Logged in as</p>
                     <p className="font-semibold">{profile?.username}</p>
-                    {profile?.role && (
-                      <p className="text-xs text-muted-foreground capitalize">{profile.role}</p>
-                    )}
+                    {profile?.role && <p className="text-xs text-muted-foreground capitalize">{profile.role}</p>}
                   </div>
 
                   <Link to="/wallet" onClick={() => setOpen(false)}>
@@ -85,23 +76,19 @@ export const Header = () => {
                     </Button>
                   </Link>
 
-                  {profile?.role === 'seller' && (
-                    <Link to="/seller" onClick={() => setOpen(false)}>
+                  {profile?.role === 'seller' && <Link to="/seller" onClick={() => setOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start">
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         Seller Dashboard
                       </Button>
-                    </Link>
-                  )}
+                    </Link>}
 
-                  {profile?.role === 'admin' && (
-                    <Link to="/admin" onClick={() => setOpen(false)}>
+                  {profile?.role === 'admin' && <Link to="/admin" onClick={() => setOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start">
                         <Shield className="mr-2 h-4 w-4" />
                         Admin Panel
                       </Button>
-                    </Link>
-                  )}
+                    </Link>}
 
                   <Link to="/settings" onClick={() => setOpen(false)}>
                     <Button variant="ghost" className="w-full justify-start">
@@ -110,20 +97,14 @@ export const Header = () => {
                     </Button>
                   </Link>
 
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start text-destructive hover:text-destructive"
-                    onClick={handleSignOut}
-                  >
+                  <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive" onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </Button>
-                </>
-              )}
+                </>}
             </div>
           </SheetContent>
         </Sheet>
       </div>
-    </header>
-  );
+    </header>;
 };
