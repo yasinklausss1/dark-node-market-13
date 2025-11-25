@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingBag, Shield, Zap, Users, TrendingUp, Star } from 'lucide-react';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
-import oracleLogo from '@/assets/oracle-logo.png';
 interface ModernHeroSectionProps {
   userCount: number;
   onScrollToProducts: () => void;
@@ -38,11 +37,9 @@ export const ModernHeroSection: React.FC<ModernHeroSectionProps> = ({
             </Badge>
           </div>
 
-          <img 
-            src={oracleLogo} 
-            alt="Oracle Market" 
-            className="h-24 md:h-32 w-auto mx-auto mb-6 drop-shadow-[0_0_30px_rgba(168,85,247,0.7)] animate-fade-in delay-200"
-          />
+          <h1 className="text-4xl md:text-6xl font-bold font-cinzel bg-gradient-to-r from-primary via-secondary to-pink bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(168,85,247,0.5)] mb-6 animate-fade-in delay-200">
+            Oracle Market
+          </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground mb-8 animate-fade-in delay-300">
             Secure crypto marketplace with advanced verification, real-time chat, and instant transactions.       
