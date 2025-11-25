@@ -19,7 +19,7 @@ export const Header = () => {
   return <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
         <Link to="/marketplace" className="flex items-center space-x-2">
-          <h1 className="text-3xl font-bold font-cinzel bg-gradient-to-r from-primary via-secondary to-pink bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">
+          <h1 className="text-3xl font-bold font-cinzel text-white">
             OM
           </h1>
         </Link>
