@@ -35,9 +35,19 @@ export const ProductAddonsSelection = ({
   }, [productId]);
   useEffect(() => {
     const selectionsArray = Array.from(selections.values());
+    
+    // Add the name selection as a special addon
+    const nameSelection: AddonSelection = {
+      addonId: '__name_selection__',
+      addonName: 'Name for fansign',
+      priceEur: 0,
+      customValue: useUsername ? '__use_username__' : customName || ''
+    };
+    
+    const allSelections = [nameSelection, ...selectionsArray];
     const totalPrice = selectionsArray.reduce((sum, sel) => sum + sel.priceEur, 0);
-    onSelectionsChange(selectionsArray, totalPrice);
-  }, [selections]);
+    onSelectionsChange(allSelections, totalPrice);
+  }, [selections, useUsername, customName]);
   const fetchAddons = async () => {
     const {
       data,
