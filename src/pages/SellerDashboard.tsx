@@ -722,14 +722,34 @@ const SellerDashboard = () => {
                           {/* Add-ons Section */}
                           {order.addons && order.addons.length > 0 && (
                             <div className="mt-3 p-2 bg-muted/50 rounded">
-                              <h4 className="font-medium text-sm mb-1">Add-ons:</h4>
-                              {order.addons.map((addon, idx) => (
-                                <p key={idx} className="text-xs text-muted-foreground">
-                                  • {addon.addon_name}
-                                  {addon.custom_value && `: "${addon.custom_value}"`}
-                                  {addon.price_eur > 0 && ` (+€${addon.price_eur.toFixed(2)})`}
-                                </p>
-                              ))}
+                              <h4 className="font-medium text-sm mb-1">Add-ons & Name Selection:</h4>
+                              {order.addons.map((addon, idx) => {
+                                // Handle the special name selection addon
+                                if (addon.addon_name === 'Name for fansign') {
+                                  if (addon.custom_value === '__use_username__') {
+                                    return (
+                                      <p key={idx} className="text-xs font-medium text-primary mb-1">
+                                        📝 Name: Use buyer's username (@{order.buyer_username})
+                                      </p>
+                                    );
+                                  } else {
+                                    return (
+                                      <p key={idx} className="text-xs font-medium text-primary mb-1">
+                                        📝 Name: Custom text "{addon.custom_value}"
+                                      </p>
+                                    );
+                                  }
+                                }
+                                
+                                // Regular addons
+                                return (
+                                  <p key={idx} className="text-xs text-muted-foreground">
+                                    • {addon.addon_name}
+                                    {addon.custom_value && `: "${addon.custom_value}"`}
+                                    {addon.price_eur > 0 && ` (+€${addon.price_eur.toFixed(2)})`}
+                                  </p>
+                                );
+                              })}
                             </div>
                           )}
 

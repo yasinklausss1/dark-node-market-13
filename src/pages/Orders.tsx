@@ -316,18 +316,40 @@ const Orders: React.FC = () => {
                         {/* Add-ons */}
                         {addonsByOrder[order.id] && addonsByOrder[order.id].length > 0 && (
                           <div className="mt-3">
-                            <h4 className="font-medium text-sm mb-1">Add-ons</h4>
+                            <h4 className="font-medium text-sm mb-1">Add-ons & Name Selection</h4>
                             <ul className="text-sm text-muted-foreground space-y-1">
-                              {addonsByOrder[order.id].map((addon) => (
-                                <li key={addon.id} className="flex items-start gap-2">
-                                  <span>•</span>
-                                  <span>
-                                    {addon.addon_name}
-                                    {addon.custom_value && `: "${addon.custom_value}"`}
-                                    {addon.price_eur > 0 && ` (+€${addon.price_eur.toFixed(2)})`}
-                                  </span>
-                                </li>
-                              ))}
+                              {addonsByOrder[order.id].map((addon) => {
+                                // Handle the special name selection addon
+                                if (addon.addon_name === 'Name for fansign') {
+                                  if (addon.custom_value === '__use_username__') {
+                                    return (
+                                      <li key={addon.id} className="flex items-start gap-2 font-medium text-primary">
+                                        <span>📝</span>
+                                        <span>Name: Using my username</span>
+                                      </li>
+                                    );
+                                  } else {
+                                    return (
+                                      <li key={addon.id} className="flex items-start gap-2 font-medium text-primary">
+                                        <span>📝</span>
+                                        <span>Name: Custom text "{addon.custom_value}"</span>
+                                      </li>
+                                    );
+                                  }
+                                }
+                                
+                                // Regular addons
+                                return (
+                                  <li key={addon.id} className="flex items-start gap-2">
+                                    <span>•</span>
+                                    <span>
+                                      {addon.addon_name}
+                                      {addon.custom_value && `: "${addon.custom_value}"`}
+                                      {addon.price_eur > 0 && ` (+€${addon.price_eur.toFixed(2)})`}
+                                    </span>
+                                  </li>
+                                );
+                              })}
                             </ul>
                           </div>
                         )}
