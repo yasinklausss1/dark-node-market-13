@@ -62,13 +62,12 @@ export const ProductAddonsSelection = ({
     }
     setSelections(newSelections);
   };
-  if (addons.length === 0) return null;
   return <div className="space-y-6 p-4 border rounded-lg bg-card">
       <h3 className="font-semibold text-lg">Add-Ons</h3>
 
       {/* Custom Name Input */}
       <div className="space-y-3">
-        <Label className="text-base">Name für dieses Produkt:</Label>
+        <Label className="text-base">Name for this product:</Label>
         <RadioGroup value={useUsername ? "username" : "custom"} onValueChange={v => setUseUsername(v === "username")}>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="username" id="use-username" />
@@ -83,27 +82,29 @@ export const ProductAddonsSelection = ({
             </Label>
           </div>
         </RadioGroup>
-        {!useUsername && <Input placeholder="Geben Sie einen benutzerdefinierten Namen ein" value={customName} onChange={e => setCustomName(e.target.value)} />}
+        {!useUsername && <Input placeholder="Enter a custom name" value={customName} onChange={e => setCustomName(e.target.value)} />}
       </div>
 
       {/* Additional Notes */}
       
 
       {/* Add-ons */}
-      <div className="space-y-4">
-        {addons.map(addon => <div key={addon.id} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg">
-            <Checkbox id={addon.id} checked={selections.has(addon.id)} onCheckedChange={checked => toggleAddon(addon, checked as boolean)} />
-            <div className="flex-1">
-              <Label htmlFor={addon.id} className="cursor-pointer flex items-center justify-between">
-                <span>
-                  {addon.name} {addon.is_required && <span className="text-destructive">**ERFORDERLICH**</span>}
-                </span>
-                <span className="text-sm font-medium">
-                  {addon.price_eur > 0 ? `+€${addon.price_eur.toFixed(2)}` : '(+0 credits)'}
-                </span>
-              </Label>
-            </div>
-          </div>)}
-      </div>
+      {addons.length > 0 && (
+        <div className="space-y-4">
+          {addons.map(addon => <div key={addon.id} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg">
+              <Checkbox id={addon.id} checked={selections.has(addon.id)} onCheckedChange={checked => toggleAddon(addon, checked as boolean)} />
+              <div className="flex-1">
+                <Label htmlFor={addon.id} className="cursor-pointer flex items-center justify-between">
+                  <span>
+                    {addon.name} {addon.is_required && <span className="text-destructive">**REQUIRED**</span>}
+                  </span>
+                  <span className="text-sm font-medium">
+                    {addon.price_eur > 0 ? `+€${addon.price_eur.toFixed(2)}` : '(+0 credits)'}
+                  </span>
+                </Label>
+              </div>
+            </div>)}
+        </div>
+      )}
     </div>;
 };
