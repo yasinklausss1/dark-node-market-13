@@ -31,10 +31,6 @@ export const ModernHeroSection: React.FC<ModernHeroSectionProps> = ({
               <Star className="h-3 w-3 mr-1" />
               Trusted Marketplace
             </Badge>
-            <Badge variant="outline" className="animate-fade-in delay-100">
-              <Users className="h-3 w-3 mr-1" />
-              100+ users
-            </Badge>
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold font-cinzel text-white mb-6 animate-fade-in delay-200">
