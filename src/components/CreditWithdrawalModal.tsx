@@ -99,9 +99,9 @@ export function CreditWithdrawalModal({ open, onOpenChange, onSuccess }: CreditW
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Credits zu Crypto auszahlen</DialogTitle>
+          <DialogTitle>Exchange Credits to Crypto</DialogTitle>
           <DialogDescription>
-            Wandle deine Credits in Kryptowährung um und erhalte sie auf deine Wallet
+            Convert your credits to cryptocurrency and receive them in your wallet
           </DialogDescription>
         </DialogHeader>
 
@@ -109,12 +109,12 @@ export function CreditWithdrawalModal({ open, onOpenChange, onSuccess }: CreditW
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Verfügbare Credits: <strong>{availableCredits}</strong>
+              Available Credits: <strong>{availableCredits}</strong>
             </AlertDescription>
           </Alert>
 
           <div className="space-y-2">
-            <Label htmlFor="currency">Kryptowährung</Label>
+            <Label htmlFor="currency">Cryptocurrency</Label>
             <Select value={currency} onValueChange={(value: "BTC" | "LTC") => setCurrency(value)}>
               <SelectTrigger>
                 <SelectValue />
@@ -127,7 +127,7 @@ export function CreditWithdrawalModal({ open, onOpenChange, onSuccess }: CreditW
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="credits">Credits Betrag</Label>
+            <Label htmlFor="credits">Credit Amount</Label>
             <Input
               id="credits"
               type="number"
@@ -136,18 +136,18 @@ export function CreditWithdrawalModal({ open, onOpenChange, onSuccess }: CreditW
               step="1"
               value={creditAmount}
               onChange={(e) => setCreditAmount(e.target.value)}
-              placeholder="Anzahl Credits"
+              placeholder="Number of Credits"
               className={hasInsufficientCredits ? "border-red-500" : ""}
             />
             {hasInsufficientCredits && (
               <p className="text-sm text-red-500">
-                Nicht genug Credits verfügbar
+                Not enough credits available
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="address">Zieladresse ({currency})</Label>
+            <Label htmlFor="address">Destination Address ({currency})</Label>
             <Input
               id="address"
               value={destinationAddress}
@@ -167,15 +167,15 @@ export function CreditWithdrawalModal({ open, onOpenChange, onSuccess }: CreditW
                 <span>€{eurAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-red-600">
-                <span>Plattform-Gebühr ({platformFeePercent}%):</span>
+                <span>Platform Fee ({platformFeePercent}%):</span>
                 <span>-€{platformFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between border-t pt-2">
-                <span>Nach Gebühren:</span>
+                <span>After Fees:</span>
                 <span className="font-semibold">€{eurAfterFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center border-t pt-2">
-                <span>Geschätzt:</span>
+                <span>Estimated:</span>
                 <span className="font-bold text-primary">
                   {estimatedCrypto.toFixed(8)} {currency}
                 </span>
@@ -187,11 +187,11 @@ export function CreditWithdrawalModal({ open, onOpenChange, onSuccess }: CreditW
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Wird bearbeitet...
+                Processing...
               </>
             ) : (
               <>
-                Auszahlung beantragen
+                Request Withdrawal
                 <ArrowRight className="ml-2 h-4 w-4" />
               </>
             )}
@@ -199,7 +199,7 @@ export function CreditWithdrawalModal({ open, onOpenChange, onSuccess }: CreditW
           
           {availableCredits === 0 && (
             <p className="text-sm text-center text-muted-foreground">
-              Du benötigst Credits, um eine Auszahlung zu machen. Kaufe Credits über "Credits kaufen".
+              You need credits to make a withdrawal. Purchase credits through "Buy Credits".
             </p>
           )}
         </form>
