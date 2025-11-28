@@ -326,6 +326,51 @@ export type Database = {
           },
         ]
       }
+      credit_withdrawals: {
+        Row: {
+          created_at: string
+          credits_amount: number
+          crypto_amount: number
+          crypto_currency: string
+          destination_address: string
+          eur_amount: number
+          fee_eur: number
+          id: string
+          status: string
+          tx_hash: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_amount: number
+          crypto_amount: number
+          crypto_currency: string
+          destination_address: string
+          eur_amount: number
+          fee_eur?: number
+          id?: string
+          status?: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_amount?: number
+          crypto_amount?: number
+          crypto_currency?: string
+          destination_address?: string
+          eur_amount?: number
+          fee_eur?: number
+          id?: string
+          status?: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       deposit_requests: {
         Row: {
           address: string

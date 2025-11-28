@@ -29,3 +29,14 @@ export function formatFansignFilename(orderId: string): string {
   const timestamp = new Date().toISOString().split('T')[0];
   return `fansign-${orderId}-${timestamp}.jpg`;
 }
+
+export function formatCryptoAmount(amount: number, decimals: number = 8): string {
+  return amount.toFixed(decimals);
+}
+
+export function formatEurAmount(amount: number): string {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(amount);
+}
