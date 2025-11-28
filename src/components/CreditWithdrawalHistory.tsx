@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, RefreshCw, Wallet } from "lucide-react";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCryptoPrices } from "@/hooks/useCryptoPrices";
 
@@ -70,13 +70,13 @@ export function CreditWithdrawalHistory() {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'Abgeschlossen';
+        return 'Completed';
       case 'pending':
-        return 'Ausstehend';
+        return 'Pending';
       case 'processing':
-        return 'In Bearbeitung';
+        return 'Processing';
       case 'failed':
-        return 'Fehlgeschlagen';
+        return 'Failed';
       default:
         return status;
     }
@@ -106,7 +106,7 @@ export function CreditWithdrawalHistory() {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Wallet className="h-5 w-5" />
-            Auszahlungshistorie
+            Withdrawal History
           </CardTitle>
           <Button variant="outline" size="sm" onClick={fetchWithdrawals} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -115,9 +115,9 @@ export function CreditWithdrawalHistory() {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <p className="text-muted-foreground text-center py-4">Lädt...</p>
+          <p className="text-muted-foreground text-center py-4">Loading...</p>
         ) : withdrawals.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">Keine Auszahlungen gefunden</p>
+          <p className="text-muted-foreground text-center py-4">No withdrawals found</p>
         ) : (
           <div className="space-y-4">
             {withdrawals.map((withdrawal) => (
@@ -137,24 +137,24 @@ export function CreditWithdrawalHistory() {
                     </p>
                   </div>
                   <div className="text-right text-sm text-muted-foreground">
-                    {format(new Date(withdrawal.created_at), 'dd. MMM yyyy, HH:mm', { locale: de })}
+                    {format(new Date(withdrawal.created_at), 'dd MMM yyyy, HH:mm', { locale: enUS })}
                   </div>
                 </div>
 
                 <div className="text-xs space-y-1">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Adresse:</span>
+                    <span className="text-muted-foreground">Address:</span>
                     <span className="font-mono">
                       {withdrawal.destination_address.slice(0, 12)}...{withdrawal.destination_address.slice(-8)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Gebühr:</span>
+                    <span className="text-muted-foreground">Fee:</span>
                     <span>€{withdrawal.fee_eur.toFixed(2)}</span>
                   </div>
                   {withdrawal.status === 'completed' && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Aktueller Wert:</span>
+                      <span className="text-muted-foreground">Current Value:</span>
                       <span>€{getCurrentValue(withdrawal).toFixed(2)}</span>
                     </div>
                   )}
@@ -170,7 +170,7 @@ export function CreditWithdrawalHistory() {
                       if (url) window.open(url, '_blank');
                     }}
                   >
-                    Transaktion ansehen <ExternalLink className="ml-1 h-3 w-3" />
+                    View Transaction <ExternalLink className="ml-1 h-3 w-3" />
                   </Button>
                 )}
               </div>
