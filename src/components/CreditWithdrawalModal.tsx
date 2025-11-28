@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, ArrowRight } from "lucide-react";
+import { Loader2, ArrowRight, AlertCircle } from "lucide-react";
 import { useCryptoPrices } from "@/hooks/useCryptoPrices";
 
 interface CreditWithdrawalModalProps {
@@ -20,7 +21,29 @@ export function CreditWithdrawalModal({ open, onOpenChange, onSuccess }: CreditW
   const [currency, setCurrency] = useState<"BTC" | "LTC">("BTC");
   const [destinationAddress, setDestinationAddress] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableCredits, setAvailableCredits] = useState(0);
   const { btcPrice, ltcPrice, loading: pricesLoading } = useCryptoPrices();
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('wallet_balances')
+        .select('balance_credits')
+        .eq('user_id', user.id)
+        .single();
+
+      if (data) {
+        setAvailableCredits(data.balance_credits);
+      }
+    };
+
+    if (open) {
+      fetchBalance();
+    }
+  }, [open]);
 
   const platformFeePercent = 5;
   const credits = Number(creditAmount) || 0;
@@ -30,6 +53,9 @@ export function CreditWithdrawalModal({ open, onOpenChange, onSuccess }: CreditW
   
   const cryptoPrice = currency === "BTC" ? btcPrice : ltcPrice;
   const estimatedCrypto = cryptoPrice > 0 ? eurAfterFee / cryptoPrice : 0;
+
+  const hasInsufficientCredits = credits > availableCredits;
+  const canSubmit = !isSubmitting && destinationAddress && credits > 0 && !hasInsufficientCredits;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +106,13 @@ export function CreditWithdrawalModal({ open, onOpenChange, onSuccess }: CreditW
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Verfügbare Credits: <strong>{availableCredits}</strong>
+            </AlertDescription>
+          </Alert>
+
           <div className="space-y-2">
             <Label htmlFor="currency">Kryptowährung</Label>
             <Select value={currency} onValueChange={(value: "BTC" | "LTC") => setCurrency(value)}>
@@ -99,11 +132,18 @@ export function CreditWithdrawalModal({ open, onOpenChange, onSuccess }: CreditW
               id="credits"
               type="number"
               min="1"
+              max={availableCredits}
               step="1"
               value={creditAmount}
               onChange={(e) => setCreditAmount(e.target.value)}
               placeholder="Anzahl Credits"
+              className={hasInsufficientCredits ? "border-red-500" : ""}
             />
+            {hasInsufficientCredits && (
+              <p className="text-sm text-red-500">
+                Nicht genug Credits verfügbar
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -143,7 +183,7 @@ export function CreditWithdrawalModal({ open, onOpenChange, onSuccess }: CreditW
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={isSubmitting || !destinationAddress || credits <= 0}>
+          <Button type="submit" className="w-full" disabled={!canSubmit}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -156,6 +196,12 @@ export function CreditWithdrawalModal({ open, onOpenChange, onSuccess }: CreditW
               </>
             )}
           </Button>
+          
+          {availableCredits === 0 && (
+            <p className="text-sm text-center text-muted-foreground">
+              Du benötigst Credits, um eine Auszahlung zu machen. Kaufe Credits über "Credits kaufen".
+            </p>
+          )}
         </form>
       </DialogContent>
     </Dialog>
