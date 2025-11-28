@@ -58,7 +58,7 @@ export default function Wallet() {
             className="w-full"
           >
             <ArrowUpRight className="mr-2 h-4 w-4" />
-            Credits zu Crypto auszahlen
+            Exchange Credits to Crypto
           </Button>
         </div>
         
