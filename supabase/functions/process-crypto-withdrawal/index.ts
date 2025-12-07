@@ -6,10 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Decrypt private key (AES-GCM)
-async function decryptPrivateKey(encryptedKey: string, userKey: string): Promise<string> {
+// Decrypt private key (AES-GCM) - MUST use same key as encryption in generate-user-addresses
+async function decryptPrivateKey(encryptedKey: string): Promise<string> {
   const decoder = new TextDecoder()
-  const key = new TextEncoder().encode(userKey.slice(0, 32).padEnd(32, '0'))
+  // Use SERVICE_ROLE_KEY as encryption key (same as in generate-user-addresses)
+  const encryptionKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+  const key = new TextEncoder().encode(encryptionKey.slice(0, 32).padEnd(32, '0'))
   
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
@@ -420,8 +422,8 @@ serve(async (req) => {
 
     // Now attempt to send the actual blockchain transaction
     try {
-      // Decrypt private key
-      const privateKey = await decryptPrivateKey(addressData.private_key_encrypted, user.id)
+      // Decrypt private key (uses SERVICE_ROLE_KEY, same as encryption)
+      const privateKey = await decryptPrivateKey(addressData.private_key_encrypted)
       
       let txHash: string
       
