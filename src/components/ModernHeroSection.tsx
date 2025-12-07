@@ -27,12 +27,10 @@ export const ModernHeroSection: React.FC<ModernHeroSectionProps> = ({
         {/* Main Hero Content */}
         <div className="text-center max-w-4xl mx-auto mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Badge variant="secondary" className="animate-fade-in">
-              <Star className="h-3 w-3 mr-1" />
+            <Badge variant="secondary" className="animate-fade-in">Safe Place<Star className="h-3 w-3 mr-1" />
               Vertrauenswürdiger Marktplatz
             </Badge>
-            <Badge variant="outline" className="animate-fade-in delay-100">
-              <Users className="h-3 w-3 mr-1" />
+            <Badge variant="outline" className="animate-fade-in delay-100">300+ Nutzer<Users className="h-3 w-3 mr-1" />
               300+ Nutzer
             </Badge>
           </div>
