@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Edit } from 'lucide-react';
-import { FileUpload } from '@/components/ui/file-upload';
+import { MultiFileUpload } from '@/components/ui/multi-file-upload';
 import { BulkDiscountManager } from '@/components/BulkDiscountManager';
 
 interface Product {
@@ -44,22 +44,40 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     description: '',
     price: '',
     category: '',
-    imageUrl: '',
+    imageUrls: [] as string[],
     stock: ''
   });
 
   useEffect(() => {
-    if (product) {
-      setFormData({
-        title: product.title,
-        description: product.description || '',
-        price: product.price.toString(),
-        category: product.category,
-        imageUrl: product.image_url || '',
-        stock: product.stock.toString()
-      });
-    }
-  }, [product]);
+    const loadProductData = async () => {
+      if (product && open) {
+        // Fetch all images for this product
+        const { data: images } = await supabase
+          .from('product_images')
+          .select('image_url')
+          .eq('product_id', product.id)
+          .order('display_order');
+
+        const imageUrls = images?.map(img => img.image_url) || [];
+        
+        // If no images in product_images table, use the main image_url
+        if (imageUrls.length === 0 && product.image_url) {
+          imageUrls.push(product.image_url);
+        }
+
+        setFormData({
+          title: product.title,
+          description: product.description || '',
+          price: product.price.toString(),
+          category: product.category,
+          imageUrls: imageUrls,
+          stock: product.stock.toString()
+        });
+      }
+    };
+
+    loadProductData();
+  }, [product, open]);
 
   useEffect(() => {
     fetchCategories();
@@ -83,11 +101,11 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     e.preventDefault();
     if (!product) return;
 
-    // Validate image is required
-    if (!formData.imageUrl) {
+    // Validate at least one image is required
+    if (formData.imageUrls.length === 0) {
       toast({
-        title: "Image required",
-        description: "Please upload an image for your product.",
+        title: "Bild erforderlich",
+        description: "Bitte lade mindestens ein Bild hoch.",
         variant: "destructive"
       });
       return;
@@ -95,6 +113,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
 
     setIsLoading(true);
 
+    // Update product with first image as main image
     const { error } = await supabase
       .from('products')
       .update({
@@ -102,25 +121,45 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         description: formData.description,
         price: parseFloat(formData.price),
         category: formData.category,
-        image_url: formData.imageUrl || null,
+        image_url: formData.imageUrls[0] || null,
         stock: parseInt(formData.stock)
       })
       .eq('id', product.id);
 
     if (error) {
       toast({
-        title: "Update Error",
+        title: "Fehler beim Aktualisieren",
         description: error.message,
         variant: "destructive"
       });
-    } else {
-      toast({
-        title: "Product Updated",
-        description: "The product has been successfully updated."
-      });
-      onProductUpdated();
-      onOpenChange(false);
+      setIsLoading(false);
+      return;
     }
+
+    // Delete existing product images and re-insert
+    await supabase
+      .from('product_images')
+      .delete()
+      .eq('product_id', product.id);
+
+    if (formData.imageUrls.length > 0) {
+      const imageInserts = formData.imageUrls.map((url, index) => ({
+        product_id: product.id,
+        image_url: url,
+        display_order: index
+      }));
+
+      await supabase
+        .from('product_images')
+        .insert(imageInserts);
+    }
+
+    toast({
+      title: "Produkt aktualisiert",
+      description: "Das Produkt wurde erfolgreich aktualisiert."
+    });
+    onProductUpdated();
+    onOpenChange(false);
 
     setIsLoading(false);
   };
@@ -192,10 +231,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
           </div>
 
           <div>
-            <Label htmlFor="edit-imageUrl">Product Image (optional)</Label>
-            <FileUpload
-              value={formData.imageUrl}
-              onChange={(url) => setFormData({...formData, imageUrl: url})}
+            <Label htmlFor="edit-imageUrls">Produktbilder</Label>
+            <MultiFileUpload
+              value={formData.imageUrls}
+              onChange={(urls) => setFormData({...formData, imageUrls: urls})}
+              minFiles={1}
+              maxFiles={10}
             />
           </div>
 

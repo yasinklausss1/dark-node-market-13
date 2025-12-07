@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { TelegramIntegration } from '@/components/TelegramIntegration';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ImageCarousel } from '@/components/ui/image-carousel';
 
 
 interface Product {
@@ -46,13 +47,34 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
   const [ltcAmount, setLtcAmount] = useState<number | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [sellerUsername, setSellerUsername] = useState<string>('');
+  const [productImages, setProductImages] = useState<string[]>([]);
 
   useEffect(() => {
     if (product && open) {
       fetchSellerUsername();
+      fetchProductImages();
       setQuantity(1);
     }
   }, [product, open]);
+
+  const fetchProductImages = async () => {
+    if (!product) return;
+
+    const { data: images } = await supabase
+      .from('product_images')
+      .select('image_url')
+      .eq('product_id', product.id)
+      .order('display_order');
+
+    if (images && images.length > 0) {
+      setProductImages(images.map(img => img.image_url));
+    } else if (product.image_url) {
+      // Fallback to main image_url if no images in product_images
+      setProductImages([product.image_url]);
+    } else {
+      setProductImages([]);
+    }
+  };
 
   useEffect(() => {
     if (product && btcPrice) setBtcAmount(product.price / btcPrice);
@@ -93,20 +115,13 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
 
   const productContent = (
     <div className="space-y-3 sm:space-y-6">
-      {/* Product Image */}
-      {product.image_url && (
-        <div className="w-full h-48 sm:h-64 bg-muted rounded-lg overflow-hidden">
-          <img
-            src={product.image_url}
-            alt={product.title}
-            className="w-full h-full object-cover pointer-events-none select-none"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-            onContextMenu={(e) => e.preventDefault()}
-            draggable={false}
-          />
-        </div>
+      {/* Product Images Carousel */}
+      {productImages.length > 0 && (
+        <ImageCarousel 
+          images={productImages} 
+          aspectRatio="video"
+          className="w-full"
+        />
       )}
 
       {/* Product Info */}

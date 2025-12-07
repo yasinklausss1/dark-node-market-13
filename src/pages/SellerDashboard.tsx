@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, Edit, Package, User, Truck, CheckCircle } from 'lucide-react';
-import { FileUpload } from '@/components/ui/file-upload';
+import { MultiFileUpload } from '@/components/ui/multi-file-upload';
 import EditProductModal from '@/components/EditProductModal';
 import OrderStatusModal from '@/components/OrderStatusModal';
 import { DisputeResolutionPanel } from '@/components/DisputeResolutionPanel';
@@ -70,7 +70,7 @@ const SellerDashboard = () => {
     description: '',
     price: '',
     category: '',
-    imageUrl: '',
+    imageUrls: [] as string[],
     stock: ''
   });
   const [enableBulkDiscount, setEnableBulkDiscount] = useState(false);
@@ -153,11 +153,11 @@ const fetchOrders = async () => {
     e.preventDefault();
     if (!user) return;
 
-    // Validate image is required
-    if (!formData.imageUrl) {
+    // Validate at least one image is required
+    if (formData.imageUrls.length === 0) {
       toast({
         title: "Bild erforderlich",
-        description: "Bitte lade ein Bild für dein Produkt hoch.",
+        description: "Bitte lade mindestens ein Bild für dein Produkt hoch.",
         variant: "destructive"
       });
       return;
@@ -172,13 +172,30 @@ const fetchOrders = async () => {
         description: formData.description,
         price: parseFloat(formData.price),
         category: formData.category,
-        image_url: formData.imageUrl || null,
+        image_url: formData.imageUrls[0] || null,
         seller_id: user.id,
         is_active: true,
         stock: parseInt(formData.stock)
       })
       .select()
       .single();
+
+    // Insert additional images into product_images table
+    if (!error && data && formData.imageUrls.length > 0) {
+      const imageInserts = formData.imageUrls.map((url, index) => ({
+        product_id: data.id,
+        image_url: url,
+        display_order: index
+      }));
+
+      const { error: imagesError } = await supabase
+        .from('product_images')
+        .insert(imageInserts);
+
+      if (imagesError) {
+        console.error('Error inserting product images:', imagesError);
+      }
+    }
 
     if (error) {
       toast({
@@ -221,7 +238,7 @@ const fetchOrders = async () => {
         description: '',
         price: '',
         category: '',
-        imageUrl: '',
+        imageUrls: [],
         stock: ''
       });
       setEnableBulkDiscount(false);
@@ -459,10 +476,12 @@ const fetchOrders = async () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="imageUrl">Produktbild</Label>
-                      <FileUpload
-                        value={formData.imageUrl}
-                        onChange={(url) => setFormData({...formData, imageUrl: url})}
+                      <Label htmlFor="imageUrls">Produktbilder</Label>
+                      <MultiFileUpload
+                        value={formData.imageUrls}
+                        onChange={(urls) => setFormData({...formData, imageUrls: urls})}
+                        minFiles={1}
+                        maxFiles={10}
                       />
                     </div>
 
