@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 type UserRole = 'user' | 'seller' | 'admin';
 
@@ -19,8 +18,8 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (identifier: string, password: string, isEmail: boolean) => Promise<{ error: any }>;
-  signUp: (identifier: string, password: string, isSeller?: boolean, dateOfBirth?: Date, isEmail?: boolean) => Promise<{ error: any }>;
+  signIn: (username: string, password: string) => Promise<{ error: any }>;
+  signUp: (username: string, password: string, isSeller?: boolean) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: any }>;
 }
@@ -90,24 +89,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signIn = async (identifier: string, password: string, isEmail: boolean) => {
-    let email = identifier;
+  const signIn = async (username: string, password: string) => {
+    // First, find the user by username to get their email
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('username', username)
+      .maybeSingle();
     
-    if (!isEmail) {
-      // If it's a username, find the user by username
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('user_id')
-        .eq('username', identifier)
-        .maybeSingle();
-      
-      if (profileError || !profileData) {
-        return { error: new Error('Benutzername nicht gefunden') };
-      }
-
-      // Generate the email from username (same pattern used in signup)
-      email = `${identifier}@example.com`;
+    if (profileError || !profileData) {
+      return { error: new Error('Benutzername nicht gefunden') };
     }
+
+    // Get the user's email from auth.users
+    const { data: userData, error: userError } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('user_id', profileData.user_id)
+      .maybeSingle();
+
+    if (userError || !userData) {
+      return { error: new Error('Benutzer nicht gefunden') };
+    }
+
+    // Generate the email from username (same pattern used in signup)
+    const email = `${username}@example.com`;
     
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -116,72 +122,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
-  const signUp = async (identifier: string, password: string, isSeller = false, dateOfBirth?: Date, isEmail = false) => {
-    let email = identifier;
-    let username = identifier;
+  const signUp = async (username: string, password: string, isSeller = false) => {
+    // Generate email from username
+    const email = `${username}@example.com`;
     
-    // Check for referral
-    const referrerUsername = localStorage.getItem('referrer_username');
-    
-    if (!isEmail) {
-      email = `${identifier}@example.com`;
-    } else {
-      username = email.split('@')[0];
-      
-      // Check if email is already registered in auth.users
-      const { data: authData, error: listError } = await supabase.auth.admin.listUsers();
-      
-      if (!listError && authData?.users) {
-        const existingUser = authData.users.find((u: any) => u.email === email);
-        if (existingUser) {
-          return { error: new Error('Diese E-Mail ist bereits registriert') };
-        }
-      }
-      
-      // Check if there's already a pending verification for this email
-      const { data: existingCode, error: codeCheckError } = await supabase
-        .from('email_verification_codes')
-        .select('*')
-        .eq('email', email)
-        .gt('expires_at', new Date().toISOString())
-        .maybeSingle();
-      
-      if (existingCode) {
-        return { error: new Error('Ein Bestätigungscode wurde bereits an diese E-Mail gesendet. Bitte prüfen Sie Ihren Posteingang.') };
-      }
-      
-      // For email registration, send verification code first
-      const code = Math.floor(1000 + Math.random() * 9000).toString();
-      
-      const { error: dbError } = await supabase
-        .from('email_verification_codes')
-        .insert({
-          email,
-          code,
-          password_hash: password,
-          date_of_birth: dateOfBirth?.toISOString().split('T')[0] || null,
-          username,
-          is_email_registration: true
-        });
-
-      if (dbError) {
-        return { error: dbError };
-      }
-
-      const { error: emailError } = await supabase.functions.invoke('send-verification-code', {
-        body: { email, code }
-      });
-
-      if (emailError) {
-        return { error: emailError };
-      }
-
-      toast.success('Bestätigungscode wurde an Ihre E-Mail gesendet!');
-      
-      return { error: null, needsVerification: true, email };
-    }
-    
-    // Username registration - direct signup
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -189,25 +133,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         emailRedirectTo: `${window.location.origin}/`,
         data: {
           username,
-          role: isSeller ? 'seller' : 'user',
-          date_of_birth: dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : undefined
+          role: isSeller ? 'seller' : 'user'
         }
       }
     });
-    
-    // Process referral if exists
-    if (!error && referrerUsername) {
-      try {
-        await supabase.functions.invoke('process-referral-signup', {
-          body: { referrerUsername }
-        });
-        localStorage.removeItem('referrer_username');
-        toast.success('Referral bonus applied! You and your friend received 3 credits.');
-      } catch (referralError) {
-        console.error('Error processing referral:', referralError);
-      }
-    }
-    
     return { error };
   };
 

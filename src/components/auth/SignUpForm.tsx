@@ -1,75 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff, Gift } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
-import { z } from 'zod';
-import { toast } from 'sonner';
-
-// Validation schemas
-const usernameSchema = z.string()
-  .trim()
-  .min(3, 'Username must be at least 3 characters')
-  .max(30, 'Username must be less than 30 characters')
-  .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores');
-
-const emailSchema = z.string()
-  .trim()
-  .email('Invalid email address')
-  .max(255, 'Email must be less than 255 characters');
-
-const passwordSchema = z.string()
-  .min(8, 'Password must be at least 8 characters')
-  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-  .regex(/[0-9]/, 'Password must contain at least one number');
-
-const signUpSchema = z.object({
-  identifier: z.string(),
-  password: passwordSchema,
-  confirmPassword: z.string(),
-  birthDay: z.string().min(1, 'Day is required'),
-  birthMonth: z.string().min(1, 'Month is required'),
-  birthYear: z.string().min(1, 'Year is required'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-});
+import { Eye, EyeOff } from 'lucide-react';
 
 interface SignUpFormProps {
-  onSubmit: (identifier: string, password: string, dateOfBirth: Date, isEmail: boolean) => Promise<void>;
+  onSubmit: (username: string, password: string) => Promise<void>;
   isLoading: boolean;
   title: string;
   description: string;
 }
 
 const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, description }) => {
-  const [registrationType, setRegistrationType] = useState<'username' | 'email'>('email');
   const [formData, setFormData] = useState({
     password: '',
-    identifier: '', // username or email
+    username: '',
     confirmPassword: ''
   });
-  const [dateOfBirth, setDateOfBirth] = useState<Date>();
-  const [birthDay, setBirthDay] = useState<string>('');
-  const [birthMonth, setBirthMonth] = useState<string>('');
-  const [birthYear, setBirthYear] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [referrerUsername, setReferrerUsername] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Check if user was invited
-    const storedReferrer = localStorage.getItem('referrer_username');
-    if (storedReferrer) {
-      setReferrerUsername(storedReferrer);
-    }
-  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -89,51 +39,12 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
-    // Validate identifier (username or email)
-    if (!formData.identifier.trim()) {
-      newErrors.identifier = registrationType === 'email' ? 'Email is required' : 'Username is required';
-    } else if (registrationType === 'email') {
-      // Email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.identifier)) {
-        newErrors.identifier = 'Please enter a valid email address';
-      }
-    } else {
-      // Username validation
-      if (formData.identifier.length < 3 || formData.identifier.length > 30) {
-        newErrors.identifier = 'Username must be between 3 and 30 characters';
-      }
-      if (!/^[a-zA-Z0-9_]+$/.test(formData.identifier)) {
-        newErrors.identifier = 'Username can only contain letters, numbers, and underscores';
-      }
-    }
-
     if (formData.password.length < 7) {
       newErrors.password = 'Password must be at least 7 characters long';
     }
 
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    // Validate date of birth
-    if (!birthDay || !birthMonth || !birthYear) {
-      newErrors.dateOfBirth = 'Date of birth is required';
-    } else {
-      const dob = new Date(parseInt(birthYear), parseInt(birthMonth) - 1, parseInt(birthDay));
-      const today = new Date();
-      const age = today.getFullYear() - dob.getFullYear();
-      const monthDiff = today.getMonth() - dob.getMonth();
-      const dayDiff = today.getDate() - dob.getDate();
-      
-      const isUnder18 = age < 18 || (age === 18 && (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)));
-      
-      if (isUnder18) {
-        newErrors.dateOfBirth = 'You must be at least 18 years old to register';
-      }
-      
-      // Set the dateOfBirth state for submission
-      setDateOfBirth(dob);
     }
 
     setErrors(newErrors);
@@ -144,15 +55,10 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
     e.preventDefault();
     
     if (!validateForm()) {
-      toast.error('Please fix the errors in the form');
       return;
     }
 
-    if (!dateOfBirth) {
-      return;
-    }
-
-    await onSubmit(formData.identifier, formData.password, dateOfBirth, registrationType === 'email');
+    await onSubmit(formData.username, formData.password);
   };
 
   return (
@@ -162,59 +68,19 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        {referrerUsername && (
-          <Alert className="mb-4 bg-primary/10 border-primary/20">
-            <Gift className="h-4 w-4 text-primary" />
-            <AlertDescription className="text-sm">
-              🎉 You've been invited by <span className="font-semibold">{referrerUsername}</span>! 
-              You'll both receive <span className="font-semibold">3 credits</span> when you complete registration.
-            </AlertDescription>
-          </Alert>
-        )}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Tabs value={registrationType} onValueChange={(v) => setRegistrationType(v as 'username' | 'email')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="email">Email</TabsTrigger>
-              <TabsTrigger value="username">Username</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="email" className="space-y-2 mt-4">
-              <Label htmlFor="signup-email">Email Address</Label>
-              <Input
-                id="signup-email"
-                name="identifier"
-                type="email"
-                placeholder="your.email@example.com"
-                value={formData.identifier}
-                onChange={handleInputChange}
-                required
-                className={errors.identifier ? 'border-destructive' : ''}
-              />
-              {errors.identifier && (
-                <p className="text-sm text-destructive">{errors.identifier}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                You'll receive a verification email after registration
-              </p>
-            </TabsContent>
-
-            <TabsContent value="username" className="space-y-2 mt-4">
-              <Label htmlFor="signup-username">Username</Label>
-              <Input
-                id="signup-username"
-                name="identifier"
-                type="text"
-                placeholder="YourUsername"
-                value={formData.identifier}
-                onChange={handleInputChange}
-                required
-                className={errors.identifier ? 'border-destructive' : ''}
-              />
-              {errors.identifier && (
-                <p className="text-sm text-destructive">{errors.identifier}</p>
-              )}
-            </TabsContent>
-          </Tabs>
+          <div className="space-y-2">
+            <Label htmlFor="signup-username">Username</Label>
+            <Input
+              id="signup-username"
+              name="username"
+              type="text"
+              placeholder="YourUsername"
+              value={formData.username}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
           
           <div className="space-y-2">
             <Label htmlFor="signup-password">Password (min. 7 characters)</Label>
@@ -263,63 +129,6 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit, isLoading, title, des
             {errors.confirmPassword && (
               <p className="text-sm text-destructive">{errors.confirmPassword}</p>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="signup-dob">Date of Birth</Label>
-            <div className="grid grid-cols-3 gap-2">
-              <Select value={birthDay} onValueChange={setBirthDay}>
-                <SelectTrigger className={errors.dateOfBirth ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Day" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                    <SelectItem key={day} value={day.toString()}>
-                      {day}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={birthMonth} onValueChange={setBirthMonth}>
-                <SelectTrigger className={errors.dateOfBirth ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">January</SelectItem>
-                  <SelectItem value="2">February</SelectItem>
-                  <SelectItem value="3">March</SelectItem>
-                  <SelectItem value="4">April</SelectItem>
-                  <SelectItem value="5">May</SelectItem>
-                  <SelectItem value="6">June</SelectItem>
-                  <SelectItem value="7">July</SelectItem>
-                  <SelectItem value="8">August</SelectItem>
-                  <SelectItem value="9">September</SelectItem>
-                  <SelectItem value="10">October</SelectItem>
-                  <SelectItem value="11">November</SelectItem>
-                  <SelectItem value="12">December</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={birthYear} onValueChange={setBirthYear}>
-                <SelectTrigger className={errors.dateOfBirth ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - 18 - i).map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {errors.dateOfBirth && (
-              <p className="text-sm text-destructive">{errors.dateOfBirth}</p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              You must be at least 18 years old to create an account
-            </p>
           </div>
           
           <Button 

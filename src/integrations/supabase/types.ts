@@ -149,12 +149,10 @@ export type Database = {
           attachment_url: string | null
           conversation_id: string
           created_at: string
-          delivered_at: string | null
           id: string
           is_read: boolean
           message: string
           message_type: string
-          read_at: string | null
           sender_id: string
           updated_at: string
         }
@@ -162,12 +160,10 @@ export type Database = {
           attachment_url?: string | null
           conversation_id: string
           created_at?: string
-          delivered_at?: string | null
           id?: string
           is_read?: boolean
           message: string
           message_type?: string
-          read_at?: string | null
           sender_id: string
           updated_at?: string
         }
@@ -175,12 +171,10 @@ export type Database = {
           attachment_url?: string | null
           conversation_id?: string
           created_at?: string
-          delivered_at?: string | null
           id?: string
           is_read?: boolean
           message?: string
           message_type?: string
-          read_at?: string | null
           sender_id?: string
           updated_at?: string
         }
@@ -227,147 +221,6 @@ export type Database = {
           seller_id?: string
           status?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      credit_purchases: {
-        Row: {
-          completed_at: string | null
-          created_at: string
-          credits_amount: number
-          crypto_amount: number | null
-          crypto_currency: string | null
-          eur_amount: number
-          id: string
-          payment_id: string | null
-          payment_provider: string
-          payment_url: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string
-          credits_amount: number
-          crypto_amount?: number | null
-          crypto_currency?: string | null
-          eur_amount: number
-          id?: string
-          payment_id?: string | null
-          payment_provider?: string
-          payment_url?: string | null
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string
-          credits_amount?: number
-          crypto_amount?: number | null
-          crypto_currency?: string | null
-          eur_amount?: number
-          id?: string
-          payment_id?: string | null
-          payment_provider?: string
-          payment_url?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      credit_transactions: {
-        Row: {
-          amount: number
-          created_at: string
-          description: string | null
-          id: string
-          related_order_id: string | null
-          related_purchase_id: string | null
-          type: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          related_order_id?: string | null
-          related_purchase_id?: string | null
-          type: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          related_order_id?: string | null
-          related_purchase_id?: string | null
-          type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "credit_transactions_related_order_id_fkey"
-            columns: ["related_order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "credit_transactions_related_purchase_id_fkey"
-            columns: ["related_purchase_id"]
-            isOneToOne: false
-            referencedRelation: "credit_purchases"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      credit_withdrawals: {
-        Row: {
-          created_at: string
-          credits_amount: number
-          crypto_amount: number
-          crypto_currency: string
-          destination_address: string
-          eur_amount: number
-          fee_eur: number
-          id: string
-          status: string
-          tx_hash: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          credits_amount: number
-          crypto_amount: number
-          crypto_currency: string
-          destination_address: string
-          eur_amount: number
-          fee_eur?: number
-          id?: string
-          status?: string
-          tx_hash?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          credits_amount?: number
-          crypto_amount?: number
-          crypto_currency?: string
-          destination_address?: string
-          eur_amount?: number
-          fee_eur?: number
-          id?: string
-          status?: string
-          tx_hash?: string | null
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -513,48 +366,6 @@ export type Database = {
           },
         ]
       }
-      email_verification_codes: {
-        Row: {
-          code: string
-          created_at: string
-          date_of_birth: string
-          email: string
-          expires_at: string
-          id: string
-          is_email_registration: boolean
-          password_hash: string
-          username: string
-          verification_type: string
-          verified: boolean
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          date_of_birth: string
-          email: string
-          expires_at?: string
-          id?: string
-          is_email_registration?: boolean
-          password_hash: string
-          username: string
-          verification_type?: string
-          verified?: boolean
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          date_of_birth?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          is_email_registration?: boolean
-          password_hash?: string
-          username?: string
-          verification_type?: string
-          verified?: boolean
-        }
-        Relationships: []
-      }
       favorites: {
         Row: {
           created_at: string
@@ -597,39 +408,6 @@ export type Database = {
           created_at?: string
           id?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      order_addon_selections: {
-        Row: {
-          addon_id: string
-          addon_name: string
-          created_at: string
-          custom_value: string | null
-          id: string
-          order_id: string
-          order_item_id: string
-          price_eur: number
-        }
-        Insert: {
-          addon_id: string
-          addon_name: string
-          created_at?: string
-          custom_value?: string | null
-          id?: string
-          order_id: string
-          order_item_id: string
-          price_eur: number
-        }
-        Update: {
-          addon_id?: string
-          addon_name?: string
-          created_at?: string
-          custom_value?: string | null
-          id?: string
-          order_id?: string
-          order_item_id?: string
-          price_eur?: number
         }
         Relationships: []
       }
@@ -678,8 +456,6 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
-          fansign_image_url: string | null
-          fansign_uploaded_at: string | null
           id: string
           order_status: Database["public"]["Enums"]["order_status"] | null
           shipping_city: string | null
@@ -700,8 +476,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          fansign_image_url?: string | null
-          fansign_uploaded_at?: string | null
           id?: string
           order_status?: Database["public"]["Enums"]["order_status"] | null
           shipping_city?: string | null
@@ -722,8 +496,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          fansign_image_url?: string | null
-          fansign_uploaded_at?: string | null
           id?: string
           order_status?: Database["public"]["Enums"]["order_status"] | null
           shipping_city?: string | null
@@ -752,80 +524,11 @@ export type Database = {
           },
         ]
       }
-      product_addons: {
-        Row: {
-          addon_type: string
-          created_at: string
-          id: string
-          is_required: boolean
-          name: string
-          price_eur: number
-          product_id: string
-          updated_at: string
-        }
-        Insert: {
-          addon_type?: string
-          created_at?: string
-          id?: string
-          is_required?: boolean
-          name: string
-          price_eur?: number
-          product_id: string
-          updated_at?: string
-        }
-        Update: {
-          addon_type?: string
-          created_at?: string
-          id?: string
-          is_required?: boolean
-          name?: string
-          price_eur?: number
-          product_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      product_images: {
-        Row: {
-          created_at: string | null
-          display_order: number
-          id: string
-          image_url: string
-          product_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          display_order?: number
-          id?: string
-          image_url: string
-          product_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          display_order?: number
-          id?: string
-          image_url?: string
-          product_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_images_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       products: {
         Row: {
           category: string
           created_at: string
           description: string | null
-          fansign_delivery_days: string
           id: string
           image_url: string | null
           is_active: boolean
@@ -841,7 +544,6 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
-          fansign_delivery_days?: string
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -857,7 +559,6 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
-          fansign_delivery_days?: string
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -882,7 +583,6 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
-          date_of_birth: string | null
           id: string
           is_verified: boolean
           role: Database["public"]["Enums"]["user_role"]
@@ -896,7 +596,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          date_of_birth?: string | null
           id?: string
           is_verified?: boolean
           role?: Database["public"]["Enums"]["user_role"]
@@ -910,7 +609,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          date_of_birth?: string | null
           id?: string
           is_verified?: boolean
           role?: Database["public"]["Enums"]["user_role"]
@@ -923,89 +621,6 @@ export type Database = {
           verified_by?: string | null
         }
         Relationships: []
-      }
-      referral_codes: {
-        Row: {
-          code: string
-          created_at: string
-          id: string
-          updated_at: string
-          user_id: string
-          uses_count: number
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id: string
-          uses_count?: number
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id?: string
-          uses_count?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "referral_codes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      referral_rewards: {
-        Row: {
-          completed_at: string | null
-          created_at: string
-          credits_awarded: number
-          id: string
-          referral_code: string
-          referred_id: string
-          referrer_id: string
-          status: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string
-          credits_awarded?: number
-          id?: string
-          referral_code: string
-          referred_id: string
-          referrer_id: string
-          status?: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string
-          credits_awarded?: number
-          id?: string
-          referral_code?: string
-          referred_id?: string
-          referrer_id?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "referral_rewards_referred_id_fkey"
-            columns: ["referred_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "referral_rewards_referrer_id_fkey"
-            columns: ["referrer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
       }
       reviews: {
         Row: {
@@ -1208,30 +823,6 @@ export type Database = {
           },
         ]
       }
-      user_roles: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_verifications: {
         Row: {
           created_at: string
@@ -1275,9 +866,6 @@ export type Database = {
         Row: {
           balance_btc: number
           balance_btc_deposited: number
-          balance_credits: number
-          balance_eth: number
-          balance_eth_deposited: number
           balance_eur: number
           balance_ltc: number
           balance_ltc_deposited: number
@@ -1291,9 +879,6 @@ export type Database = {
         Insert: {
           balance_btc?: number
           balance_btc_deposited?: number
-          balance_credits?: number
-          balance_eth?: number
-          balance_eth_deposited?: number
           balance_eur?: number
           balance_ltc?: number
           balance_ltc_deposited?: number
@@ -1307,9 +892,6 @@ export type Database = {
         Update: {
           balance_btc?: number
           balance_btc_deposited?: number
-          balance_credits?: number
-          balance_eth?: number
-          balance_eth_deposited?: number
           balance_eur?: number
           balance_ltc?: number
           balance_ltc_deposited?: number
@@ -1453,19 +1035,14 @@ export type Database = {
         Args: { amount_eur: number; user_uuid: string }
         Returns: boolean
       }
-      cleanup_expired_verification_codes: { Args: never; Returns: undefined }
-      cleanup_old_referral_codes: {
-        Args: never
-        Returns: {
-          deleted_count: number
-          user_id: string
-        }[]
-      }
       close_conversation: {
         Args: { conversation_uuid: string }
         Returns: boolean
       }
-      close_deposit_request: { Args: { request_id: string }; Returns: boolean }
+      close_deposit_request: {
+        Args: { request_id: string }
+        Returns: boolean
+      }
       get_or_create_wallet_balance: {
         Args: { user_uuid: string }
         Returns: {
@@ -1493,23 +1070,18 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_user_primary_role: {
-        Args: { _user_id: string }
-        Returns: Database["public"]["Enums"]["app_role"]
-      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
+      is_user_verified: {
+        Args: { user_uuid: string }
         Returns: boolean
       }
-      is_user_verified: { Args: { user_uuid: string }; Returns: boolean }
-      make_user_admin: { Args: { user_email: string }; Returns: undefined }
+      make_user_admin: {
+        Args: { user_email: string }
+        Returns: undefined
+      }
       revoke_user_verification: {
         Args: { target_user_id: string }
         Returns: boolean
@@ -1529,7 +1101,6 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "seller" | "user"
       order_status:
         | "pending"
         | "confirmed"
@@ -1672,7 +1243,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "seller", "user"],
       order_status: [
         "pending",
         "confirmed",

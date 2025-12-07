@@ -11,10 +11,8 @@ interface WalletBalance {
   balance_eur: number;
   balance_btc: number;
   balance_ltc: number;
-  balance_eth: number;
   balance_btc_deposited: number;
   balance_ltc_deposited: number;
-  balance_eth_deposited: number;
 }
 
 export function WalletBalance() {
@@ -24,7 +22,6 @@ export function WalletBalance() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { btcPrice, ltcPrice } = useCryptoPrices();
-  const ethPrice = 3500; // Placeholder
 
   const fetchBalance = async () => {
     if (!user) return;
@@ -32,7 +29,7 @@ export function WalletBalance() {
     try {
       const { data, error } = await supabase
         .from('wallet_balances')
-        .select('balance_eur, balance_btc, balance_ltc, balance_eth, balance_btc_deposited, balance_ltc_deposited, balance_eth_deposited')
+        .select('balance_eur, balance_btc, balance_ltc, balance_btc_deposited, balance_ltc_deposited')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -49,10 +46,8 @@ export function WalletBalance() {
             balance_eur: 0,
             balance_btc: 0,
             balance_ltc: 0,
-            balance_eth: 0,
             balance_btc_deposited: 0,
-            balance_ltc_deposited: 0,
-            balance_eth_deposited: 0
+            balance_ltc_deposited: 0
           })
           .select()
           .single();
@@ -151,7 +146,7 @@ export function WalletBalance() {
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 gap-4">
           {/* Crypto Balances */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Bitcoin Balance */}
             <div className="bg-card border p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
@@ -193,27 +188,6 @@ export function WalletBalance() {
                 </div>
               </div>
             </div>
-
-            {/* Ethereum Balance */}
-            <div className="bg-card border p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Wallet className="h-5 w-5 text-purple-500" />
-                <h4 className="font-medium">Ethereum (ETH)</h4>
-              </div>
-              <div className="space-y-1">
-                <div className="text-2xl font-bold">
-                  {balance?.balance_eth?.toFixed(8) || '0.00000000'} ETH
-                </div>
-                {ethPrice && balance?.balance_eth && (
-                  <div className="text-lg font-semibold text-primary">
-                    ≈ €{(balance.balance_eth * ethPrice).toFixed(2)}
-                  </div>
-                )}
-                <div className="text-xs text-muted-foreground">
-                  Available for purchases
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -227,10 +201,6 @@ export function WalletBalance() {
             <div className="flex justify-between">
               <span>Total Litecoin Deposited:</span>
               <span className="font-medium">{balance?.balance_ltc_deposited?.toFixed(8) || '0.00000000'} LTC</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Total Ethereum Deposited:</span>
-              <span className="font-medium">{balance?.balance_eth_deposited?.toFixed(8) || '0.00000000'} ETH</span>
             </div>
           </div>
         </div>

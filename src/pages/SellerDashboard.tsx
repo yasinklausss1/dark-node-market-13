@@ -16,14 +16,23 @@ import EditProductModal from '@/components/EditProductModal';
 import OrderStatusModal from '@/components/OrderStatusModal';
 import { DisputeResolutionPanel } from '@/components/DisputeResolutionPanel';
 import { BulkDiscountManager } from '@/components/BulkDiscountManager';
-import { ProductAddonManager } from '@/components/ProductAddonManager';
-import { MultiImageUpload } from '@/components/ui/multi-image-upload';
 import { Switch } from '@/components/ui/switch';
 import { useChat } from '@/hooks/useChat';
 import { ConversationsModal } from '@/components/ConversationsModal';
 import { ChatModal } from '@/components/ChatModal';
-import { FansignUpload } from '@/components/FansignUpload';
-import { Product } from '@/types/Product';
+
+
+interface Product {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  image_url: string;
+  is_active: boolean;
+  created_at: string;
+  stock: number;
+}
 
 interface Order {
   id: string;
@@ -41,29 +50,17 @@ interface Order {
   tracking_number: string | null;
   tracking_url: string | null;
   buyer_username: string;
-  fansign_image_url: string | null;
-  fansign_uploaded_at: string | null;
   items: {
     order_item_id: string;
     quantity: number;
     price_eur: number;
     product_title: string | null;
   }[] | null;
-  addons?: Array<{
-    addon_name: string;
-    custom_value: string | null;
-    price_eur: number;
-  }>;
 }
+
 const SellerDashboard = () => {
-  const {
-    user,
-    profile,
-    loading
-  } = useAuth();
-  const {
-    toast
-  } = useToast();
+  const { user, profile, loading } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -74,32 +71,31 @@ const SellerDashboard = () => {
     price: '',
     category: '',
     imageUrl: '',
-    stock: '',
-    fansignDeliveryDays: '1-2' as '1-2' | '3' | '1-4'
+    stock: ''
   });
-  const [productImages, setProductImages] = useState<string[]>([]);
   const [enableBulkDiscount, setEnableBulkDiscount] = useState(false);
   const [bulkDiscountData, setBulkDiscountData] = useState({
     minQuantity: '',
     discountPercentage: ''
   });
-  const [newProductAddons, setNewProductAddons] = useState<Array<{name: string, price_eur: number, is_required: boolean}>>([]);
+  const [newProductId, setNewProductId] = useState<string | null>(null);
+  const [newProductTitle, setNewProductTitle] = useState<string>('');
+
   const [categories, setCategories] = useState<any[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string>('');
   const [selectedOrderStatus, setSelectedOrderStatus] = useState<string>('');
-
+  
   // Chat state
   const [conversationsModalOpen, setConversationsModalOpen] = useState(false);
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<any>(null);
-
+  
   // Get chat data
-  const {
-    conversations
-  } = useChat();
+  const { conversations } = useChat();
+
   useEffect(() => {
     fetchCategories();
     if (profile?.role === 'seller' || profile?.role === 'admin') {
@@ -107,91 +103,83 @@ const SellerDashboard = () => {
       fetchOrders();
     }
   }, [profile]);
+
   const fetchCategories = async () => {
-    const {
-      data,
-      error
-    } = await supabase.from('categories').select('*').order('name');
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name');
+    
     if (error) {
       console.error('Error fetching categories:', error);
       return;
     }
+
     setCategories(data || []);
   };
+
   const fetchProducts = async () => {
     if (!user) return;
-    const {
-      data,
-      error
-    } = await supabase.from('products').select('*').eq('seller_id', user.id).order('created_at', {
-      ascending: false
-    });
+
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('seller_id', user.id)
+      .order('created_at', { ascending: false });
+
     if (error) {
       console.error('Error fetching products:', error);
       return;
     }
-    setProducts((data || []) as Product[]);
+
+    setProducts(data || []);
   };
-  const fetchOrders = async () => {
-    if (!user) return;
-    const {
-      data,
-      error
-    } = await supabase.rpc('get_seller_orders', {
-      seller_uuid: user.id
-    });
-    if (error) {
-      console.error('Error fetching seller orders:', error);
-      return;
-    }
-    
-    const ordersData = (data as any) || [];
-    
-    // Fetch add-ons for each order
-    const ordersWithAddons = await Promise.all(
-      ordersData.map(async (order: any) => {
-        const { data: addonsData } = await supabase
-          .from('order_addon_selections')
-          .select('addon_name, custom_value, price_eur')
-          .eq('order_id', order.id);
-        
-        return {
-          ...order,
-          addons: addonsData || []
-        };
-      })
-    );
-    
-    setOrders(ordersWithAddons);
-  };
+
+const fetchOrders = async () => {
+  if (!user) return;
+
+  const { data, error } = await supabase
+    .rpc('get_seller_orders', { seller_uuid: user.id });
+
+  if (error) {
+    console.error('Error fetching seller orders:', error);
+    return;
+  }
+
+  setOrders((data as any) || []);
+};
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
-    // Validate at least one image is required
-    if (!formData.imageUrl && productImages.length === 0) {
+    // Validate image is required
+    if (!formData.imageUrl) {
       toast({
-        title: "Bild erforderlich",
-        description: "Bitte laden Sie mindestens ein Bild für Ihr Produkt hoch.",
+        title: "Image required",
+        description: "Please upload an image for your product.",
         variant: "destructive"
       });
       return;
     }
+
     setIsLoading(true);
-    const {
-      data,
-      error
-    } = await supabase.from('products').insert({
-      title: formData.title,
-      description: formData.description,
-      price: parseFloat(formData.price),
-      category: formData.category,
-      image_url: formData.imageUrl || null,
-      seller_id: user.id,
-      is_active: true,
-      stock: parseInt(formData.stock),
-      fansign_delivery_days: formData.fansignDeliveryDays
-    }).select().single();
+
+    const { data, error } = await supabase
+      .from('products')
+      .insert({
+        title: formData.title,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        category: formData.category,
+        image_url: formData.imageUrl || null,
+        seller_id: user.id,
+        is_active: true,
+        stock: parseInt(formData.stock)
+      })
+      .select()
+      .single();
+
     if (error) {
       toast({
         title: "Error adding product",
@@ -199,64 +187,34 @@ const SellerDashboard = () => {
         variant: "destructive"
       });
     } else {
+      toast({
+        title: "Product added",
+        description: "Your product has been successfully added."
+      });
+
       // If bulk discount is enabled, create it
       if (enableBulkDiscount && bulkDiscountData.minQuantity && bulkDiscountData.discountPercentage) {
-        const {
-          error: discountError
-        } = await supabase.from('bulk_discounts').insert({
-          product_id: data.id,
-          min_quantity: parseInt(bulkDiscountData.minQuantity),
-          discount_percentage: parseFloat(bulkDiscountData.discountPercentage)
-        });
+        const { error: discountError } = await supabase
+          .from('bulk_discounts')
+          .insert({
+            product_id: data.id,
+            min_quantity: parseInt(bulkDiscountData.minQuantity),
+            discount_percentage: parseFloat(bulkDiscountData.discountPercentage)
+          });
+
         if (discountError) {
-          console.error("Bulk discount error:", discountError);
-        }
-      }
-
-      // Create add-ons if any were added
-      if (newProductAddons.length > 0) {
-        const addonsToInsert = newProductAddons.map(addon => ({
-          product_id: data.id,
-          name: addon.name,
-          price_eur: addon.price_eur,
-          is_required: addon.is_required
-        }));
-        
-        const { error: addonsError } = await supabase
-          .from('product_addons')
-          .insert(addonsToInsert);
-        
-        if (addonsError) {
-          console.error("Add-ons error:", addonsError);
-        }
-      }
-
-      // Insert product images if any
-      if (productImages.length > 0) {
-        const imagesToInsert = productImages.map((url, index) => ({
-          product_id: data.id,
-          image_url: url,
-          display_order: index
-        }));
-        
-        const { error: imagesError } = await supabase
-          .from('product_images')
-          .insert(imagesToInsert);
-        
-        if (imagesError) {
-          console.error("Images error:", imagesError);
           toast({
-            title: "Warning",
-            description: "Product created but some images couldn't be saved.",
+            title: "Product added, but bulk discount failed",
+            description: discountError.message,
             variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Product and bulk discount added",
+            description: "Your product and bulk discount have been successfully created."
           });
         }
       }
-
-      toast({
-        title: "Product added",
-        description: "Your product has been successfully added with all add-ons."
-      });
 
       setFormData({
         title: '',
@@ -264,26 +222,25 @@ const SellerDashboard = () => {
         price: '',
         category: '',
         imageUrl: '',
-        stock: '',
-        fansignDeliveryDays: '1-2' as '1-2' | '3' | '1-4'
+        stock: ''
       });
       setEnableBulkDiscount(false);
       setBulkDiscountData({
         minQuantity: '',
         discountPercentage: ''
       });
-      setNewProductAddons([]);
-      setProductImages([]);
       fetchProducts();
     }
+
     setIsLoading(false);
   };
+
   const toggleProductStatus = async (productId: string, isActive: boolean) => {
-    const {
-      error
-    } = await supabase.from('products').update({
-      is_active: !isActive
-    }).eq('id', productId);
+    const { error } = await supabase
+      .from('products')
+      .update({ is_active: !isActive })
+      .eq('id', productId);
+
     if (error) {
       toast({
         title: "Error",
@@ -298,52 +255,17 @@ const SellerDashboard = () => {
       });
     }
   };
+
   const deleteProduct = async (productId: string, productTitle: string) => {
     if (!confirm(`Are you sure you want to delete the product "${productTitle}"?`)) {
       return;
     }
 
-    // First check if product has orders
-    const {
-      data: orderItems,
-      error: checkError
-    } = await supabase.from('order_items').select('id').eq('product_id', productId).limit(1);
-    if (checkError) {
-      toast({
-        title: "Error checking product",
-        description: checkError.message,
-        variant: "destructive"
-      });
-      return;
-    }
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', productId);
 
-    // If product has orders, deactivate instead of delete
-    if (orderItems && orderItems.length > 0) {
-      const {
-        error
-      } = await supabase.from('products').update({
-        is_active: false
-      }).eq('id', productId);
-      if (error) {
-        toast({
-          title: "Error deactivating",
-          description: error.message,
-          variant: "destructive"
-        });
-      } else {
-        fetchProducts();
-        toast({
-          title: "Product deactivated",
-          description: "This product has existing orders and was deactivated instead of deleted."
-        });
-      }
-      return;
-    }
-
-    // No orders, safe to delete
-    const {
-      error
-    } = await supabase.from('products').delete().eq('id', productId);
     if (error) {
       toast({
         title: "Error deleting",
@@ -358,11 +280,13 @@ const SellerDashboard = () => {
       });
     }
   };
+
   const handleUpdateOrderStatus = (orderId: string, currentStatus: string) => {
     setSelectedOrderId(orderId);
     setSelectedOrderStatus(currentStatus);
     setStatusModalOpen(true);
   };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'processing':
@@ -375,6 +299,7 @@ const SellerDashboard = () => {
         return <CheckCircle className="h-4 w-4 text-muted-foreground" />;
     }
   };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -391,21 +316,30 @@ const SellerDashboard = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-background">
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>;
+      </div>
+    );
   }
-  if (!user || profile?.role !== 'seller' && profile?.role !== 'admin') {
+
+  if (!user || (profile?.role !== 'seller' && profile?.role !== 'admin')) {
     return <Navigate to="/marketplace" replace />;
   }
-  return <div className="min-h-screen bg-background p-6">
+
+  return (
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <h1 className="text-3xl font-bold font-cinzel">Seller Dashboard</h1>
           </div>
-          <Button variant="outline" onClick={() => navigate('/marketplace')}>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/marketplace')}
+          >
             Back to Marketplace
           </Button>
         </div>
@@ -419,12 +353,12 @@ const SellerDashboard = () => {
           <CardContent>
             <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
               <li>Do not scam or mislead users. Honesty is mandatory.</li>
-              
+              <li>Ship orders promptly and provide accurate tracking when available.</li>
               <li>Describe products truthfully with real photos and specifications.</li>
               <li>Maintain professional communication and respond within 24–48 hours.</li>
               <li>Comply with all applicable laws and do not list prohibited items.</li>
               <li>Respect user privacy; never share buyer information.</li>
-              
+              <li>Cancel and refund orders you cannot fulfill in a timely manner.</li>
             </ul>
           </CardContent>
         </Card>
@@ -439,10 +373,12 @@ const SellerDashboard = () => {
               <User className="h-4 w-4" />
               Orders
             </TabsTrigger>
-            {profile?.role === 'admin' && <TabsTrigger value="disputes" className="flex items-center gap-2">
+            {profile?.role === 'admin' && (
+              <TabsTrigger value="disputes" className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
                 Disputes
-              </TabsTrigger>}
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="products" className="space-y-6">
@@ -459,89 +395,131 @@ const SellerDashboard = () => {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <Label htmlFor="title">Product Name</Label>
-                      <Input id="title" value={formData.title} onChange={e => setFormData({
-                      ...formData,
-                      title: e.target.value
-                    })} required />
+                      <Input
+                        id="title"
+                        value={formData.title}
+                        onChange={(e) => setFormData({...formData, title: e.target.value})}
+                        required
+                      />
                     </div>
 
                     <div>
                       <Label htmlFor="price">Price (EUR)</Label>
-                      <Input id="price" type="number" step="0.01" value={formData.price} onChange={e => setFormData({
-                      ...formData,
-                      price: e.target.value
-                    })} required />
+                      <Input
+                        id="price"
+                        type="number"
+                        step="0.01"
+                        value={formData.price}
+                        onChange={(e) => setFormData({...formData, price: e.target.value})}
+                        required
+                      />
                     </div>
 
                     <div>
                       <Label htmlFor="category">Category</Label>
-                      <Select value={formData.category} onValueChange={value => setFormData({
-                      ...formData,
-                      category: value
-                    })}>
+                      <Select 
+                        value={formData.category} 
+                        onValueChange={(value) => setFormData({...formData, category: value})}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Choose category" />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories.map(category => <SelectItem key={category.id} value={category.name}>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.name}>
                               {category.name}
-                            </SelectItem>)}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div>
                       <Label htmlFor="stock">Stock</Label>
-                      <Input id="stock" type="number" min="0" value={formData.stock} onChange={e => setFormData({
-                      ...formData,
-                      stock: e.target.value
-                    })} required />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="fansignDeliveryDays">Fansign Lieferzeit (Tage)</Label>
-                      <Select value={formData.fansignDeliveryDays} onValueChange={value => setFormData({
-                      ...formData,
-                      fansignDeliveryDays: value as '1-2' | '3' | '1-4'
-                    })} required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Wähle Lieferzeit" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1-2">1-2 Tage</SelectItem>
-                          <SelectItem value="3">3 Tage</SelectItem>
-                          <SelectItem value="1-4">1-4 Tage</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label>Produktbilder (mehrere möglich)</Label>
-                      <MultiImageUpload 
-                        images={productImages} 
-                        onChange={setProductImages}
-                        maxImages={5}
+                      <Input
+                        id="stock"
+                        type="number"
+                        min="0"
+                        value={formData.stock}
+                        onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                        required
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="imageUrl">Hauptbild (optional - wird aus Galerie verwendet)</Label>
-                      <FileUpload value={formData.imageUrl} onChange={url => setFormData({
-                      ...formData,
-                      imageUrl: url
-                    })} />
+                      <Label htmlFor="imageUrl">Product Image</Label>
+                      <FileUpload
+                        value={formData.imageUrl}
+                        onChange={(url) => setFormData({...formData, imageUrl: url})}
+                      />
                     </div>
 
                     <div>
                       <Label htmlFor="description">Description</Label>
-                      <Textarea id="description" value={formData.description} onChange={e => setFormData({
-                      ...formData,
-                      description: e.target.value
-                    })} rows={4} />
+                      <Textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        rows={4}
+                      />
                     </div>
 
                     {/* Bulk Discount Option */}
-                    
+                    <div className="border rounded-lg p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="enable-bulk-discount" className="text-sm font-medium">
+                            Enable Bulk Discount
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Offer discounts for larger quantities
+                          </p>
+                        </div>
+                        <Switch
+                          id="enable-bulk-discount"
+                          checked={enableBulkDiscount}
+                          onCheckedChange={setEnableBulkDiscount}
+                        />
+                      </div>
+
+                      {enableBulkDiscount && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label htmlFor="min-quantity" className="text-xs">
+                              Min. Quantity
+                            </Label>
+                            <Input
+                              id="min-quantity"
+                              type="number"
+                              min="2"
+                              placeholder="e.g. 5"
+                              value={bulkDiscountData.minQuantity}
+                              onChange={(e) => setBulkDiscountData({
+                                ...bulkDiscountData, 
+                                minQuantity: e.target.value
+                              })}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="discount-percentage" className="text-xs">
+                              Discount %
+                            </Label>
+                            <Input
+                              id="discount-percentage"
+                              type="number"
+                              min="1"
+                              max="50"
+                              placeholder="e.g. 10"
+                              value={bulkDiscountData.discountPercentage}
+                              onChange={(e) => setBulkDiscountData({
+                                ...bulkDiscountData, 
+                                discountPercentage: e.target.value
+                              })}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                     <Button type="submit" className="w-full" disabled={isLoading}>
                       <Upload className="h-4 w-4 mr-2" />
@@ -549,85 +527,25 @@ const SellerDashboard = () => {
                     </Button>
                   </form>
 
-                  {/* Add-ons Section - Before product is created */}
-                  <div className="space-y-4 border-t pt-4">
-                    <h3 className="text-lg font-semibold">Product Add-ons (Optional)</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Add customizable options for your product (e.g., custom names, extra services)
-                    </p>
-                    
-                    {/* Display existing addons */}
-                    {newProductAddons.map((addon, index) => (
-                      <div key={index} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
-                        <div className="flex-1">
-                          <div className="font-medium">{addon.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            +€{addon.price_eur.toFixed(2)} {addon.is_required && "(Erforderlich)"}
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          type="button"
-                          onClick={() => {
-                            setNewProductAddons(newProductAddons.filter((_, i) => i !== index));
-                          }}
-                        >
-                          <Upload className="h-4 w-4 rotate-180" />
-                        </Button>
-                      </div>
-                    ))}
-
-                    {/* Add new addon inline */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input
-                        placeholder="Add-on Name (z.B. Custom Name)"
-                        id="addon-name"
-                        type="text"
+                  {/* Bulk Discount Management - Show after product is created */}
+                  {newProductId && (
+                    <div className="mt-6 border-t pt-6">
+                      <BulkDiscountManager 
+                        productId={newProductId}
+                        productTitle={newProductTitle}
                       />
-                      <Input
-                        placeholder="Preis (EUR)"
-                        id="addon-price"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                      />
+                      <Button
+                        variant="outline"
+                        className="w-full mt-4"
+                        onClick={() => {
+                          setNewProductId(null);
+                          setNewProductTitle('');
+                        }}
+                      >
+                        Finish Product Setup
+                      </Button>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="addon-required"
-                        className="h-4 w-4"
-                      />
-                      <Label htmlFor="addon-required" className="cursor-pointer text-sm">
-                        Erforderlich
-                      </Label>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        const nameInput = document.getElementById('addon-name') as HTMLInputElement;
-                        const priceInput = document.getElementById('addon-price') as HTMLInputElement;
-                        const requiredInput = document.getElementById('addon-required') as HTMLInputElement;
-                        
-                        if (nameInput.value.trim()) {
-                          setNewProductAddons([...newProductAddons, {
-                            name: nameInput.value,
-                            price_eur: parseFloat(priceInput.value) || 0,
-                            is_required: requiredInput.checked
-                          }]);
-                          nameInput.value = '';
-                          priceInput.value = '';
-                          requiredInput.checked = false;
-                        }
-                      }}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Add-on hinzufügen
-                    </Button>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -641,35 +559,53 @@ const SellerDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {products.map(product => <div key={product.id} className="border rounded-lg p-4">
+                    {products.map((product) => (
+                      <div key={product.id} className="border rounded-lg p-4">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <h3 className="font-semibold">{product.title}</h3>
                             <p className="text-sm text-muted-foreground">{product.category}</p>
                             <p className="text-lg font-bold text-primary">€{product.price}</p>
                             <p className="text-sm text-muted-foreground">Stock: {product.stock} units</p>
-                            {product.stock === 0 && <p className="text-sm text-red-500 font-medium">Out of stock</p>}
+                            {product.stock === 0 && (
+                              <p className="text-sm text-red-500 font-medium">Out of stock</p>
+                            )}
                           </div>
                           <div className="flex gap-2 flex-wrap">
-                            <Button variant="outline" size="sm" onClick={() => {
-                          setEditingProduct(product);
-                          setEditModalOpen(true);
-                        }}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingProduct(product);
+                                setEditModalOpen(true);
+                              }}
+                            >
                               <Edit className="h-4 w-4 mr-1" />
                               Edit
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => deleteProduct(product.id, product.title)}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => deleteProduct(product.id, product.title)}
+                            >
                               Delete
                             </Button>
-                            <Button variant={product.is_active ? "destructive" : "default"} size="sm" onClick={() => toggleProductStatus(product.id, product.is_active)}>
+                            <Button
+                              variant={product.is_active ? "destructive" : "default"}
+                              size="sm"
+                              onClick={() => toggleProductStatus(product.id, product.is_active)}
+                            >
                               {product.is_active ? "Deactivate" : "Activate"}
                             </Button>
                           </div>
                         </div>
-                      </div>)}
-                    {products.length === 0 && <p className="text-muted-foreground text-center py-8">
+                      </div>
+                    ))}
+                    {products.length === 0 && (
+                      <p className="text-muted-foreground text-center py-8">
                         No products added yet.
-                      </p>}
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -686,7 +622,8 @@ const SellerDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {orders.map(order => <div key={order.id} className="border rounded-lg p-4">
+                  {orders.map((order) => (
+                    <div key={order.id} className="border rounded-lg p-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <div className="flex items-center justify-between mb-2">
@@ -705,114 +642,112 @@ const SellerDashboard = () => {
                           <p className="text-sm">Customer: <span className="font-medium">@{order.buyer_username}</span></p>
                           
                           {/* Tracking Information */}
-                          {order.tracking_number && <div className="mt-2 p-2 bg-muted rounded">
+                          {order.tracking_number && (
+                            <div className="mt-2 p-2 bg-muted rounded">
                               <p className="text-sm font-medium">Tracking: {order.tracking_number}</p>
-                              {order.tracking_url && <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                              {order.tracking_url && (
+                                <a 
+                                  href={order.tracking_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-primary hover:underline"
+                                >
                                   Track Package
-                                </a>}
-                            </div>}
+                                </a>
+                              )}
+                            </div>
+                          )}
                           
                           <div className="mt-2">
                             <h4 className="font-medium text-sm">Items:</h4>
-                            {order.items?.map(item => <p key={item.order_item_id} className="text-xs text-muted-foreground">
+                            {order.items?.map((item) => (
+                              <p key={item.order_item_id} className="text-xs text-muted-foreground">
                                 {item.quantity}x {item.product_title || 'Product unavailable'} (€{item.price_eur.toFixed(2)})
-                              </p>)}
+                              </p>
+                            ))}
                           </div>
 
-                          {/* Add-ons Section */}
-                          {order.addons && order.addons.length > 0 && (
-                            <div className="mt-3 p-2 bg-muted/50 rounded">
-                              <h4 className="font-medium text-sm mb-1">Add-ons & Name Selection:</h4>
-                              {order.addons.map((addon, idx) => {
-                                // Handle the special name selection addon
-                                if (addon.addon_name === 'Name for fansign') {
-                                  if (addon.custom_value === '__use_username__') {
-                                    return (
-                                      <p key={idx} className="text-xs font-medium text-primary mb-1">
-                                        📝 Name: Use buyer's username (@{order.buyer_username})
-                                      </p>
-                                    );
-                                  } else {
-                                    return (
-                                      <p key={idx} className="text-xs font-medium text-primary mb-1">
-                                        📝 Name: Custom text "{addon.custom_value}"
-                                      </p>
-                                    );
-                                  }
-                                }
-                                
-                                // Regular addons
-                                return (
-                                  <p key={idx} className="text-xs text-muted-foreground">
-                                    • {addon.addon_name}
-                                    {addon.custom_value && `: "${addon.custom_value}"`}
-                                    {addon.price_eur > 0 && ` (+€${addon.price_eur.toFixed(2)})`}
-                                  </p>
-                                );
-                              })}
-                            </div>
-                          )}
-
                           {/* Update Status Button */}
-                          <Button variant="outline" size="sm" className="mt-3" onClick={() => handleUpdateOrderStatus(order.id, order.order_status)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-3"
+                            onClick={() => handleUpdateOrderStatus(order.id, order.order_status)}
+                          >
                             Update Status
                           </Button>
                         </div>
                         
-                        <div className="space-y-4">
-                          <div>
-                            <h4 className="font-medium text-sm mb-2">Shipping Address:</h4>
-                            <div className="text-sm text-muted-foreground space-y-1">
-                              <p>{order.shipping_first_name} {order.shipping_last_name}</p>
-                              <p>{order.shipping_street} {order.shipping_house_number}</p>
-                              <p>{order.shipping_postal_code} {order.shipping_city}</p>
-                              <p>{order.shipping_country}</p>
-                            </div>
-                          </div>
-
-                          {/* Fansign Upload Section */}
-                          <div>
-                            <h4 className="font-medium text-sm mb-2">Fansign Image:</h4>
-                            <FansignUpload
-                              orderId={order.id}
-                              currentImageUrl={order.fansign_image_url}
-                              onUploadSuccess={() => fetchOrders()}
-                            />
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">Shipping Address:</h4>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <p>{order.shipping_first_name} {order.shipping_last_name}</p>
+                            <p>{order.shipping_street} {order.shipping_house_number}</p>
+                            <p>{order.shipping_postal_code} {order.shipping_city}</p>
+                            <p>{order.shipping_country}</p>
                           </div>
                         </div>
                       </div>
-                    </div>)}
-                  {orders.length === 0 && <p className="text-muted-foreground text-center py-8">
+                    </div>
+                  ))}
+                  {orders.length === 0 && (
+                    <p className="text-muted-foreground text-center py-8">
                       No orders yet.
-                    </p>}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
 
-          {profile?.role === 'admin' && <TabsContent value="disputes" className="space-y-6">
+          {profile?.role === 'admin' && (
+            <TabsContent value="disputes" className="space-y-6">
               <DisputeResolutionPanel />
-            </TabsContent>}
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Edit Product Modal */}
-        <EditProductModal product={editingProduct} open={editModalOpen} onOpenChange={setEditModalOpen} onProductUpdated={fetchProducts} />
+        <EditProductModal
+          product={editingProduct}
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          onProductUpdated={fetchProducts}
+        />
 
         {/* Order Status Modal */}
-        <OrderStatusModal open={statusModalOpen} onOpenChange={setStatusModalOpen} orderId={selectedOrderId} currentStatus={selectedOrderStatus} onStatusUpdated={fetchOrders} />
+        <OrderStatusModal
+          open={statusModalOpen}
+          onOpenChange={setStatusModalOpen}
+          orderId={selectedOrderId}
+          currentStatus={selectedOrderStatus}
+          onStatusUpdated={fetchOrders}
+        />
 
         {/* Chat Modal */}
-        <ChatModal open={chatModalOpen} onOpenChange={open => {
-        setChatModalOpen(open);
-        if (!open) {
-          setSelectedConversation(null);
-        }
-      }} productId={selectedConversation?.product_id} sellerId={selectedConversation?.seller_id} productTitle={selectedConversation?.product_title} sellerUsername={selectedConversation?.other_user_username} conversationId={selectedConversation?.id} conversationStatus={selectedConversation?.status} onBackToConversations={() => {
-        setChatModalOpen(false);
-        setConversationsModalOpen(true);
-      }} />
+        <ChatModal
+          open={chatModalOpen}
+          onOpenChange={(open) => {
+            setChatModalOpen(open);
+            if (!open) {
+              setSelectedConversation(null);
+            }
+          }}
+          productId={selectedConversation?.product_id}
+          sellerId={selectedConversation?.seller_id}
+          productTitle={selectedConversation?.product_title}
+          sellerUsername={selectedConversation?.other_user_username}
+          conversationId={selectedConversation?.id}
+          conversationStatus={selectedConversation?.status}
+          onBackToConversations={() => {
+            setChatModalOpen(false);
+            setConversationsModalOpen(true);
+          }}
+        />
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default SellerDashboard;

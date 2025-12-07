@@ -3,452 +3,602 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, Bitcoin, Coins, Euro, X, Wallet, Clock, AlertCircle } from "lucide-react";
+import { Copy, Bitcoin, Coins, Euro, RefreshCw, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useCryptoPrices } from "@/hooks/useCryptoPrices";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
-interface DepositAddress {
-  currency: string;
-  address: string;
-}
 
 export function DepositRequest() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [selectedCurrency, setSelectedCurrency] = useState<'BTC' | 'LTC' | 'ETH'>('BTC');
-  const [eurAmount, setEurAmount] = useState("");
-  const [addresses, setAddresses] = useState<DepositAddress[]>([]);
-  const [activeRequest, setActiveRequest] = useState<any>(null);
+  const [selectedCrypto, setSelectedCrypto] = useState<"bitcoin" | "litecoin">("bitcoin");
+  const [eurAmount, setEurAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState<string>("");
-  const [progressPercent, setProgressPercent] = useState(100);
-  const [showCloseDialog, setShowCloseDialog] = useState(false);
-  const { btcPrice, ltcPrice } = useCryptoPrices();
-  const ethPrice = 3500;
+  const [generatingAddresses, setGeneratingAddresses] = useState(false);
+  const [userAddresses, setUserAddresses] = useState<{btc: string, ltc: string} | null>(null);
+  const [existingRequest, setExistingRequest] = useState<{
+    id: string;
+    crypto_amount: number;
+    requested_eur: number;
+    qr_data: string;
+    fingerprint: number;
+    expires_at: string;
+    address: string;
+    currency: string;
+  } | null>(null);
+  const [btcPrice, setBtcPrice] = useState<number | null>(null);
+  const [ltcPrice, setLtcPrice] = useState<number | null>(null);
+  const [timeLeft, setTimeLeft] = useState<string>("");
 
+  // Check for existing pending request and user addresses
   useEffect(() => {
     if (user) {
+      checkExistingRequest();
       getUserAddresses();
-      checkActiveRequest();
     }
   }, [user]);
 
-  // Timer for active deposit request
+  // Countdown timer for active deposit request
   useEffect(() => {
-    if (!activeRequest) return;
-
-    const interval = setInterval(() => {
+    if (!existingRequest) return;
+    
+    const updateCountdown = () => {
       const now = new Date().getTime();
-      const expires = new Date(activeRequest.expires_at).getTime();
-      const totalDuration = 6 * 60 * 60 * 1000; // 6 hours
-      const remaining = expires - now;
-
-      if (remaining <= 0) {
-        setActiveRequest(null);
-        setTimeRemaining("Expired");
-        setProgressPercent(0);
-        toast({
-          title: "Deposit Request Expired",
-          description: "Your deposit request has expired. Please create a new one.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const hours = Math.floor(remaining / (1000 * 60 * 60));
-      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+      const expires = new Date(existingRequest.expires_at).getTime();
+      const difference = expires - now;
       
-      setTimeRemaining(`${hours}h ${minutes}m ${seconds}s`);
-      setProgressPercent(Math.round((remaining / totalDuration) * 100));
-    }, 1000);
+      if (difference > 0) {
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+        
+        setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+      } else {
+        setTimeLeft("Expired");
+        setExistingRequest(null);
+      }
+    };
+    
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+    
+    return () => clearInterval(timer);
+  }, [existingRequest]);
 
-    return () => clearInterval(interval);
-  }, [activeRequest]);
-
-  const getUserAddresses = async () => {
-    if (!user?.id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('user_addresses')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true);
-
-      if (error) throw error;
-      setAddresses(data || []);
-    } catch (error) {
-      console.error('Error fetching addresses:', error);
-    }
-  };
-
-  const checkActiveRequest = async () => {
-    if (!user?.id) return;
-
+  const checkExistingRequest = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('deposit_requests')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'pending')
-        .order('created_at', { ascending: false })
         .maybeSingle();
 
       if (error) throw error;
       
       if (data) {
+        // Check if request is still valid (not expired)
         const now = new Date().getTime();
         const expires = new Date(data.expires_at).getTime();
         
         if (expires > now) {
-          setActiveRequest(data);
-          setSelectedCurrency(data.currency as 'BTC' | 'LTC' | 'ETH');
-        } else {
-          // Auto-close expired request
-          await closeDepositRequest(data.id);
+          const currency = data.currency === 'BTC' ? 'bitcoin' : 'litecoin';
+          const qrData = `${currency}:${data.address}?amount=${data.crypto_amount.toFixed(8)}`;
+          
+          setExistingRequest({
+            ...data,
+            qr_data: qrData
+          });
+          setSelectedCrypto(currency);
         }
       }
     } catch (error) {
-      console.error('Error checking active request:', error);
+      console.error('Error checking existing request:', error);
+    }
+  };
+
+  const getUserAddresses = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_addresses')
+        .select('currency, address')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      if (error) throw error;
+      
+      if (data && data.length >= 2) {
+        const btcAddr = data.find(addr => addr.currency === 'BTC')?.address;
+        const ltcAddr = data.find(addr => addr.currency === 'LTC')?.address;
+        
+        if (btcAddr && ltcAddr && btcAddr !== 'pending' && ltcAddr !== 'pending') {
+          setUserAddresses({ btc: btcAddr, ltc: ltcAddr });
+        } else {
+          // Generate addresses if they are still pending
+          await generateUserAddresses();
+        }
+      } else {
+        // Generate addresses if they don't exist
+        await generateUserAddresses();
+      }
+    } catch (error) {
+      console.error('Error getting user addresses:', error);
+    }
+  };
+
+  const generateUserAddresses = async () => {
+    if (!user) return;
+    
+    setGeneratingAddresses(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-crypto-addresses');
+      if (error) throw error;
+      
+      if (data && data.success) {
+        // Refresh addresses
+        setTimeout(() => getUserAddresses(), 1000);
+        toast({
+          title: "Addresses Generated",
+          description: "Your Bitcoin and Litecoin addresses have been created.",
+        });
+      } else {
+        throw new Error("Failed to generate addresses");
+      }
+    } catch (error) {
+      console.error('Error generating addresses:', error);
+      toast({
+        title: "Error", 
+        description: "Could not generate crypto addresses. Please refresh the page.",
+        variant: "destructive",
+      });
+      
+      // Retry after delay
+      setTimeout(() => {
+        setGeneratingAddresses(false);
+        getUserAddresses();
+      }, 2000);
+    } finally {
+      setTimeout(() => setGeneratingAddresses(false), 1000);
+    }
+  };
+
+  const fetchPrices = async () => {
+    try {
+      // Use a more reliable endpoint with better CORS support
+      const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,litecoin&vs_currencies=eur&precision=2');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      const btcPriceValue = data.bitcoin?.eur;
+      const ltcPriceValue = data.litecoin?.eur;
+      
+      if (!btcPriceValue || !ltcPriceValue) {
+        throw new Error('Invalid price data received');
+      }
+      
+      setBtcPrice(btcPriceValue);
+      setLtcPrice(ltcPriceValue);
+      
+      return { btcPrice: btcPriceValue, ltcPrice: ltcPriceValue };
+    } catch (error) {
+      console.error('Error fetching crypto prices:', error);
+      // Use fallback prices to prevent blocking
+      const fallbackBtc = 90000;
+      const fallbackLtc = 100;
+      setBtcPrice(fallbackBtc);
+      setLtcPrice(fallbackLtc);
+      return { btcPrice: fallbackBtc, ltcPrice: fallbackLtc };
     }
   };
 
   const createDepositRequest = async () => {
-    if (!user?.id || !eurAmount || parseFloat(eurAmount) < 10) {
+    if (!user) {
       toast({
-        title: "Invalid amount",
-        description: "Minimum deposit is €10",
-        variant: "destructive"
+        title: "Authentication Required",
+        description: "Please log in to create a deposit request",
+        variant: "destructive",
       });
       return;
     }
 
-    // Check if there's already an active request
-    if (activeRequest) {
+    if (!userAddresses) {
+      toast({
+        title: "Error",
+        description: "User addresses not ready. Please wait or refresh the page.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!eurAmount || parseFloat(eurAmount) <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if there's already a pending request
+    if (existingRequest) {
       toast({
         title: "Active Request Exists",
-        description: "Please complete or cancel your current deposit request first.",
-        variant: "destructive"
+        description: "You already have a pending deposit request. Please complete or close it first.",
+        variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
+    
     try {
-      const amount = parseFloat(eurAmount);
-      const address = addresses.find(a => a.currency === selectedCurrency);
+      const prices = await fetchPrices();
       
-      if (!address) {
-        throw new Error('Address not found');
+      const amountEur = parseFloat(eurAmount);
+      const price = selectedCrypto === "bitcoin" ? prices.btcPrice : prices.ltcPrice;
+      
+      if (!price || price <= 0) {
+        throw new Error("Invalid crypto price received");
       }
-
-      const price = selectedCurrency === 'BTC' ? btcPrice : 
-                    selectedCurrency === 'LTC' ? ltcPrice : ethPrice;
-      const cryptoAmount = amount / price;
-      const expiresAt = new Date(Date.now() + 6 * 60 * 60 * 1000); // 6 hours
       
+      const amountCrypto = amountEur / price;
+      
+      // Use user's individual address
+      const address = selectedCrypto === "bitcoin" ? userAddresses.btc : userAddresses.ltc;
+      
+      // Generate fingerprint (1-99 satoshis/litoshis)
+      const fingerprint = Math.floor(Math.random() * 99) + 1;
+      const finalAmount = amountCrypto + (fingerprint / 1e8);
+      
+      // Set expiry to 6 hours from now
+      const expiresAt = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
+      
+      // Create deposit request in database
       const { data, error } = await supabase
         .from('deposit_requests')
         .insert({
           user_id: user.id,
-          currency: selectedCurrency,
-          requested_eur: amount,
-          crypto_amount: cryptoAmount,
+          currency: selectedCrypto === "bitcoin" ? "BTC" : "LTC",
+          address: address,
+          requested_eur: amountEur,
           rate_locked: price,
-          address: address.address,
-          fingerprint: Math.floor(Math.random() * 1000000),
-          expires_at: expiresAt.toISOString(),
-          status: 'pending'
+          crypto_amount: finalAmount,
+          fingerprint: fingerprint,
+          status: 'pending',
+          expires_at: expiresAt
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      setActiveRequest(data);
+      // Create BIP21 URI with exact amount
+      const currency = selectedCrypto === "bitcoin" ? "bitcoin" : "litecoin";
+      const qrData = `${currency}:${address}?amount=${finalAmount.toFixed(8)}`;
+      
+      const newRequest = {
+        id: data.id,
+        crypto_amount: finalAmount,
+        requested_eur: amountEur,
+        qr_data: qrData,
+        fingerprint: fingerprint,
+        expires_at: expiresAt,
+        address: address,
+        currency: data.currency
+      };
+
+      setExistingRequest(newRequest);
+
       toast({
         title: "Deposit Request Created",
-        description: `Send exactly ${cryptoAmount.toFixed(8)} ${selectedCurrency} to the address below.`,
+        description: `Send exactly ${finalAmount.toFixed(8)} ${selectedCrypto.toUpperCase()} to your address within 6 hours`,
       });
-    } catch (error: any) {
+      
+    } catch (error) {
       console.error('Error creating deposit request:', error);
+      
+      let errorMessage = "Could not create deposit request";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('auth')) {
+          errorMessage = "Please log in to create a deposit request";
+        } else if (error.message.includes('price')) {
+          errorMessage = "Could not fetch current crypto prices. Please try again.";
+        } else if (error.message.includes('duplicate key')) {
+          errorMessage = "You already have a pending deposit request. Please complete or close it first.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: error.message,
-        variant: "destructive"
+        description: errorMessage,
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const closeDepositRequest = async (requestId?: string) => {
-    const id = requestId || activeRequest?.id;
-    if (!id) return;
-
+  const closeDepositRequest = async () => {
+    if (!existingRequest) return;
+    
     try {
-      const { error } = await supabase
-        .from('deposit_requests')
-        .update({ status: 'closed' })
-        .eq('id', id);
+      const { data, error } = await supabase.rpc('close_deposit_request', {
+        request_id: existingRequest.id
+      });
 
       if (error) throw error;
 
-      setActiveRequest(null);
-      setEurAmount("");
-      toast({
-        title: "Request Cancelled",
-        description: "Your deposit request has been cancelled.",
-      });
+      if (data) {
+        setExistingRequest(null);
+        setEurAmount("");
+        toast({
+          title: "Request Closed",
+          description: "Your deposit request has been closed.",
+        });
+      } else {
+        throw new Error("Failed to close request");
+      }
     } catch (error) {
       console.error('Error closing request:', error);
+      toast({
+        title: "Error",
+        description: "Could not close deposit request",
+        variant: "destructive",
+      });
     }
   };
 
-  const copyAddress = async () => {
-    if (!activeRequest) return;
-    await navigator.clipboard.writeText(activeRequest.address);
+  const copyQRData = async () => {
+    if (!existingRequest) return;
+    
+    await navigator.clipboard.writeText(existingRequest.qr_data);
     toast({
       title: "Copied",
-      description: "Deposit address copied to clipboard",
+      description: "Payment URI copied to clipboard",
     });
   };
 
-  const getCurrencyIcon = (currency: string) => {
-    switch (currency) {
-      case 'BTC': return <Bitcoin className="h-5 w-5 text-orange-500" />;
-      case 'LTC': return <Coins className="h-5 w-5 text-gray-500" />;
-      case 'ETH': return <Wallet className="h-5 w-5 text-blue-500" />;
-      default: return <Euro className="h-5 w-5" />;
-    }
+  const copyAddress = async () => {
+    if (!existingRequest) return;
+    await navigator.clipboard.writeText(existingRequest.address);
+    toast({
+      title: "Copied",
+      description: "Address copied to clipboard",
+    });
   };
 
-  // Active Request View
-  if (activeRequest) {
+  const resetRequest = () => {
+    setExistingRequest(null);
+    setEurAmount("");
+  };
+
+  // Show existing request if it exists
+  if (existingRequest) {
+    const cryptoName = existingRequest.currency === 'BTC' ? 'bitcoin' : 'litecoin';
     return (
-      <>
-        <Card className="w-full max-w-2xl mx-auto">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                {getCurrencyIcon(activeRequest.currency)}
-                Active Deposit Request
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCloseDialog(true)}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Timer Section */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <Clock className="h-4 w-4" />
-                  Time Remaining
-                </div>
-                <span className="text-lg font-bold font-mono">{timeRemaining}</span>
-              </div>
-              <Progress value={progressPercent} className="h-2" />
-              {progressPercent < 20 && (
-                <Alert variant="destructive" className="mt-2">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Your deposit request will expire soon!
-                  </AlertDescription>
-                </Alert>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {cryptoName === "bitcoin" ? (
+                <Bitcoin className="h-5 w-5 text-orange-500" />
+              ) : (
+                <Coins className="h-5 w-5 text-blue-500" />
               )}
+              Active Deposit Request
             </div>
-
-            {/* Amount Info */}
-            <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
-              <div>
-                <p className="text-sm text-muted-foreground">Amount to Send</p>
-                <p className="text-lg font-bold font-mono">
-                  {activeRequest.crypto_amount.toFixed(8)} {activeRequest.currency}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">EUR Value</p>
-                <p className="text-lg font-bold">€{activeRequest.requested_eur.toFixed(2)}</p>
-              </div>
-              <div className="col-span-2">
-                <p className="text-sm text-muted-foreground">Exchange Rate (Locked)</p>
-                <p className="text-sm font-medium">1 {activeRequest.currency} = €{activeRequest.rate_locked.toFixed(2)}</p>
-              </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={closeDepositRequest}
+              className="text-red-600 hover:text-red-700"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Close
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="bg-muted p-4 rounded-lg space-y-2">
+            <div className="flex justify-between">
+              <span>Amount (EUR):</span>
+              <span className="font-bold">€{existingRequest.requested_eur.toFixed(2)}</span>
             </div>
-
-            {/* QR Code */}
-            <div className="flex justify-center p-4 bg-white rounded-lg">
-              <QRCodeSVG 
-                value={activeRequest.address} 
-                size={220}
-                includeMargin={true}
-              />
+            <div className="flex justify-between">
+              <span>Amount ({existingRequest.currency}):</span>
+              <span className="font-bold">{existingRequest.crypto_amount.toFixed(8)}</span>
             </div>
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Expires at:</span>
+              <span>{new Date(existingRequest.expires_at).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm font-medium">
+              <span>Time remaining:</span>
+              <span className={timeLeft === "Expired" ? "text-red-500" : "text-primary"}>{timeLeft}</span>
+            </div>
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Fingerprint:</span>
+              <span>+{existingRequest.fingerprint} {cryptoName === "bitcoin" ? "sats" : "litoshis"}</span>
+            </div>
+          </div>
 
-            {/* Deposit Address */}
+          <div className="text-center">
+            <QRCodeSVG 
+              value={existingRequest.qr_data}
+              size={200}
+              className="mx-auto border rounded-lg p-2"
+            />
+          </div>
+
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Deposit Address</Label>
+              <Label className="text-sm font-medium">BIP21 Payment URI:</Label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 p-3 bg-muted rounded-lg text-sm break-all font-mono">
-                  {activeRequest.address}
+                <code className="flex-1 p-2 bg-muted rounded text-xs break-all">
+                  {existingRequest.qr_data}
                 </code>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={copyAddress}
-                  className="shrink-0"
-                >
+                <Button variant="outline" size="sm" onClick={copyQRData}>
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            {/* Instructions */}
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="space-y-2">
-                <p className="font-medium">Important Instructions:</p>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Send exactly <strong>{activeRequest.crypto_amount.toFixed(8)} {activeRequest.currency}</strong></li>
-                  <li>Only send {activeRequest.currency} to this address</li>
-                  <li>Your balance will be credited after network confirmation</li>
-                  <li>This request expires in {timeRemaining}</li>
-                </ul>
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Your {cryptoName === "bitcoin" ? "Bitcoin" : "Litecoin"} Address:
+              </Label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 p-2 bg-muted rounded text-sm break-all">
+                  {existingRequest.address}
+                </code>
+                <Button variant="outline" size="sm" onClick={copyAddress}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
 
-        {/* Close Confirmation Dialog */}
-        <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure you want to close this deposit request?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will cancel your active deposit request. Any funds sent to this address after cancellation may not be credited to your account.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  closeDepositRequest();
-                  setShowCloseDialog(false);
-                }}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Close Request
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </>
+          <div className="bg-card border p-4 rounded-lg">
+            <h4 className="font-medium mb-2">Important:</h4>
+            <ul className="list-disc list-inside space-y-1 text-sm">
+              <li>Send EXACTLY {existingRequest.crypto_amount.toFixed(8)} {existingRequest.currency}</li>
+              <li>This is your personal {existingRequest.currency} address</li>
+              <li>Payment will be credited after 1 confirmation</li>
+              <li>Request expires at {new Date(existingRequest.expires_at).toLocaleString()}</li>
+              <li>You can close this request anytime using the Close button</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
-  // Create New Request View
+  // Show loading state while generating addresses
+  if (generatingAddresses || !userAddresses) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Euro className="h-5 w-5 text-primary" />
+            Setting Up Your Wallet
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-8">
+          <div className="flex flex-col items-center gap-4">
+            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">
+              {generatingAddresses ? "Generating your Bitcoin and Litecoin addresses..." : "Loading your addresses..."}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Euro className="h-5 w-5" />
+          <Euro className="h-5 w-5 text-primary" />
           Create Deposit Request
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="currency">Cryptocurrency</Label>
-            <Select value={selectedCurrency} onValueChange={(v) => setSelectedCurrency(v as any)}>
-              <SelectTrigger id="currency">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="BTC">
-                  <div className="flex items-center gap-2">
-                    <Bitcoin className="h-4 w-4 text-orange-500" />
-                    Bitcoin (BTC)
-                  </div>
-                </SelectItem>
-                <SelectItem value="LTC">
-                  <div className="flex items-center gap-2">
-                    <Coins className="h-4 w-4 text-gray-500" />
-                    Litecoin (LTC)
-                  </div>
-                </SelectItem>
-                <SelectItem value="ETH">
-                  <div className="flex items-center gap-2">
-                    <Wallet className="h-4 w-4 text-blue-500" />
-                    Ethereum (ETH)
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="amount">Amount (EUR)</Label>
-            <div className="relative">
-              <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="amount"
-                type="number"
-                placeholder="Minimum €10"
-                value={eurAmount}
-                onChange={(e) => setEurAmount(e.target.value)}
-                className="pl-9"
-                min="10"
-                step="0.01"
-              />
-            </div>
-            {eurAmount && parseFloat(eurAmount) >= 10 && (
+            <Input
+              id="amount"
+              type="number"
+              step="0.01"
+              min="1"
+              placeholder="Enter amount in EUR"
+              value={eurAmount}
+              onChange={(e) => setEurAmount(e.target.value)}
+              disabled={!user}
+            />
+            {!user && (
               <p className="text-sm text-muted-foreground">
-                ≈ {(parseFloat(eurAmount) / (selectedCurrency === 'BTC' ? btcPrice : selectedCurrency === 'LTC' ? ltcPrice : ethPrice)).toFixed(8)} {selectedCurrency}
+                Please log in to create deposit requests
               </p>
             )}
           </div>
+
+          <div className="space-y-4">
+            <Label className="text-sm font-medium">Select Cryptocurrency:</Label>
+            <RadioGroup 
+              value={selectedCrypto} 
+              onValueChange={(value) => setSelectedCrypto(value as "bitcoin" | "litecoin")}
+              className="flex gap-6"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="bitcoin" id="bitcoin" />
+                <Label htmlFor="bitcoin" className="flex items-center gap-2 cursor-pointer">
+                  <Bitcoin className="h-4 w-4 text-orange-500" />
+                  Bitcoin (BTC)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="litecoin" id="litecoin" />
+                <Label htmlFor="litecoin" className="flex items-center gap-2 cursor-pointer">
+                  <Coins className="h-4 w-4 text-blue-500" />
+                  Litecoin (LTC)
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {userAddresses && (
+            <div className="bg-muted p-4 rounded-lg space-y-2">
+              <h4 className="font-medium text-sm">Your Addresses:</h4>
+              <div className="text-xs space-y-1">
+                <div><strong>BTC:</strong> {userAddresses.btc}</div>
+                <div><strong>LTC:</strong> {userAddresses.ltc}</div>
+              </div>
+            </div>
+          )}
+
+          <Button 
+            onClick={createDepositRequest} 
+            disabled={loading || !user || !eurAmount || parseFloat(eurAmount) <= 0 || !!existingRequest}
+            className="w-full"
+          >
+            {loading ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Creating Request...
+              </>
+            ) : existingRequest ? (
+              'Complete Current Request First'
+            ) : (
+              'Create Deposit Request'
+            )}
+          </Button>
         </div>
 
-        <Alert>
-          <Clock className="h-4 w-4" />
-          <AlertDescription>
-            Your deposit request will be valid for <strong>6 hours</strong>. 
-            Only one active request is allowed at a time.
-          </AlertDescription>
-        </Alert>
-
-        <Button
-          onClick={createDepositRequest}
-          disabled={loading || !eurAmount || parseFloat(eurAmount) < 10}
-          className="w-full"
-          size="lg"
-        >
-          {loading ? "Creating..." : "Create Deposit Request"}
-        </Button>
+        <div className="text-sm text-muted-foreground space-y-2">
+          <p><strong>How it works:</strong></p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Enter the EUR amount you want to deposit</li>
+            <li>Choose Bitcoin or Litecoin</li>
+            <li>Send to your personal crypto address</li>
+            <li>Only one active request allowed at a time</li>
+            <li>Requests expire after 6 hours</li>
+          </ul>
+        </div>
       </CardContent>
     </Card>
   );

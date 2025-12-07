@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Header } from '@/components/Header';
+import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, LogOut, Bitcoin, Wallet, Settings, Users, Star, Share2, Menu, ShoppingBag, MessageCircle, ChevronLeft, Newspaper } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Search, LogOut, Bitcoin, Wallet, Settings, Users, Star, Share2, Menu, ShoppingBag, MessageCircle } from 'lucide-react';
 import ProductModal from '@/components/ProductModal';
 import ShoppingCart from '@/components/ShoppingCart';
 import SellerProfileModal from '@/components/SellerProfileModal';
@@ -22,8 +21,6 @@ import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { ModernHeroSection } from '@/components/ModernHeroSection';
 import { ProductCard } from '@/components/ProductCard';
 import { ChatModal } from '@/components/ChatModal';
-import { ProductCardSkeleton } from '@/components/skeletons/ProductCardSkeleton';
-import NewsEditor from '@/components/NewsEditor';
 
 import { ConversationsModal } from '@/components/ConversationsModal';
 import { useChat } from '@/hooks/useChat';
@@ -62,8 +59,6 @@ const Marketplace = () => {
   const [selectedChatProduct, setSelectedChatProduct] = useState<Product | null>(null);
   const [conversationsModalOpen, setConversationsModalOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<any>(null);
-  const [productsLoading, setProductsLoading] = useState(true);
-  const [newsDrawerOpen, setNewsDrawerOpen] = useState(false);
   
   // Chat functionality
   const { conversations, fetchConversations } = useChat();
@@ -109,7 +104,7 @@ const Marketplace = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []); // Load products for everyone, including guests
+  }, [user, profile]);
 
   // Handle URL product parameter to open modal directly
   useEffect(() => {
@@ -209,7 +204,6 @@ const Marketplace = () => {
   };
 
   const fetchProducts = async () => {
-    setProductsLoading(true);
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -223,11 +217,10 @@ const Marketplace = () => {
         description: "Products could not be loaded.",
         variant: "destructive"
       });
-      setProductsLoading(false);
       return;
     }
 
-    setProducts((data || []) as Product[]);
+    setProducts(data || []);
     const sellerIds = Array.from(new Set((data || []).map((p: any) => p.seller_id)));
     if (sellerIds.length) {
       fetchSellerRatings(sellerIds);
@@ -249,7 +242,6 @@ const Marketplace = () => {
       });
       setLtcPrices(ltcPricesMap);
     }
-    setProductsLoading(false);
   };
 
   const calculateCategoryCounts = () => {
@@ -351,26 +343,87 @@ const Marketplace = () => {
     );
   }
 
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      {/* Header */}
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-3 py-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl md:text-3xl font-bold font-cinzel">Oracle Market</h1>
+            
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setCartOpen(true)}
+                className="relative shrink-0"
+              >
+                Cart ({getCartItemCount()})
+              </Button>
+              
+              <Button variant="outline" size="sm" onClick={handleSignOut} className="shrink-0">
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">Sign Out</span>
+              </Button>
+            </div>
+          </div>
+          
+          {/* Second row for user info and navigation on mobile */}
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
+            <span className="text-xs text-muted-foreground truncate">
+              {profile?.username} ({profile?.role})
+            </span>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-xs px-2">
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/orders')}>
+                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  Orders
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/wallet')}>
+                  <Wallet className="h-4 w-4 mr-2" />
+                  Wallet
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setConversationsModalOpen(true)}>
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Conversations
+                </DropdownMenuItem>
+                {profile?.role === 'admin' && (
+                  <DropdownMenuItem onClick={() => window.location.href = '/admin'}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Admin Panel
+                  </DropdownMenuItem>
+                )}
+                {(profile?.role === 'seller' || profile?.role === 'admin') && (
+                  <DropdownMenuItem onClick={() => window.location.href = '/seller'}>
+                    <Users className="h-4 w-4 mr-2" />
+                    Seller Dashboard
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6">{!user && (
-          <div className="mb-6 p-4 bg-muted/50 border border-border rounded-lg text-center">
-            <p className="text-sm text-muted-foreground">
-              You are browsing as a guest. Please{' '}
-              <a href="/auth?tab=signin" className="text-primary hover:underline font-semibold">
-                login
-              </a>
-              {' '}or{' '}
-              <a href="/auth?tab=signup" className="text-primary hover:underline font-semibold">
-                sign up
-              </a>
-              {' '}to purchase products and access all features.
-            </p>
-          </div>
-        )}
+      <main className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6">
+        <div className="mb-6">
+          <NewsPanel />
+        </div>
 
         {/* Modern Hero Section */}
         <ModernHeroSection 
@@ -424,14 +477,9 @@ const Marketplace = () => {
         </div>
 
         {/* Products Grid with Modern Cards */}
-        <div id="products-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {productsLoading ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <ProductCardSkeleton key={i} />
-            ))
-          ) : (
-            currentItems.map((product) => (
-              <ProductCard
+        <div id="products-grid" className="grid grid-cols-2 md:grid-cols-6 gap-3 md:gap-6">
+          {currentItems.map((product) => (
+            <ProductCard
               key={product.id}
               product={product}
               sellerRating={sellerRatings[product.seller_id]}
@@ -443,10 +491,8 @@ const Marketplace = () => {
                 setChatModalOpen(true);
               }}
               isOwner={user?.id === product.seller_id}
-              isGuest={!user}
             />
-            ))
-          )}
+          ))}
         </div>
 
         {/* Pagination */}
@@ -502,7 +548,7 @@ const Marketplace = () => {
 
       {/* Product Modal */}
       <ProductModal
-        product={selectedProduct as Product}
+        product={selectedProduct}
         open={modalOpen}
         onOpenChange={setModalOpen}
         onStartChat={(product) => {
@@ -511,50 +557,6 @@ const Marketplace = () => {
           setModalOpen(false); // Close product modal when opening chat
         }}
       />
-
-      {/* Floating Cart Button */}
-      <Button
-        onClick={() => setCartOpen(true)}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg"
-        size="icon"
-      >
-        <ShoppingBag className="h-6 w-6" />
-        {getCartItemCount() > 0 && (
-          <Badge className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 flex items-center justify-center">
-            {getCartItemCount()}
-          </Badge>
-        )}
-      </Button>
-
-      {/* News Drawer Toggle Button - Only for logged in users */}
-      {user && (
-        <Sheet open={newsDrawerOpen} onOpenChange={setNewsDrawerOpen}>
-          <SheetTrigger asChild>
-            <Button
-              className="fixed top-20 right-0 z-50 h-12 rounded-l-lg rounded-r-none shadow-lg bg-primary hover:bg-primary/90"
-              size="icon"
-            >
-              <Newspaper className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
-            <div className="space-y-6 pt-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Newspaper className="h-6 w-6" />
-                <h2 className="text-2xl font-bold">News & Updates</h2>
-              </div>
-              
-              <NewsPanel />
-              
-              {profile?.role === 'admin' && (
-                <div className="mt-6 pt-6 border-t">
-                  <NewsEditor />
-                </div>
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
-      )}
 
       {/* Shopping Cart */}
       <ShoppingCart

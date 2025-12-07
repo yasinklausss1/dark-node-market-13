@@ -4,76 +4,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff } from 'lucide-react';
-import { z } from 'zod';
-import { toast } from 'sonner';
-
-// Validation schema
-const signInSchema = z.object({
-  identifier: z.string()
-    .trim()
-    .min(1, 'Username or email is required')
-    .refine(
-      (value) => {
-        // If contains @, validate as email
-        if (value.includes('@')) {
-          return z.string().email().safeParse(value).success;
-        }
-        // Otherwise validate as username (alphanumeric, underscore, 3-30 chars)
-        return /^[a-zA-Z0-9_]{3,30}$/.test(value);
-      },
-      'Invalid username or email format'
-    ),
-  password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-});
 
 interface SignInFormProps {
-  onSubmit: (identifier: string, password: string, isEmail: boolean) => Promise<void>;
+  onSubmit: (username: string, password: string) => Promise<void>;
   isLoading: boolean;
-  onForgotPassword?: () => void;
 }
 
-const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading, onForgotPassword }) => {
-  const [formData, setFormData] = useState({ identifier: '', password: '' });
+const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading }) => {
+  const [formData, setFormData] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ identifier?: string; password?: string }>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [e.target.name]: e.target.value
     }));
-    // Clear error for this field
-    if (errors[name as keyof typeof errors]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: undefined
-      }));
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrors({});
-
-    // Validate with Zod
-    const validation = signInSchema.safeParse(formData);
-    
-    if (!validation.success) {
-      const fieldErrors: { identifier?: string; password?: string } = {};
-      validation.error.errors.forEach((error) => {
-        const field = error.path[0] as 'identifier' | 'password';
-        fieldErrors[field] = error.message;
-      });
-      setErrors(fieldErrors);
-      toast.error('Please fix the errors in the form');
-      return;
-    }
-
-    // Check if identifier is an email
-    const isEmail = formData.identifier.includes('@');
-    await onSubmit(formData.identifier, formData.password, isEmail);
+    await onSubmit(formData.username, formData.password);
   };
 
   return (
@@ -87,19 +37,16 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading, onForgotPa
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="signin-identifier">Username or Email</Label>
+            <Label htmlFor="signin-username">Username</Label>
             <Input
-              id="signin-identifier"
-              name="identifier"
+              id="signin-username"
+              name="username"
               type="text"
-              placeholder="Username or E-Mail"
-              value={formData.identifier}
+              placeholder="Your username"
+              value={formData.username}
               onChange={handleInputChange}
-              className={errors.identifier ? 'border-destructive' : ''}
+              required
             />
-            {errors.identifier && (
-              <p className="text-sm text-destructive">{errors.identifier}</p>
-            )}
           </div>
           
           <div className="space-y-2">
@@ -112,7 +59,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading, onForgotPa
                 placeholder="Your password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className={errors.password ? 'border-destructive' : ''}
+                required
               />
               <Button
                 type="button"
@@ -128,24 +75,9 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading, onForgotPa
                 )}
               </Button>
             </div>
-            {errors.password && (
-              <p className="text-sm text-destructive">{errors.password}</p>
-            )}
-            {onForgotPassword && (
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  variant="link"
-                  className="px-0 text-sm h-auto"
-                  onClick={onForgotPassword}
-                >
-                  Forgot password?
-                </Button>
-              </div>
-            )}
           </div>
           
-          <Button
+          <Button 
             type="submit" 
             className="w-full" 
             disabled={isLoading}

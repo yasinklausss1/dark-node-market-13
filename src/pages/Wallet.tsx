@@ -1,32 +1,17 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { CreditBalance } from "@/components/CreditBalance";
-import { CreditPurchase } from "@/components/CreditPurchase";
-import { CreditTransactionHistory } from "@/components/CreditTransactionHistory";
-import { CreditWithdrawalModal } from "@/components/CreditWithdrawalModal";
-import { CreditWithdrawalHistory } from "@/components/CreditWithdrawalHistory";
+import { useState } from "react";
+import { WalletBalance } from "@/components/WalletBalance";
+import { DepositRequest } from "@/components/DepositRequest";
+import { TransactionHistory } from "@/components/TransactionHistory";
+import WithdrawalModal from "@/components/WithdrawalModal";
+import WithdrawalHistory from "@/components/WithdrawalHistory";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
-import { WalletSkeleton } from "@/components/skeletons/WalletSkeleton";
+import { ArrowLeft, Download } from "lucide-react";
 
 export default function Wallet() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
   const [withdrawalModalOpen, setWithdrawalModalOpen] = useState(false);
-
-  useEffect(() => {
-    // Simulate initial loading
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleWithdrawalSuccess = () => {
-    window.location.reload();
-  };
-
-  if (loading) {
-    return <WalletSkeleton />;
-  }
+  const [refreshKey, setRefreshKey] = useState(0);
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -44,34 +29,35 @@ export default function Wallet() {
         </div>
         <h1 className="text-3xl font-bold">Wallet</h1>
         <p className="text-muted-foreground mt-2">
-          Manage your credits and purchase more
+          Manage your balance, deposit and withdraw cryptocurrency
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
-          <CreditBalance />
-          <CreditPurchase />
-          <Button 
-            onClick={() => setWithdrawalModalOpen(true)} 
-            variant="outline" 
-            className="w-full"
-          >
-            <ArrowUpRight className="mr-2 h-4 w-4" />
-            Exchange Credits to Crypto
-          </Button>
+          <WalletBalance key={refreshKey} />
+          <DepositRequest />
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => setWithdrawalModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Withdraw Crypto
+            </Button>
+          </div>
         </div>
         
         <div className="space-y-6">
-          <CreditTransactionHistory />
-          <CreditWithdrawalHistory />
+          <TransactionHistory />
+          <WithdrawalHistory key={refreshKey} />
         </div>
       </div>
 
-      <CreditWithdrawalModal
+      <WithdrawalModal
         open={withdrawalModalOpen}
         onOpenChange={setWithdrawalModalOpen}
-        onSuccess={handleWithdrawalSuccess}
+        onWithdrawalSuccess={() => setRefreshKey(prev => prev + 1)}
       />
     </div>
   );

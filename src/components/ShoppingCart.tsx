@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart as ShoppingCartIcon, Trash2, Plus, Minus, Coins } from 'lucide-react';
+import { ShoppingCart as ShoppingCartIcon, Trash2, Plus, Minus, Bitcoin, Coins } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import CheckoutModal from './CheckoutModal';
+import { PaymentMethodModal } from './PaymentMethodModal';
 
 interface CartItem {
   id: string;
@@ -31,23 +33,27 @@ interface ShoppingCartProps {
 }
 
 interface WalletBalance {
-  balance_credits: number;
+  balance_eur: number;
+  balance_btc: number;
+  balance_ltc: number;
 }
 
-const ShoppingCart: React.FC<ShoppingCartProps> = ({
-  open,
-  onOpenChange,
-  cartItems,
-  onUpdateQuantity,
-  onRemoveItem,
-  onClearCart
+const ShoppingCart: React.FC<ShoppingCartProps> = ({ 
+  open, 
+  onOpenChange, 
+  cartItems, 
+  onUpdateQuantity, 
+  onRemoveItem, 
+  onClearCart 
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
-
+  const { btcPrice, ltcPrice } = useCryptoPrices();
   const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
+  const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'btc' | 'ltc' | null>(null);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
 
   useEffect(() => {
@@ -62,7 +68,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     try {
       const { data, error } = await supabase
         .from('wallet_balances')
-        .select('balance_credits')
+        .select('balance_eur, balance_btc, balance_ltc')
         .eq('user_id', user.id)
         .single();
 
@@ -70,7 +76,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
         throw error;
       }
 
-      setWalletBalance(data || { balance_credits: 0 });
+      setWalletBalance(data || { balance_eur: 0, balance_btc: 0, balance_ltc: 0 });
     } catch (error) {
       console.error('Error fetching wallet balance:', error);
     }
@@ -86,64 +92,63 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
       return;
     }
 
-    const creditsNeeded = Math.ceil(totalEUR);
+    // Calculate crypto amounts needed
+    const btcNeeded = btcPrice ? totalEUR / btcPrice : 0;
+    const ltcNeeded = ltcPrice ? totalEUR / ltcPrice : 0;
+    
+    // Check if user has enough in either currency
+    const hasBtc = walletBalance.balance_btc >= btcNeeded;
+    const hasLtc = walletBalance.balance_ltc >= ltcNeeded;
 
-    if (walletBalance.balance_credits < creditsNeeded) {
+    if (!hasBtc && !hasLtc) {
       toast({
-        title: "Insufficient Credits",
-        description: `You need ${creditsNeeded} credits to complete this purchase. You have ${walletBalance.balance_credits} credits.`,
+        title: "Insufficient Balance",
+        description: `You need either ${btcNeeded.toFixed(8)} BTC or ${ltcNeeded.toFixed(8)} LTC to complete this purchase.`,
         variant: "destructive",
-        action: (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              onOpenChange(false);
-              window.location.href = '/wallet';
-            }}
-          >
-            Buy Credits
-          </Button>
-        ),
       });
       return;
     }
 
-    setCheckoutOpen(true);
+    setPaymentMethodOpen(true);
   };
 
   const handleConfirmOrder = async (addressData: any) => {
-    if (!user) return;
+    if (!user || !selectedPaymentMethod) return;
 
     setIsProcessingOrder(true);
-
+    
     try {
+      // Use the new process-order function
       const items = cartItems.map(item => ({
         id: item.id,
-        quantity: item.quantity,
+        quantity: item.quantity
       }));
 
       const { data, error } = await supabase.functions.invoke('update-process-order', {
         body: {
           userId: user.id,
           items,
-          method: 'credits',
-          shippingAddress: addressData,
-        },
+          method: selectedPaymentMethod,
+          btcPrice,
+          ltcPrice,
+          shippingAddress: addressData
+        }
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
+      // Success
       toast({
         title: "Order Successful",
-        description: "Your order has been successfully placed and credits have been transferred to sellers",
+        description: "Your order has been successfully placed and sellers have been credited",
       });
 
       onClearCart();
       setCheckoutOpen(false);
+      setPaymentMethodOpen(false);
       onOpenChange(false);
-      fetchWalletBalance(); // Refresh balance
+      
     } catch (error) {
       console.error('Error processing order:', error);
       toast({
@@ -155,6 +160,13 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
       setIsProcessingOrder(false);
     }
   };
+
+  const handleSelectPayment = (method: 'btc' | 'ltc') => {
+    setSelectedPaymentMethod(method);
+    setPaymentMethodOpen(false);
+    setCheckoutOpen(true);
+  };
+
   const [bulkDiscounts, setBulkDiscounts] = useState<Record<string, any[]>>({});
 
   // Fetch bulk discounts when cart opens
@@ -163,15 +175,17 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
       fetchBulkDiscounts();
     }
   }, [open, cartItems]);
+
   const fetchBulkDiscounts = async () => {
     const productIds = cartItems.map(item => item.id);
     if (productIds.length === 0) return;
-    const {
-      data,
-      error
-    } = await supabase.from('bulk_discounts').select('*').in('product_id', productIds).order('min_quantity', {
-      ascending: false
-    });
+
+    const { data, error } = await supabase
+      .from('bulk_discounts')
+      .select('*')
+      .in('product_id', productIds)
+      .order('min_quantity', { ascending: false });
+
     if (!error && data) {
       const discountMap: Record<string, any[]> = {};
       data.forEach(discount => {
@@ -183,11 +197,12 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
       setBulkDiscounts(discountMap);
     }
   };
+
   const calculateItemPrice = (item: any) => {
     const quantity = item.quantity;
     const basePrice = item.price;
     const productDiscounts = bulkDiscounts[item.id] || [];
-
+    
     // Find the highest applicable discount
     let bestDiscount = 0;
     for (const discount of productDiscounts) {
@@ -195,6 +210,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
         bestDiscount = Math.max(bestDiscount, discount.discount_percentage);
       }
     }
+    
     const discountedPrice = basePrice * (1 - bestDiscount / 100);
     return {
       originalPrice: basePrice,
@@ -203,77 +219,132 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
       totalPrice: discountedPrice * quantity
     };
   };
+
   const totalEUR = cartItems.reduce((sum, item) => {
     const { totalPrice } = calculateItemPrice(item);
     return sum + totalPrice;
   }, 0);
+  const totalBTC = btcPrice ? totalEUR / btcPrice : null;
+  const totalLTC = ltcPrice ? totalEUR / ltcPrice : null;
 
-  const totalCredits = Math.ceil(totalEUR);
-  const CartContent = () => <div className="space-y-4">
-      {cartItems.length === 0 ? <div className="text-center py-8">
+  const CartContent = () => (
+    <div className="space-y-4">
+      {cartItems.length === 0 ? (
+        <div className="text-center py-8">
           <ShoppingCartIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">Your cart is empty</p>
-        </div> : <>
+          <p className="text-muted-foreground">Ihr Warenkorb ist leer</p>
+        </div>
+      ) : (
+        <>
           {/* Cart Items */}
           <div className={`space-y-3 ${isMobile ? 'max-h-80' : 'max-h-64'} overflow-y-auto`}>
-            {cartItems.map(item => <Card key={item.id}>
+            {cartItems.map((item) => (
+              <Card key={item.id}>
                 <CardContent className={`${isMobile ? 'p-2' : 'p-3'}`}>
                   <div className={`flex items-center ${isMobile ? 'space-x-2' : 'space-x-3'}`}>
-                    {item.image_url && <img src={item.image_url} alt={item.title} className={`object-cover rounded ${isMobile ? 'w-12 h-12' : 'w-16 h-16'}`} onError={e => {
-                e.currentTarget.style.display = 'none';
-              }} />}
+                    {item.image_url && (
+                      <img
+                        src={item.image_url}
+                        alt={item.title}
+                        className={`object-cover rounded ${isMobile ? 'w-12 h-12' : 'w-16 h-16'}`}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    )}
                     
                     <div className="flex-1 min-w-0">
                       <h4 className={`font-medium truncate ${isMobile ? 'text-sm' : ''}`}>{item.title}</h4>
                       <Badge variant="secondary" className="text-xs">{item.category}</Badge>
                       {(() => {
-                  const priceInfo = calculateItemPrice(item);
-                  return <div className="space-y-1">
-                            {priceInfo.discountPercentage > 0 ? <>
+                        const priceInfo = calculateItemPrice(item);
+                        return (
+                          <div className="space-y-1">
+                            {priceInfo.discountPercentage > 0 ? (
+                              <>
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm line-through text-muted-foreground">€{priceInfo.originalPrice.toFixed(2)}</span>
                                   <Badge variant="destructive" className="text-xs">-{priceInfo.discountPercentage}%</Badge>
                                 </div>
                                 <p className="text-sm font-semibold text-primary">€{priceInfo.discountedPrice.toFixed(2)}</p>
-                              </> : <p className="text-sm font-semibold text-primary">€{item.price.toFixed(2)}</p>}
-                          </div>;
-                })()}
+                              </>
+                            ) : (
+                              <p className="text-sm font-semibold text-primary">€{item.price.toFixed(2)}</p>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                     
-                    {isMobile ? <div className="flex flex-col items-center space-y-1">
+                    {isMobile ? (
+                      <div className="flex flex-col items-center space-y-1">
                         <div className="flex items-center space-x-1">
-                          <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => onUpdateQuantity(item.id, Math.max(0, item.quantity - 1))}>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => onUpdateQuantity(item.id, Math.max(0, item.quantity - 1))}
+                          >
                             <Minus className="h-2 w-2" />
                           </Button>
                           
                           <span className="w-6 text-center text-xs">{item.quantity}</span>
                           
-                          <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                          >
                             <Plus className="h-2 w-2" />
                           </Button>
                         </div>
                         
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => onRemoveItem(item.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-destructive"
+                          onClick={() => onRemoveItem(item.id)}
+                        >
                           <Trash2 className="h-2 w-2" />
                         </Button>
-                      </div> : <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onUpdateQuantity(item.id, Math.max(0, item.quantity - 1))}>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => onUpdateQuantity(item.id, Math.max(0, item.quantity - 1))}
+                        >
                           <Minus className="h-3 w-3" />
                         </Button>
                         
                         <span className="w-8 text-center text-sm">{item.quantity}</span>
                         
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                        >
                           <Plus className="h-3 w-3" />
                         </Button>
                         
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onRemoveItem(item.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => onRemoveItem(item.id)}
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
-                      </div>}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
-              </Card>)}
+              </Card>
+            ))}
           </div>
 
           <Separator />
@@ -281,13 +352,21 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
           {/* Total */}
           <div className="space-y-3">
             <div className="flex justify-between items-center text-lg font-semibold">
-              <span>Total:</span>
+              <span>Gesamt:</span>
               <div className="text-right">
                 <div className="text-primary">€{totalEUR.toFixed(2)}</div>
-                <div className="text-sm text-muted-foreground flex items-center justify-end mt-1">
-                  <Coins className="h-3 w-3 mr-1" />
-                  {totalCredits} Credits
-                </div>
+                {totalBTC && (
+                  <div className="text-sm text-orange-500 flex items-center justify-end">
+                    <Bitcoin className="h-3 w-3 mr-1" />
+                    ₿{totalBTC.toFixed(8)}
+                  </div>
+                )}
+                {totalLTC && (
+                  <div className="text-sm text-blue-500 flex items-center justify-end">
+                    <Coins className="h-3 w-3 mr-1" />
+                    Ł{totalLTC.toFixed(8)}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -296,22 +375,31 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
 
           {/* Actions */}
           <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'space-x-2'}`}>
-            <Button variant="outline" onClick={onClearCart} className="flex-1">
-              Clear Cart
+            <Button 
+              variant="outline" 
+              onClick={onClearCart}
+              className="flex-1"
+            >
+              Warenkorb leeren
             </Button>
             <Button className="flex-1" onClick={handleCheckout}>
-              Checkout
+              Zur Kasse
             </Button>
           </div>
-        </>}
-    </div>;
-  return <>
-      {isMobile ? <Drawer open={open} onOpenChange={onOpenChange}>
+        </>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      {isMobile ? (
+        <Drawer open={open} onOpenChange={onOpenChange}>
           <DrawerContent className="max-h-[90vh]">
             <DrawerHeader className="pb-4">
               <DrawerTitle className="flex items-center space-x-2">
                 <ShoppingCartIcon className="h-5 w-5" />
-                <span>Shopping Cart ({cartItems.length} items)</span>
+                <span>Warenkorb ({cartItems.length} Artikel)</span>
               </DrawerTitle>
             </DrawerHeader>
             
@@ -319,27 +407,41 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
               <CartContent />
             </div>
           </DrawerContent>
-        </Drawer> : <Dialog open={open} onOpenChange={onOpenChange}>
+        </Drawer>
+      ) : (
+        <Dialog open={open} onOpenChange={onOpenChange}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center space-x-2">
                 <ShoppingCartIcon className="h-5 w-5" />
-                <span>Shopping Cart ({cartItems.length} items)</span>
+                <span>Warenkorb ({cartItems.length} Artikel)</span>
               </DialogTitle>
             </DialogHeader>
             
             <CartContent />
           </DialogContent>
-        </Dialog>}
+        </Dialog>
+      )}
+      
+      <PaymentMethodModal
+        open={paymentMethodOpen}
+        onOpenChange={setPaymentMethodOpen}
+        onSelectPayment={handleSelectPayment}
+        totalAmountEur={totalEUR}
+        currentBtcPrice={btcPrice || 90000}
+        currentLtcPrice={ltcPrice || 100}
+        walletBalance={walletBalance}
+      />
       
       <CheckoutModal
         open={checkoutOpen}
         onOpenChange={setCheckoutOpen}
-        totalAmount={totalCredits}
+        totalAmount={totalEUR}
         onConfirmOrder={handleConfirmOrder}
         loading={isProcessingOrder}
       />
-    </>;
+    </>
+  );
 };
 
 export default ShoppingCart;

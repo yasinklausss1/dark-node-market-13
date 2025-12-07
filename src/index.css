@@ -28,9 +28,6 @@
     --secondary: 261.4 83.3% 57.8%;
     --secondary-foreground: 210 40% 98%;
 
-    --pink: 330 81% 60%;
-    --pink-foreground: 210 40% 98%;
-
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
@@ -50,7 +47,6 @@
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
     --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--primary)));
     --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted)));
-    --gradient-logo: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)), hsl(var(--pink)));
 
     /* Shadows */
     --shadow-elegant: 0 10px 30px -10px hsl(var(--primary) / 0.3);
@@ -60,11 +56,6 @@
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-
-    /* Shimmer Effect */
-    --shimmer-from: hsl(var(--muted));
-    --shimmer-via: hsl(var(--muted-foreground) / 0.1);
-    --shimmer-to: hsl(var(--muted));
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -97,9 +88,6 @@
     --secondary: 261.4 83.3% 57.8%;
     --secondary-foreground: 210 40% 98%;
 
-    --pink: 330 81% 60%;
-    --pink-foreground: 210 40% 98%;
-
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
@@ -117,7 +105,6 @@
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary) / 0.8), hsl(var(--primary-glow) / 0.8));
     --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary) / 0.8), hsl(var(--primary) / 0.8));
     --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted)));
-    --gradient-logo: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)), hsl(var(--pink)));
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -176,10 +163,6 @@
     background: var(--gradient-secondary);
   }
 
-  .bg-gradient-logo {
-    background: var(--gradient-logo);
-  }
-
   .shadow-elegant {
     box-shadow: var(--shadow-elegant);
   }
@@ -214,14 +197,5 @@
   to {
     transform: translateY(0);
     opacity: 1;
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
   }
 }

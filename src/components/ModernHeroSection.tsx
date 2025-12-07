@@ -31,14 +31,19 @@ export const ModernHeroSection: React.FC<ModernHeroSectionProps> = ({
               <Star className="h-3 w-3 mr-1" />
               Trusted Marketplace
             </Badge>
+            <Badge variant="outline" className="animate-fade-in delay-100">
+              <Users className="h-3 w-3 mr-1" />
+              300+ user
+            </Badge>
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-bold font-cinzel text-white mb-6 animate-fade-in delay-200">
+          <h1 className="text-4xl md:text-6xl font-bold font-cinzel bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6 animate-fade-in delay-200">
             Oracle Market
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground mb-8 animate-fade-in delay-300">
-            Secure crypto marketplace with advanced verification, real-time chat, and instant transactions.       
+            Secure crypto marketplace with advanced verification, real-time chat, and instant transactions.
+            Shop with confidence using Bitcoin and Litecoin.
           </p>
 
           

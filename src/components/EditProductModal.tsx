@@ -10,8 +10,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { Edit } from 'lucide-react';
 import { FileUpload } from '@/components/ui/file-upload';
 import { BulkDiscountManager } from '@/components/BulkDiscountManager';
-import { ProductAddonManager } from '@/components/ProductAddonManager';
-import { Product } from '@/types/Product';
+
+interface Product {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  image_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  stock: number;
+}
 
 interface EditProductModalProps {
   product: Product | null;
@@ -35,8 +45,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     price: '',
     category: '',
     imageUrl: '',
-    stock: '',
-    fansignDeliveryDays: '1-2' as '1-2' | '3' | '1-4'
+    stock: ''
   });
 
   useEffect(() => {
@@ -47,8 +56,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         price: product.price.toString(),
         category: product.category,
         imageUrl: product.image_url || '',
-        stock: product.stock.toString(),
-        fansignDeliveryDays: product.fansign_delivery_days
+        stock: product.stock.toString()
       });
     }
   }, [product]);
@@ -95,8 +103,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         price: parseFloat(formData.price),
         category: formData.category,
         image_url: formData.imageUrl || null,
-        stock: parseInt(formData.stock),
-        fansign_delivery_days: formData.fansignDeliveryDays
+        stock: parseInt(formData.stock)
       })
       .eq('id', product.id);
 
@@ -166,23 +173,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
           </div>
 
           <div>
-            <Label htmlFor="edit-fansignDeliveryDays">Fansign Lieferzeit (Tage)</Label>
-            <Select 
-              value={formData.fansignDeliveryDays} 
-              onValueChange={(value) => setFormData({...formData, fansignDeliveryDays: value as '1-2' | '3' | '1-4'})}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Wähle Lieferzeit" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1-2">1-2 Tage</SelectItem>
-                <SelectItem value="3">3 Tage</SelectItem>
-                <SelectItem value="1-4">1-4 Tage</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
             <Label htmlFor="edit-category">Category</Label>
             <Select 
               value={formData.category} 
@@ -238,12 +228,11 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
           </div>
         </form>
 
-        <div className="mt-6 border-t pt-6 space-y-6">
+        <div className="mt-6 border-t pt-6">
           <BulkDiscountManager 
             productId={product.id}
             productTitle={product.title}
           />
-          <ProductAddonManager productId={product.id} />
         </div>
       </DialogContent>
     </Dialog>
