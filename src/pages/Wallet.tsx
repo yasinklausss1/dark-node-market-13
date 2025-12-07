@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { WalletBalance } from "@/components/WalletBalance";
 import { DepositRequest } from "@/components/DepositRequest";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import WithdrawalModal from "@/components/WithdrawalModal";
 import WithdrawalHistory from "@/components/WithdrawalHistory";
+import { WalletTestPanel } from "@/components/WalletTestPanel";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download } from "lucide-react";
 
@@ -12,6 +13,10 @@ export default function Wallet() {
   const navigate = useNavigate();
   const [withdrawalModalOpen, setWithdrawalModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleBalanceChange = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -35,6 +40,7 @@ export default function Wallet() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
+          <WalletTestPanel onBalanceChange={handleBalanceChange} />
           <WalletBalance key={refreshKey} />
           <DepositRequest />
           <div className="flex gap-3">
