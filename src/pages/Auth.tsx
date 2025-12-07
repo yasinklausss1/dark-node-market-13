@@ -53,6 +53,23 @@ const Auth = () => {
           </div>
         </div>
 
+        <div className="bg-muted/50 border border-border rounded-lg p-4 text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Um einen Account zu erhalten, schreibe auf Telegram:
+          </p>
+          <a 
+            href="https://t.me/elmatzo" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-primary font-semibold hover:underline text-lg"
+          >
+            @elmatzo
+          </a>
+          <p className="text-xs text-muted-foreground mt-2">
+            Dies dient der Sicherheit, um unbefugten Zugriff zu verhindern.
+          </p>
+        </div>
+
         <SignInForm
           onSubmit={handleSignIn}
           isLoading={isLoading}
