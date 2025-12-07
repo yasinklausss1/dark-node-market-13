@@ -58,8 +58,8 @@ export function WalletBalance() {
     } catch (error) {
       console.error('Error fetching balance:', error);
       toast({
-        title: "Error",
-        description: "Could not fetch wallet balance",
+        title: "Fehler",
+        description: "Wallet-Guthaben konnte nicht abgerufen werden",
         variant: "destructive",
       });
     }
@@ -79,14 +79,14 @@ export function WalletBalance() {
       await fetchBalance();
       
       toast({
-        title: "Refreshed",
-        description: "Checked for new payments and updated balance",
+        title: "Aktualisiert",
+        description: "Auf neue Zahlungen geprüft und Guthaben aktualisiert",
       });
     } catch (error) {
       console.error('Error refreshing payments:', error);
       toast({
-        title: "Error",
-        description: "Could not refresh payments",
+        title: "Fehler",
+        description: "Zahlungen konnten nicht aktualisiert werden",
         variant: "destructive",
       });
     } finally {
@@ -110,13 +110,13 @@ export function WalletBalance() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wallet className="h-5 w-5" />
-            Wallet Balance
+            Wallet-Guthaben
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
             <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
-            <p className="text-muted-foreground">Loading balance...</p>
+            <p className="text-muted-foreground">Guthaben wird geladen...</p>
           </div>
         </CardContent>
       </Card>
@@ -129,7 +129,7 @@ export function WalletBalance() {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Wallet className="h-5 w-5" />
-            Wallet Balance
+            Wallet-Guthaben
           </div>
           <Button
             variant="outline"
@@ -139,7 +139,7 @@ export function WalletBalance() {
             className="flex items-center gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Checking...' : 'Refresh'}
+            {refreshing ? 'Prüfe...' : 'Aktualisieren'}
           </Button>
         </CardTitle>
       </CardHeader>
@@ -163,7 +163,7 @@ export function WalletBalance() {
                   </div>
                 )}
                 <div className="text-xs text-muted-foreground">
-                  Available for purchases
+                  Verfügbar für Einkäufe
                 </div>
               </div>
             </div>
@@ -184,7 +184,7 @@ export function WalletBalance() {
                   </div>
                 )}
                 <div className="text-xs text-muted-foreground">
-                  Available for purchases
+                  Verfügbar für Einkäufe
                 </div>
               </div>
             </div>
@@ -192,21 +192,21 @@ export function WalletBalance() {
         </div>
 
         <div className="bg-muted p-4 rounded-lg">
-          <h4 className="font-medium mb-2">Deposit History</h4>
+          <h4 className="font-medium mb-2">Einzahlungsverlauf</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span>Total Bitcoin Deposited:</span>
+              <span>Gesamt Bitcoin eingezahlt:</span>
               <span className="font-medium">{balance?.balance_btc_deposited?.toFixed(8) || '0.00000000'} BTC</span>
             </div>
             <div className="flex justify-between">
-              <span>Total Litecoin Deposited:</span>
+              <span>Gesamt Litecoin eingezahlt:</span>
               <span className="font-medium">{balance?.balance_ltc_deposited?.toFixed(8) || '0.00000000'} LTC</span>
             </div>
           </div>
         </div>
 
         <div className="text-xs text-muted-foreground">
-          <p><strong>Note:</strong> The amounts above show your available crypto balances and total deposited amounts. Click Refresh to check for new incoming payments.</p>
+          <p><strong>Hinweis:</strong> Die obigen Beträge zeigen dein verfügbares Krypto-Guthaben und die Gesamteinzahlungen. Klicke auf Aktualisieren um nach neuen eingehenden Zahlungen zu suchen.</p>
         </div>
       </CardContent>
     </Card>

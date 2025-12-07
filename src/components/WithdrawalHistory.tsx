@@ -87,6 +87,17 @@ export default function WithdrawalHistory() {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending': return 'Ausstehend';
+      case 'processing': return 'In Bearbeitung';
+      case 'completed': return 'Abgeschlossen';
+      case 'failed': return 'Fehlgeschlagen';
+      case 'cancelled': return 'Storniert';
+      default: return status;
+    }
+  };
+
   const getBlockchainExplorerUrl = (txHash: string, currency: string) => {
     if (currency === 'BTC') {
       return `https://blockstream.info/tx/${txHash}`;
@@ -110,9 +121,9 @@ export default function WithdrawalHistory() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Withdrawal History</CardTitle>
+            <CardTitle>Auszahlungsverlauf</CardTitle>
             <CardDescription>
-              Your recent cryptocurrency withdrawals
+              Deine letzten Kryptowährungs-Auszahlungen
             </CardDescription>
           </div>
           <Button 
@@ -134,7 +145,7 @@ export default function WithdrawalHistory() {
         {withdrawals.length === 0 ? (
           <div className="text-center py-8">
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No withdrawals found</p>
+            <p className="text-muted-foreground">Keine Auszahlungen gefunden</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -144,7 +155,7 @@ export default function WithdrawalHistory() {
                   <div className="flex items-center gap-2">
                     {getStatusIcon(withdrawal.status)}
                     <Badge className={getStatusColor(withdrawal.status)}>
-                      {withdrawal.status.charAt(0).toUpperCase() + withdrawal.status.slice(1)}
+                      {getStatusLabel(withdrawal.status)}
                     </Badge>
                     <span className="font-medium">
                       {withdrawal.amount_crypto.toFixed(8)} {withdrawal.currency}
@@ -155,14 +166,14 @@ export default function WithdrawalHistory() {
                       {withdrawal.amount_eur.toFixed(2)} EUR
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Fee: {withdrawal.fee_eur.toFixed(2)} EUR
+                      Gebühr: {withdrawal.fee_eur.toFixed(2)} EUR
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">To:</span>
+                    <span className="text-muted-foreground">An:</span>
                     <span className="font-mono text-xs">
                       {withdrawal.destination_address.slice(0, 20)}...
                       {withdrawal.destination_address.slice(-10)}
@@ -170,25 +181,25 @@ export default function WithdrawalHistory() {
                   </div>
                   
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Date:</span>
+                    <span className="text-muted-foreground">Datum:</span>
                     <span>
-                      {new Date(withdrawal.created_at).toLocaleDateString()} {' '}
-                      {new Date(withdrawal.created_at).toLocaleTimeString()}
+                      {new Date(withdrawal.created_at).toLocaleDateString('de-DE')} {' '}
+                      {new Date(withdrawal.created_at).toLocaleTimeString('de-DE')}
                     </span>
                   </div>
 
                   {withdrawal.processed_at && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Processed:</span>
+                      <span className="text-muted-foreground">Verarbeitet:</span>
                       <span>
-                        {new Date(withdrawal.processed_at).toLocaleDateString()} {' '}
-                        {new Date(withdrawal.processed_at).toLocaleTimeString()}
+                        {new Date(withdrawal.processed_at).toLocaleDateString('de-DE')} {' '}
+                        {new Date(withdrawal.processed_at).toLocaleTimeString('de-DE')}
                       </span>
                     </div>
                   )}
 
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Current Value:</span>
+                    <span className="text-muted-foreground">Aktueller Wert:</span>
                     <span>
                       {getCurrentValue(withdrawal).toFixed(2)} EUR
                     </span>
@@ -196,7 +207,7 @@ export default function WithdrawalHistory() {
 
                   {withdrawal.tx_hash && (
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Transaction:</span>
+                      <span className="text-muted-foreground">Transaktion:</span>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -216,7 +227,7 @@ export default function WithdrawalHistory() {
 
                   {withdrawal.notes && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Notes:</span>
+                      <span className="text-muted-foreground">Hinweise:</span>
                       <span className="text-red-600 text-xs">
                         {withdrawal.notes}
                       </span>

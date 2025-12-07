@@ -11,13 +11,13 @@ import { z } from 'zod';
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
 
 const checkoutSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  street: z.string().min(1, 'Street is required'),
-  houseNumber: z.string().min(1, 'House number is required'),
-  postalCode: z.string().min(1, 'Postal code is required'),
-  city: z.string().min(1, 'City is required'),
-  country: z.string().min(1, 'Country is required'),
+  firstName: z.string().min(1, 'Vorname ist erforderlich'),
+  lastName: z.string().min(1, 'Nachname ist erforderlich'),
+  street: z.string().min(1, 'Straße ist erforderlich'),
+  houseNumber: z.string().min(1, 'Hausnummer ist erforderlich'),
+  postalCode: z.string().min(1, 'Postleitzahl ist erforderlich'),
+  city: z.string().min(1, 'Stadt ist erforderlich'),
+  country: z.string().min(1, 'Land ist erforderlich'),
 });
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
@@ -31,49 +31,49 @@ interface CheckoutModalProps {
 }
 
 const countries = [
-  { value: 'DE', label: 'Germany' },
-  { value: 'AT', label: 'Austria' },
-  { value: 'CH', label: 'Switzerland' },
-  { value: 'FR', label: 'France' },
-  { value: 'IT', label: 'Italy' },
-  { value: 'NL', label: 'Netherlands' },
-  { value: 'BE', label: 'Belgium' },
-  { value: 'ES', label: 'Spain' },
+  { value: 'DE', label: 'Deutschland' },
+  { value: 'AT', label: 'Österreich' },
+  { value: 'CH', label: 'Schweiz' },
+  { value: 'FR', label: 'Frankreich' },
+  { value: 'IT', label: 'Italien' },
+  { value: 'NL', label: 'Niederlande' },
+  { value: 'BE', label: 'Belgien' },
+  { value: 'ES', label: 'Spanien' },
   { value: 'PT', label: 'Portugal' },
-  { value: 'GB', label: 'United Kingdom' },
-  { value: 'IE', label: 'Ireland' },
-  { value: 'PL', label: 'Poland' },
-  { value: 'CZ', label: 'Czech Republic' },
-  { value: 'HU', label: 'Hungary' },
-  { value: 'SK', label: 'Slovakia' },
-  { value: 'SI', label: 'Slovenia' },
-  { value: 'HR', label: 'Croatia' },
-  { value: 'SE', label: 'Sweden' },
-  { value: 'NO', label: 'Norway' },
-  { value: 'DK', label: 'Denmark' },
-  { value: 'FI', label: 'Finland' },
-  { value: 'RO', label: 'Romania' },
-  { value: 'BG', label: 'Bulgaria' },
-  { value: 'GR', label: 'Greece' },
-  { value: 'TR', label: 'Turkey' },
-  { value: 'RU', label: 'Russia' },
+  { value: 'GB', label: 'Vereinigtes Königreich' },
+  { value: 'IE', label: 'Irland' },
+  { value: 'PL', label: 'Polen' },
+  { value: 'CZ', label: 'Tschechien' },
+  { value: 'HU', label: 'Ungarn' },
+  { value: 'SK', label: 'Slowakei' },
+  { value: 'SI', label: 'Slowenien' },
+  { value: 'HR', label: 'Kroatien' },
+  { value: 'SE', label: 'Schweden' },
+  { value: 'NO', label: 'Norwegen' },
+  { value: 'DK', label: 'Dänemark' },
+  { value: 'FI', label: 'Finnland' },
+  { value: 'RO', label: 'Rumänien' },
+  { value: 'BG', label: 'Bulgarien' },
+  { value: 'GR', label: 'Griechenland' },
+  { value: 'TR', label: 'Türkei' },
+  { value: 'RU', label: 'Russland' },
   { value: 'UA', label: 'Ukraine' },
-  // Asia
+  // Asien
   { value: 'CN', label: 'China' },
   { value: 'JP', label: 'Japan' },
-  { value: 'KR', label: 'South Korea' },
-  { value: 'SG', label: 'Singapore' },
-  { value: 'HK', label: 'Hong Kong' },
+  { value: 'KR', label: 'Südkorea' },
+  { value: 'SG', label: 'Singapur' },
+  { value: 'HK', label: 'Hongkong' },
   { value: 'TW', label: 'Taiwan' },
   { value: 'MY', label: 'Malaysia' },
   { value: 'TH', label: 'Thailand' },
   { value: 'VN', label: 'Vietnam' },
-  { value: 'PH', label: 'Philippines' },
-  { value: 'ID', label: 'Indonesia' },
-  { value: 'IN', label: 'India' },
-  { value: 'AE', label: 'United Arab Emirates' },
-  { value: 'SA', label: 'Saudi Arabia' },
-  { value: 'QA', label: 'Qatar' },
+  { value: 'PH', label: 'Philippinen' },
+  { value: 'ID', label: 'Indonesien' },
+  { value: 'IN', label: 'Indien' },
+  { value: 'AE', label: 'Vereinigte Arabische Emirate' },
+  { value: 'SA', label: 'Saudi-Arabien' },
+  { value: 'QA', label: 'Katar' },
   { value: 'IL', label: 'Israel' },
 ];
 
@@ -107,13 +107,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <ShoppingCart className="h-5 w-5" />
-            <span>Complete Order</span>
+            <span>Bestellung abschließen</span>
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="text-center p-4 bg-muted rounded-lg">
-            <p className="text-lg font-semibold">Total Amount: €{totalAmount.toFixed(2)}</p>
+            <p className="text-lg font-semibold">Gesamtbetrag: €{totalAmount.toFixed(2)}</p>
           </div>
 
           <Form {...form}>
@@ -124,7 +124,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First Name</FormLabel>
+                      <FormLabel>Vorname</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -138,7 +138,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Last Name</FormLabel>
+                      <FormLabel>Nachname</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -155,7 +155,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     name="street"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Street</FormLabel>
+                        <FormLabel>Straße</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -170,7 +170,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   name="houseNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>No.</FormLabel>
+                      <FormLabel>Nr.</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -186,7 +186,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   name="postalCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>ZIP</FormLabel>
+                      <FormLabel>PLZ</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -201,7 +201,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     name="city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>City</FormLabel>
+                        <FormLabel>Stadt</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -217,11 +217,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 name="country"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Country</FormLabel>
+                    <FormLabel>Land</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select country" />
+                          <SelectValue placeholder="Land auswählen" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -246,14 +246,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   disabled={loading}
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Back
+                  Zurück
                 </Button>
                 <Button
                   type="submit"
                   className="flex-1"
                   disabled={loading}
                 >
-                  {loading ? 'Processing...' : 'Place Order'}
+                  {loading ? 'Wird verarbeitet...' : 'Bestellung aufgeben'}
                 </Button>
               </div>
             </form>

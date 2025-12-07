@@ -156,8 +156,8 @@ const fetchOrders = async () => {
     // Validate image is required
     if (!formData.imageUrl) {
       toast({
-        title: "Image required",
-        description: "Please upload an image for your product.",
+        title: "Bild erforderlich",
+        description: "Bitte lade ein Bild für dein Produkt hoch.",
         variant: "destructive"
       });
       return;
@@ -182,14 +182,14 @@ const fetchOrders = async () => {
 
     if (error) {
       toast({
-        title: "Error adding product",
+        title: "Fehler beim Hinzufügen",
         description: error.message,
         variant: "destructive"
       });
     } else {
       toast({
-        title: "Product added",
-        description: "Your product has been successfully added."
+        title: "Produkt hinzugefügt",
+        description: "Dein Produkt wurde erfolgreich hinzugefügt."
       });
 
       // If bulk discount is enabled, create it
@@ -204,14 +204,14 @@ const fetchOrders = async () => {
 
         if (discountError) {
           toast({
-            title: "Product added, but bulk discount failed",
+            title: "Produkt hinzugefügt, aber Mengenrabatt fehlgeschlagen",
             description: discountError.message,
             variant: "destructive"
           });
         } else {
           toast({
-            title: "Product and bulk discount added",
-            description: "Your product and bulk discount have been successfully created."
+            title: "Produkt und Mengenrabatt hinzugefügt",
+            description: "Dein Produkt und Mengenrabatt wurden erfolgreich erstellt."
           });
         }
       }
@@ -243,21 +243,21 @@ const fetchOrders = async () => {
 
     if (error) {
       toast({
-        title: "Error",
+        title: "Fehler",
         description: error.message,
         variant: "destructive"
       });
     } else {
       fetchProducts();
       toast({
-        title: "Status changed",
-        description: "Product status has been updated."
+        title: "Status geändert",
+        description: "Produktstatus wurde aktualisiert."
       });
     }
   };
 
   const deleteProduct = async (productId: string, productTitle: string) => {
-    if (!confirm(`Are you sure you want to delete the product "${productTitle}"?`)) {
+    if (!confirm(`Bist du sicher, dass du das Produkt "${productTitle}" löschen möchtest?`)) {
       return;
     }
 
@@ -268,15 +268,15 @@ const fetchOrders = async () => {
 
     if (error) {
       toast({
-        title: "Error deleting",
+        title: "Fehler beim Löschen",
         description: error.message,
         variant: "destructive"
       });
     } else {
       fetchProducts();
       toast({
-        title: "Product deleted",
-        description: "The product has been successfully deleted."
+        title: "Produkt gelöscht",
+        description: "Das Produkt wurde erfolgreich gelöscht."
       });
     }
   };
@@ -317,6 +317,18 @@ const fetchOrders = async () => {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending': return 'Ausstehend';
+      case 'confirmed': return 'Bestätigt';
+      case 'processing': return 'In Bearbeitung';
+      case 'shipped': return 'Versendet';
+      case 'delivered': return 'Geliefert';
+      case 'cancelled': return 'Storniert';
+      default: return status;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -334,31 +346,31 @@ const fetchOrders = async () => {
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <h1 className="text-3xl font-bold font-cinzel">Seller Dashboard</h1>
+            <h1 className="text-3xl font-bold font-cinzel">Verkäufer-Dashboard</h1>
           </div>
           <Button 
             variant="outline" 
             onClick={() => navigate('/marketplace')}
           >
-            Back to Marketplace
+            Zurück zum Marktplatz
           </Button>
         </div>
 
         {/* Seller Rules */}
         <Card>
           <CardHeader>
-            <CardTitle>Seller Rules</CardTitle>
-            <CardDescription>Please follow these professional guidelines</CardDescription>
+            <CardTitle>Verkäuferregeln</CardTitle>
+            <CardDescription>Bitte befolge diese professionellen Richtlinien</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-              <li>Do not scam or mislead users. Honesty is mandatory.</li>
-              <li>Ship orders promptly and provide accurate tracking when available.</li>
-              <li>Describe products truthfully with real photos and specifications.</li>
-              <li>Maintain professional communication and respond within 24–48 hours.</li>
-              <li>Comply with all applicable laws and do not list prohibited items.</li>
-              <li>Respect user privacy; never share buyer information.</li>
-              <li>Cancel and refund orders you cannot fulfill in a timely manner.</li>
+              <li>Betrug oder Täuschung von Nutzern ist untersagt. Ehrlichkeit ist Pflicht.</li>
+              <li>Versende Bestellungen zeitnah und gib genaue Tracking-Informationen an.</li>
+              <li>Beschreibe Produkte wahrheitsgemäß mit echten Fotos und Spezifikationen.</li>
+              <li>Halte professionelle Kommunikation ein und antworte innerhalb von 24-48 Stunden.</li>
+              <li>Beachte alle geltenden Gesetze und liste keine verbotenen Artikel.</li>
+              <li>Respektiere die Privatsphäre der Nutzer; teile keine Käuferinformationen.</li>
+              <li>Storniere und erstatte Bestellungen, die du nicht erfüllen kannst.</li>
             </ul>
           </CardContent>
         </Card>
@@ -367,16 +379,16 @@ const fetchOrders = async () => {
           <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
-              Products
+              Produkte
             </TabsTrigger>
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              Orders
+              Bestellungen
             </TabsTrigger>
             {profile?.role === 'admin' && (
               <TabsTrigger value="disputes" className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
-                Disputes
+                Streitfälle
               </TabsTrigger>
             )}
           </TabsList>
@@ -386,15 +398,15 @@ const fetchOrders = async () => {
               {/* Add Product Form */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Add New Product</CardTitle>
+                  <CardTitle>Neues Produkt hinzufügen</CardTitle>
                   <CardDescription>
-                    Add a new product to your shop
+                    Füge ein neues Produkt zu deinem Shop hinzu
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <Label htmlFor="title">Product Name</Label>
+                      <Label htmlFor="title">Produktname</Label>
                       <Input
                         id="title"
                         value={formData.title}
@@ -404,7 +416,7 @@ const fetchOrders = async () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="price">Price (EUR)</Label>
+                      <Label htmlFor="price">Preis (EUR)</Label>
                       <Input
                         id="price"
                         type="number"
@@ -416,13 +428,13 @@ const fetchOrders = async () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="category">Category</Label>
+                      <Label htmlFor="category">Kategorie</Label>
                       <Select 
                         value={formData.category} 
                         onValueChange={(value) => setFormData({...formData, category: value})}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Choose category" />
+                          <SelectValue placeholder="Kategorie wählen" />
                         </SelectTrigger>
                         <SelectContent>
                           {categories.map((category) => (
@@ -435,7 +447,7 @@ const fetchOrders = async () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="stock">Stock</Label>
+                      <Label htmlFor="stock">Bestand</Label>
                       <Input
                         id="stock"
                         type="number"
@@ -447,7 +459,7 @@ const fetchOrders = async () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="imageUrl">Product Image</Label>
+                      <Label htmlFor="imageUrl">Produktbild</Label>
                       <FileUpload
                         value={formData.imageUrl}
                         onChange={(url) => setFormData({...formData, imageUrl: url})}
@@ -455,7 +467,7 @@ const fetchOrders = async () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="description">Description</Label>
+                      <Label htmlFor="description">Beschreibung</Label>
                       <Textarea
                         id="description"
                         value={formData.description}
@@ -469,10 +481,10 @@ const fetchOrders = async () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <Label htmlFor="enable-bulk-discount" className="text-sm font-medium">
-                            Enable Bulk Discount
+                            Mengenrabatt aktivieren
                           </Label>
                           <p className="text-xs text-muted-foreground">
-                            Offer discounts for larger quantities
+                            Biete Rabatte für größere Mengen an
                           </p>
                         </div>
                         <Switch
@@ -486,13 +498,13 @@ const fetchOrders = async () => {
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <Label htmlFor="min-quantity" className="text-xs">
-                              Min. Quantity
+                              Mind. Menge
                             </Label>
                             <Input
                               id="min-quantity"
                               type="number"
                               min="2"
-                              placeholder="e.g. 5"
+                              placeholder="z.B. 5"
                               value={bulkDiscountData.minQuantity}
                               onChange={(e) => setBulkDiscountData({
                                 ...bulkDiscountData, 
@@ -502,14 +514,14 @@ const fetchOrders = async () => {
                           </div>
                           <div>
                             <Label htmlFor="discount-percentage" className="text-xs">
-                              Discount %
+                              Rabatt %
                             </Label>
                             <Input
                               id="discount-percentage"
                               type="number"
                               min="1"
                               max="50"
-                              placeholder="e.g. 10"
+                              placeholder="z.B. 10"
                               value={bulkDiscountData.discountPercentage}
                               onChange={(e) => setBulkDiscountData({
                                 ...bulkDiscountData, 
@@ -523,7 +535,7 @@ const fetchOrders = async () => {
 
                     <Button type="submit" className="w-full" disabled={isLoading}>
                       <Upload className="h-4 w-4 mr-2" />
-                      {isLoading ? "Adding..." : "Add Product"}
+                      {isLoading ? "Wird hinzugefügt..." : "Produkt hinzufügen"}
                     </Button>
                   </form>
 
@@ -542,7 +554,7 @@ const fetchOrders = async () => {
                           setNewProductTitle('');
                         }}
                       >
-                        Finish Product Setup
+                        Produkteinrichtung abschließen
                       </Button>
                     </div>
                   )}
@@ -552,9 +564,9 @@ const fetchOrders = async () => {
               {/* Products List */}
               <Card>
                 <CardHeader>
-                  <CardTitle>My Products ({products.length})</CardTitle>
+                  <CardTitle>Meine Produkte ({products.length})</CardTitle>
                   <CardDescription>
-                    Manage your available products
+                    Verwalte deine verfügbaren Produkte
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -566,9 +578,9 @@ const fetchOrders = async () => {
                             <h3 className="font-semibold">{product.title}</h3>
                             <p className="text-sm text-muted-foreground">{product.category}</p>
                             <p className="text-lg font-bold text-primary">€{product.price}</p>
-                            <p className="text-sm text-muted-foreground">Stock: {product.stock} units</p>
+                            <p className="text-sm text-muted-foreground">Bestand: {product.stock} Stück</p>
                             {product.stock === 0 && (
-                              <p className="text-sm text-red-500 font-medium">Out of stock</p>
+                              <p className="text-sm text-red-500 font-medium">Nicht auf Lager</p>
                             )}
                           </div>
                           <div className="flex gap-2 flex-wrap">
@@ -581,21 +593,21 @@ const fetchOrders = async () => {
                               }}
                             >
                               <Edit className="h-4 w-4 mr-1" />
-                              Edit
+                              Bearbeiten
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => deleteProduct(product.id, product.title)}
                             >
-                              Delete
+                              Löschen
                             </Button>
                             <Button
                               variant={product.is_active ? "destructive" : "default"}
                               size="sm"
                               onClick={() => toggleProductStatus(product.id, product.is_active)}
                             >
-                              {product.is_active ? "Deactivate" : "Activate"}
+                              {product.is_active ? "Deaktivieren" : "Aktivieren"}
                             </Button>
                           </div>
                         </div>
@@ -603,7 +615,7 @@ const fetchOrders = async () => {
                     ))}
                     {products.length === 0 && (
                       <p className="text-muted-foreground text-center py-8">
-                        No products added yet.
+                        Noch keine Produkte hinzugefügt.
                       </p>
                     )}
                   </div>
@@ -615,9 +627,9 @@ const fetchOrders = async () => {
           <TabsContent value="orders" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Customer Orders ({orders.length})</CardTitle>
+                <CardTitle>Kundenbestellungen ({orders.length})</CardTitle>
                 <CardDescription>
-                  View and manage orders containing your products
+                  Zeige und verwalte Bestellungen mit deinen Produkten
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -627,24 +639,24 @@ const fetchOrders = async () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-semibold">Order #{order.id.slice(0, 8)}</h3>
+                            <h3 className="font-semibold">Bestellung #{order.id.slice(0, 8)}</h3>
                             <div className="flex items-center gap-2">
                               {getStatusIcon(order.order_status)}
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.order_status)}`}>
-                                {order.order_status}
+                                {getStatusLabel(order.order_status)}
                               </span>
                             </div>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {new Date(order.created_at).toLocaleDateString()}
+                            {new Date(order.created_at).toLocaleDateString('de-DE')}
                           </p>
                           <p className="text-lg font-bold text-primary">€{order.total_amount_eur.toFixed(2)}</p>
-                          <p className="text-sm">Customer: <span className="font-medium">@{order.buyer_username}</span></p>
+                          <p className="text-sm">Kunde: <span className="font-medium">@{order.buyer_username}</span></p>
                           
                           {/* Tracking Information */}
                           {order.tracking_number && (
                             <div className="mt-2 p-2 bg-muted rounded">
-                              <p className="text-sm font-medium">Tracking: {order.tracking_number}</p>
+                              <p className="text-sm font-medium">Sendungsnummer: {order.tracking_number}</p>
                               {order.tracking_url && (
                                 <a 
                                   href={order.tracking_url} 
@@ -652,17 +664,17 @@ const fetchOrders = async () => {
                                   rel="noopener noreferrer"
                                   className="text-xs text-primary hover:underline"
                                 >
-                                  Track Package
+                                  Sendung verfolgen
                                 </a>
                               )}
                             </div>
                           )}
                           
                           <div className="mt-2">
-                            <h4 className="font-medium text-sm">Items:</h4>
+                            <h4 className="font-medium text-sm">Artikel:</h4>
                             {order.items?.map((item) => (
                               <p key={item.order_item_id} className="text-xs text-muted-foreground">
-                                {item.quantity}x {item.product_title || 'Product unavailable'} (€{item.price_eur.toFixed(2)})
+                                {item.quantity}x {item.product_title || 'Produkt nicht verfügbar'} (€{item.price_eur.toFixed(2)})
                               </p>
                             ))}
                           </div>
@@ -674,12 +686,12 @@ const fetchOrders = async () => {
                             className="mt-3"
                             onClick={() => handleUpdateOrderStatus(order.id, order.order_status)}
                           >
-                            Update Status
+                            Status aktualisieren
                           </Button>
                         </div>
                         
                         <div>
-                          <h4 className="font-medium text-sm mb-2">Shipping Address:</h4>
+                          <h4 className="font-medium text-sm mb-2">Lieferadresse:</h4>
                           <div className="text-sm text-muted-foreground space-y-1">
                             <p>{order.shipping_first_name} {order.shipping_last_name}</p>
                             <p>{order.shipping_street} {order.shipping_house_number}</p>
@@ -692,7 +704,7 @@ const fetchOrders = async () => {
                   ))}
                   {orders.length === 0 && (
                     <p className="text-muted-foreground text-center py-8">
-                      No orders yet.
+                      Noch keine Bestellungen.
                     </p>
                   )}
                 </div>

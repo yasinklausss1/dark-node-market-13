@@ -56,7 +56,7 @@ export function DepositRequest() {
         
         setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
       } else {
-        setTimeLeft("Expired");
+        setTimeLeft("Abgelaufen");
         setExistingRequest(null);
       }
     };
@@ -144,17 +144,17 @@ export function DepositRequest() {
         // Refresh addresses
         setTimeout(() => getUserAddresses(), 1000);
         toast({
-          title: "Addresses Generated",
-          description: "Your Bitcoin and Litecoin addresses have been created.",
+          title: "Adressen erstellt",
+          description: "Deine Bitcoin- und Litecoin-Adressen wurden erstellt.",
         });
       } else {
-        throw new Error("Failed to generate addresses");
+        throw new Error("Adressen konnten nicht erstellt werden");
       }
     } catch (error) {
       console.error('Error generating addresses:', error);
       toast({
-        title: "Error", 
-        description: "Could not generate crypto addresses. Please refresh the page.",
+        title: "Fehler", 
+        description: "Krypto-Adressen konnten nicht erstellt werden. Bitte lade die Seite neu.",
         variant: "destructive",
       });
       
@@ -183,7 +183,7 @@ export function DepositRequest() {
       const ltcPriceValue = data.litecoin?.eur;
       
       if (!btcPriceValue || !ltcPriceValue) {
-        throw new Error('Invalid price data received');
+        throw new Error('Ungültige Preisdaten empfangen');
       }
       
       setBtcPrice(btcPriceValue);
@@ -204,8 +204,8 @@ export function DepositRequest() {
   const createDepositRequest = async () => {
     if (!user) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to create a deposit request",
+        title: "Anmeldung erforderlich",
+        description: "Bitte melde dich an um eine Einzahlungsanfrage zu erstellen",
         variant: "destructive",
       });
       return;
@@ -213,8 +213,8 @@ export function DepositRequest() {
 
     if (!userAddresses) {
       toast({
-        title: "Error",
-        description: "User addresses not ready. Please wait or refresh the page.",
+        title: "Fehler",
+        description: "Benutzeradressen nicht bereit. Bitte warte oder lade die Seite neu.",
         variant: "destructive",
       });
       return;
@@ -222,8 +222,8 @@ export function DepositRequest() {
 
     if (!eurAmount || parseFloat(eurAmount) <= 0) {
       toast({
-        title: "Error",
-        description: "Please enter a valid amount",
+        title: "Fehler",
+        description: "Bitte gib einen gültigen Betrag ein",
         variant: "destructive",
       });
       return;
@@ -232,8 +232,8 @@ export function DepositRequest() {
     // Check if there's already a pending request
     if (existingRequest) {
       toast({
-        title: "Active Request Exists",
-        description: "You already have a pending deposit request. Please complete or close it first.",
+        title: "Aktive Anfrage vorhanden",
+        description: "Du hast bereits eine ausstehende Einzahlungsanfrage. Bitte schließe diese zuerst ab.",
         variant: "destructive",
       });
       return;
@@ -248,7 +248,7 @@ export function DepositRequest() {
       const price = selectedCrypto === "bitcoin" ? prices.btcPrice : prices.ltcPrice;
       
       if (!price || price <= 0) {
-        throw new Error("Invalid crypto price received");
+        throw new Error("Ungültiger Krypto-Preis empfangen");
       }
       
       const amountCrypto = amountEur / price;
@@ -300,29 +300,29 @@ export function DepositRequest() {
       setExistingRequest(newRequest);
 
       toast({
-        title: "Deposit Request Created",
-        description: `Send exactly ${finalAmount.toFixed(8)} ${selectedCrypto.toUpperCase()} to your address within 6 hours`,
+        title: "Einzahlungsanfrage erstellt",
+        description: `Sende exakt ${finalAmount.toFixed(8)} ${selectedCrypto.toUpperCase()} an deine Adresse innerhalb von 6 Stunden`,
       });
       
     } catch (error) {
       console.error('Error creating deposit request:', error);
       
-      let errorMessage = "Could not create deposit request";
+      let errorMessage = "Einzahlungsanfrage konnte nicht erstellt werden";
       
       if (error instanceof Error) {
         if (error.message.includes('auth')) {
-          errorMessage = "Please log in to create a deposit request";
+          errorMessage = "Bitte melde dich an um eine Einzahlungsanfrage zu erstellen";
         } else if (error.message.includes('price')) {
-          errorMessage = "Could not fetch current crypto prices. Please try again.";
+          errorMessage = "Krypto-Preise konnten nicht abgerufen werden. Bitte versuche es erneut.";
         } else if (error.message.includes('duplicate key')) {
-          errorMessage = "You already have a pending deposit request. Please complete or close it first.";
+          errorMessage = "Du hast bereits eine ausstehende Einzahlungsanfrage. Bitte schließe diese zuerst ab.";
         } else {
           errorMessage = error.message;
         }
       }
       
       toast({
-        title: "Error",
+        title: "Fehler",
         description: errorMessage,
         variant: "destructive",
       });
@@ -345,17 +345,17 @@ export function DepositRequest() {
         setExistingRequest(null);
         setEurAmount("");
         toast({
-          title: "Request Closed",
-          description: "Your deposit request has been closed.",
+          title: "Anfrage geschlossen",
+          description: "Deine Einzahlungsanfrage wurde geschlossen.",
         });
       } else {
-        throw new Error("Failed to close request");
+        throw new Error("Anfrage konnte nicht geschlossen werden");
       }
     } catch (error) {
       console.error('Error closing request:', error);
       toast({
-        title: "Error",
-        description: "Could not close deposit request",
+        title: "Fehler",
+        description: "Einzahlungsanfrage konnte nicht geschlossen werden",
         variant: "destructive",
       });
     }
@@ -366,8 +366,8 @@ export function DepositRequest() {
     
     await navigator.clipboard.writeText(existingRequest.qr_data);
     toast({
-      title: "Copied",
-      description: "Payment URI copied to clipboard",
+      title: "Kopiert",
+      description: "Zahlungs-URI in Zwischenablage kopiert",
     });
   };
 
@@ -375,8 +375,8 @@ export function DepositRequest() {
     if (!existingRequest) return;
     await navigator.clipboard.writeText(existingRequest.address);
     toast({
-      title: "Copied",
-      description: "Address copied to clipboard",
+      title: "Kopiert",
+      description: "Adresse in Zwischenablage kopiert",
     });
   };
 
@@ -398,7 +398,7 @@ export function DepositRequest() {
               ) : (
                 <Coins className="h-5 w-5 text-blue-500" />
               )}
-              Active Deposit Request
+              Aktive Einzahlungsanfrage
             </div>
             <Button
               variant="outline"
@@ -407,31 +407,31 @@ export function DepositRequest() {
               className="text-red-600 hover:text-red-700"
             >
               <X className="h-4 w-4 mr-1" />
-              Close
+              Schließen
             </Button>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="bg-muted p-4 rounded-lg space-y-2">
             <div className="flex justify-between">
-              <span>Amount (EUR):</span>
+              <span>Betrag (EUR):</span>
               <span className="font-bold">€{existingRequest.requested_eur.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
-              <span>Amount ({existingRequest.currency}):</span>
+              <span>Betrag ({existingRequest.currency}):</span>
               <span className="font-bold">{existingRequest.crypto_amount.toFixed(8)}</span>
             </div>
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Expires at:</span>
-              <span>{new Date(existingRequest.expires_at).toLocaleString()}</span>
+              <span>Läuft ab um:</span>
+              <span>{new Date(existingRequest.expires_at).toLocaleString('de-DE')}</span>
             </div>
             <div className="flex justify-between text-sm font-medium">
-              <span>Time remaining:</span>
-              <span className={timeLeft === "Expired" ? "text-red-500" : "text-primary"}>{timeLeft}</span>
+              <span>Verbleibende Zeit:</span>
+              <span className={timeLeft === "Abgelaufen" ? "text-red-500" : "text-primary"}>{timeLeft}</span>
             </div>
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Fingerprint:</span>
-              <span>+{existingRequest.fingerprint} {cryptoName === "bitcoin" ? "sats" : "litoshis"}</span>
+              <span>Fingerabdruck:</span>
+              <span>+{existingRequest.fingerprint} {cryptoName === "bitcoin" ? "Sats" : "Litoshis"}</span>
             </div>
           </div>
 
@@ -445,7 +445,7 @@ export function DepositRequest() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium">BIP21 Payment URI:</Label>
+              <Label className="text-sm font-medium">BIP21 Zahlungs-URI:</Label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 p-2 bg-muted rounded text-xs break-all">
                   {existingRequest.qr_data}
@@ -458,7 +458,7 @@ export function DepositRequest() {
 
             <div className="space-y-2">
               <Label className="text-sm font-medium">
-                Your {cryptoName === "bitcoin" ? "Bitcoin" : "Litecoin"} Address:
+                Deine {cryptoName === "bitcoin" ? "Bitcoin" : "Litecoin"}-Adresse:
               </Label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 p-2 bg-muted rounded text-sm break-all">
@@ -472,13 +472,13 @@ export function DepositRequest() {
           </div>
 
           <div className="bg-card border p-4 rounded-lg">
-            <h4 className="font-medium mb-2">Important:</h4>
+            <h4 className="font-medium mb-2">Wichtig:</h4>
             <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>Send EXACTLY {existingRequest.crypto_amount.toFixed(8)} {existingRequest.currency}</li>
-              <li>This is your personal {existingRequest.currency} address</li>
-              <li>Payment will be credited after 1 confirmation</li>
-              <li>Request expires at {new Date(existingRequest.expires_at).toLocaleString()}</li>
-              <li>You can close this request anytime using the Close button</li>
+              <li>Sende EXAKT {existingRequest.crypto_amount.toFixed(8)} {existingRequest.currency}</li>
+              <li>Dies ist deine persönliche {existingRequest.currency}-Adresse</li>
+              <li>Zahlung wird nach 1 Bestätigung gutgeschrieben</li>
+              <li>Anfrage läuft ab um {new Date(existingRequest.expires_at).toLocaleString('de-DE')}</li>
+              <li>Du kannst diese Anfrage jederzeit über Schließen beenden</li>
             </ul>
           </div>
         </CardContent>
@@ -493,14 +493,14 @@ export function DepositRequest() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Euro className="h-5 w-5 text-primary" />
-            Setting Up Your Wallet
+            Wallet wird eingerichtet
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center py-8">
           <div className="flex flex-col items-center gap-4">
             <RefreshCw className="h-8 w-8 animate-spin text-primary" />
             <p className="text-muted-foreground">
-              {generatingAddresses ? "Generating your Bitcoin and Litecoin addresses..." : "Loading your addresses..."}
+              {generatingAddresses ? "Deine Bitcoin- und Litecoin-Adressen werden erstellt..." : "Adressen werden geladen..."}
             </p>
           </div>
         </CardContent>
@@ -513,32 +513,32 @@ export function DepositRequest() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Euro className="h-5 w-5 text-primary" />
-          Create Deposit Request
+          Einzahlungsanfrage erstellen
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount (EUR)</Label>
+            <Label htmlFor="amount">Betrag (EUR)</Label>
             <Input
               id="amount"
               type="number"
               step="0.01"
               min="1"
-              placeholder="Enter amount in EUR"
+              placeholder="Betrag in EUR eingeben"
               value={eurAmount}
               onChange={(e) => setEurAmount(e.target.value)}
               disabled={!user}
             />
             {!user && (
               <p className="text-sm text-muted-foreground">
-                Please log in to create deposit requests
+                Bitte melde dich an um Einzahlungsanfragen zu erstellen
               </p>
             )}
           </div>
 
           <div className="space-y-4">
-            <Label className="text-sm font-medium">Select Cryptocurrency:</Label>
+            <Label className="text-sm font-medium">Kryptowährung auswählen:</Label>
             <RadioGroup 
               value={selectedCrypto} 
               onValueChange={(value) => setSelectedCrypto(value as "bitcoin" | "litecoin")}
@@ -563,7 +563,7 @@ export function DepositRequest() {
 
           {userAddresses && (
             <div className="bg-muted p-4 rounded-lg space-y-2">
-              <h4 className="font-medium text-sm">Your Addresses:</h4>
+              <h4 className="font-medium text-sm">Deine Adressen:</h4>
               <div className="text-xs space-y-1">
                 <div><strong>BTC:</strong> {userAddresses.btc}</div>
                 <div><strong>LTC:</strong> {userAddresses.ltc}</div>
@@ -579,24 +579,24 @@ export function DepositRequest() {
             {loading ? (
               <>
                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                Creating Request...
+                Anfrage wird erstellt...
               </>
             ) : existingRequest ? (
-              'Complete Current Request First'
+              'Schließe zuerst die aktuelle Anfrage ab'
             ) : (
-              'Create Deposit Request'
+              'Einzahlungsanfrage erstellen'
             )}
           </Button>
         </div>
 
         <div className="text-sm text-muted-foreground space-y-2">
-          <p><strong>How it works:</strong></p>
+          <p><strong>So funktioniert es:</strong></p>
           <ul className="list-disc list-inside space-y-1">
-            <li>Enter the EUR amount you want to deposit</li>
-            <li>Choose Bitcoin or Litecoin</li>
-            <li>Send to your personal crypto address</li>
-            <li>Only one active request allowed at a time</li>
-            <li>Requests expire after 6 hours</li>
+            <li>Gib den gewünschten EUR-Betrag ein</li>
+            <li>Wähle Bitcoin oder Litecoin</li>
+            <li>Sende an deine persönliche Krypto-Adresse</li>
+            <li>Nur eine aktive Anfrage gleichzeitig erlaubt</li>
+            <li>Anfragen laufen nach 6 Stunden ab</li>
           </ul>
         </div>
       </CardContent>

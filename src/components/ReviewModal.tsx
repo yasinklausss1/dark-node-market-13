@@ -35,8 +35,8 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     
     if (rating === 0) {
       toast({
-        title: "Rating Required",
-        description: "Please select a rating before submitting.",
+        title: "Bewertung erforderlich",
+        description: "Bitte wähle eine Bewertung vor dem Absenden.",
         variant: "destructive"
       });
       return;
@@ -58,8 +58,8 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       if (error) throw error;
 
       toast({
-        title: "Review Submitted",
-        description: "Thank you for your feedback!"
+        title: "Bewertung abgesendet",
+        description: "Danke für dein Feedback!"
       });
       
       onReviewSubmitted();
@@ -69,8 +69,8 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     } catch (error) {
       console.error('Error submitting review:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to submit review",
+        title: "Fehler",
+        description: error instanceof Error ? error.message : "Bewertung konnte nicht gesendet werden",
         variant: "destructive"
       });
     } finally {
@@ -82,12 +82,12 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Rate Seller: @{sellerUsername}</DialogTitle>
+          <DialogTitle>Verkäufer bewerten: @{sellerUsername}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label>Rating</Label>
+            <Label>Bewertung</Label>
             <div className="flex gap-1 mt-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -109,22 +109,22 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
               ))}
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              {rating > 0 && `${rating} out of 5 stars`}
+              {rating > 0 && `${rating} von 5 Sternen`}
             </p>
           </div>
 
           <div>
-            <Label htmlFor="comment">Comment (Optional)</Label>
+            <Label htmlFor="comment">Kommentar (Optional)</Label>
             <Textarea
               id="comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Share your experience with this seller..."
+              placeholder="Teile deine Erfahrung mit diesem Verkäufer..."
               rows={4}
               maxLength={500}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              {comment.length}/500 characters
+              {comment.length}/500 Zeichen
             </p>
           </div>
 
@@ -136,14 +136,14 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
               className="flex-1"
               disabled={isLoading}
             >
-              Cancel
+              Abbrechen
             </Button>
             <Button
               type="submit"
               className="flex-1"
               disabled={isLoading}
             >
-              {isLoading ? 'Submitting...' : 'Submit Review'}
+              {isLoading ? 'Wird gesendet...' : 'Bewertung absenden'}
             </Button>
           </div>
         </form>

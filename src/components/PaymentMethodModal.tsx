@@ -35,12 +35,12 @@ export const PaymentMethodModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Choose Payment Method</DialogTitle>
+          <DialogTitle>Zahlungsmethode wählen</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Total Amount: €{totalAmountEur.toFixed(2)}
+            Gesamtbetrag: €{totalAmountEur.toFixed(2)}
           </p>
           
           <div className="space-y-3">
@@ -56,7 +56,7 @@ export const PaymentMethodModal = ({
                   <div className="font-medium">Bitcoin (BTC)</div>
                   <div className="text-sm text-muted-foreground">
                     {btcAmount} BTC
-                    {!hasEnoughBtc && " (Insufficient Balance)"}
+                    {!hasEnoughBtc && " (Unzureichendes Guthaben)"}
                   </div>
                 </div>
               </div>
@@ -74,7 +74,7 @@ export const PaymentMethodModal = ({
                   <div className="font-medium">Litecoin (LTC)</div>
                   <div className="text-sm text-muted-foreground">
                     {ltcAmount} LTC
-                    {!hasEnoughLtc && " (Insufficient Balance)"}
+                    {!hasEnoughLtc && " (Unzureichendes Guthaben)"}
                   </div>
                 </div>
               </div>
@@ -86,7 +86,7 @@ export const PaymentMethodModal = ({
             onClick={() => onOpenChange(false)}
             className="w-full"
           >
-            Cancel
+            Abbrechen
           </Button>
         </div>
       </DialogContent>
