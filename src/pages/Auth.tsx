@@ -109,38 +109,10 @@ const Auth = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Register</TabsTrigger>
-            <TabsTrigger value="seller">Seller</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="signin">
-            <SignInForm
-              onSubmit={handleSignIn}
-              isLoading={isLoading}
-            />
-          </TabsContent>
-          
-          <TabsContent value="signup">
-            <SignUpForm
-              onSubmit={handleUserSignUp}
-              isLoading={isLoading}
-              title="User Registration"
-              description="Create a new user account"
-            />
-          </TabsContent>
-
-          <TabsContent value="seller">
-            <SignUpForm
-              onSubmit={handleSellerSignUp}
-              isLoading={isLoading}
-              title="Seller Registration"
-              description="Create a seller account"
-            />
-          </TabsContent>
-        </Tabs>
+        <SignInForm
+          onSubmit={handleSignIn}
+          isLoading={isLoading}
+        />
       </div>
     </div>
   );
