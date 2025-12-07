@@ -27,9 +27,7 @@ export const ModernHeroSection: React.FC<ModernHeroSectionProps> = ({
         {/* Main Hero Content */}
         <div className="text-center max-w-4xl mx-auto mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Badge variant="secondary" className="animate-fade-in">Safe Place<Star className="h-3 w-3 mr-1" />
-              Vertrauenswürdiger Marktplatz
-            </Badge>
+            
             
           </div>
 
