@@ -57,14 +57,32 @@ const Auth = () => {
           <p className="text-sm text-muted-foreground">
             Um einen Account zu erhalten, schreibe auf Telegram:
           </p>
-          <a 
-            href="https://t.me/elmatzo" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-primary font-semibold hover:underline text-lg"
-          >
-            @elmatzo
-          </a>
+          <div className="flex flex-wrap justify-center gap-3">
+            <a 
+              href="https://t.me/elmatzo" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary font-semibold hover:underline text-lg"
+            >
+              elmatzo
+            </a>
+            <a 
+              href="https://t.me/xmlsfuak" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary font-semibold hover:underline text-lg"
+            >
+              xmlsfuak
+            </a>
+            <a 
+              href="https://t.me/veiyoo" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary font-semibold hover:underline text-lg"
+            >
+              veiyoo
+            </a>
+          </div>
           <p className="text-xs text-muted-foreground mt-2">
             Dies dient der Sicherheit, um unbefugten Zugriff zu verhindern.
           </p>
