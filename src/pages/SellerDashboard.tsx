@@ -359,14 +359,15 @@ const fetchOrders = async () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-background p-3 sm:p-6 overflow-x-hidden">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
-            <h1 className="text-3xl font-bold font-cinzel">Verkäufer-Dashboard</h1>
+            <h1 className="text-xl sm:text-3xl font-bold font-cinzel">Verkäufer-Dashboard</h1>
           </div>
           <Button 
             variant="outline" 
+            size="sm"
             onClick={() => navigate('/marketplace')}
           >
             Zurück zum Marktplatz
@@ -375,12 +376,12 @@ const fetchOrders = async () => {
 
         {/* Seller Rules */}
         <Card>
-          <CardHeader>
-            <CardTitle>Verkäuferregeln</CardTitle>
-            <CardDescription>Bitte befolge diese professionellen Richtlinien</CardDescription>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-lg sm:text-xl">Verkäuferregeln</CardTitle>
+            <CardDescription className="text-sm">Bitte befolge diese professionellen Richtlinien</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <ul className="list-disc pl-4 sm:pl-5 space-y-1 text-xs sm:text-sm text-muted-foreground">
               <li>Betrug oder Täuschung von Nutzern ist untersagt. Ehrlichkeit ist Pflicht.</li>
               <li>Versende Bestellungen zeitnah und gib genaue Tracking-Informationen an.</li>
               <li>Beschreibe Produkte wahrheitsgemäß mit echten Fotos und Spezifikationen.</li>
@@ -393,19 +394,22 @@ const fetchOrders = async () => {
         </Card>
 
         <Tabs defaultValue="products" className="w-full">
-          <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-3' : 'grid-cols-2'}`}>
-            <TabsTrigger value="products" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Produkte
+          <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-3' : 'grid-cols-2'} h-auto`}>
+            <TabsTrigger value="products" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Produkte</span>
+              <span className="sm:hidden">Prod.</span>
             </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Bestellungen
+            <TabsTrigger value="orders" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <User className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Bestellungen</span>
+              <span className="sm:hidden">Best.</span>
             </TabsTrigger>
             {profile?.role === 'admin' && (
-              <TabsTrigger value="disputes" className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                Streitfälle
+              <TabsTrigger value="disputes" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Streitfälle</span>
+                <span className="sm:hidden">Streit</span>
               </TabsTrigger>
             )}
           </TabsList>
