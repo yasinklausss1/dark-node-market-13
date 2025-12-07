@@ -80,8 +80,8 @@ const Marketplace = () => {
     hasPrevPage 
   } = usePagination({
     items: filteredProducts,
-    itemsPerPageMobile: 18, // 3x6 grid
-    itemsPerPageDesktop: 36, // 6x6 grid on desktop
+    itemsPerPageMobile: 18,
+    itemsPerPageDesktop: 36,
     isMobile
   });
 
@@ -90,7 +90,6 @@ const Marketplace = () => {
     fetchCategories(); 
     fetchUserCount();
     
-    // Set up real-time listener for user count
     const channel = supabase
       .channel('user-count-changes')
       .on('postgres_changes', 
@@ -106,7 +105,6 @@ const Marketplace = () => {
     };
   }, [user, profile]);
 
-  // Handle URL product parameter to open modal directly
   useEffect(() => {
     const productId = searchParams.get('product');
     if (productId && products.length > 0) {
@@ -114,7 +112,6 @@ const Marketplace = () => {
       if (product) {
         openProductModal(product);
       } else {
-        // Product not found - show error message
         toast({
           title: "Produkt nicht gefunden",
           description: "Das gesuchte Produkt existiert nicht mehr oder wurde entfernt.",
@@ -122,7 +119,6 @@ const Marketplace = () => {
         });
       }
       
-      // Remove the product parameter from URL without affecting browser history
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('product');
       const newUrl = newSearchParams.toString() 
@@ -133,7 +129,6 @@ const Marketplace = () => {
   }, [products, searchParams, toast]);
 
   useEffect(() => {
-    // Recalculate BTC prices when currentBtcPrice changes
     if (currentBtcPrice && products.length > 0) {
       const prices: {[key: string]: number} = {};
       products.forEach(product => {
@@ -144,7 +139,6 @@ const Marketplace = () => {
   }, [currentBtcPrice, products]);
 
   useEffect(() => {
-    // Recalculate LTC prices when currentLtcPrice changes
     if (currentLtcPrice && products.length > 0) {
       const prices: {[key: string]: number} = {};
       products.forEach(product => {
@@ -213,8 +207,8 @@ const Marketplace = () => {
     if (error) {
       console.error('Error fetching products:', error);
       toast({
-        title: "Error",
-        description: "Products could not be loaded.",
+        title: "Fehler",
+        description: "Produkte konnten nicht geladen werden.",
         variant: "destructive"
       });
       return;
@@ -225,7 +219,6 @@ const Marketplace = () => {
     if (sellerIds.length) {
       fetchSellerRatings(sellerIds);
     }
-    // Calculate BTC prices for all products
     if (currentBtcPrice && data) {
       const btcPricesMap: {[key: string]: number} = {};
       data.forEach(product => {
@@ -234,7 +227,6 @@ const Marketplace = () => {
       setBtcPrices(btcPricesMap);
     }
     
-    // Calculate LTC prices for all products
     if (currentLtcPrice && data) {
       const ltcPricesMap: {[key: string]: number} = {};
       data.forEach(product => {
@@ -268,7 +260,6 @@ const Marketplace = () => {
       filtered = filtered.filter(product => product.category === selectedCategory);
     }
 
-    // Apply sorting
     switch (sortBy) {
       case 'price-asc':
         filtered = [...filtered].sort((a, b) => a.price - b.price);
@@ -289,11 +280,10 @@ const Marketplace = () => {
   };
 
   const handleAddToCart = (product: Product) => {
-    // Check if user is trying to buy their own product
     if (user && product.seller_id === user.id) {
       toast({
-        title: "Cannot Add to Cart",
-        description: "You cannot purchase your own product.",
+        title: "Nicht möglich",
+        description: "Du kannst dein eigenes Produkt nicht kaufen.",
         variant: "destructive"
       });
       return;
@@ -308,8 +298,8 @@ const Marketplace = () => {
     });
     
     toast({
-      title: "Added to Cart",
-      description: `${product.title} has been added to your cart.`
+      title: "Zum Warenkorb hinzugefügt",
+      description: `${product.title} wurde zum Warenkorb hinzugefügt.`
     });
   };
 
@@ -324,7 +314,7 @@ const Marketplace = () => {
       if (error) throw error;
       
       setSelectedSellerId(sellerId);
-      setSelectedSellerUsername(data?.username || 'Unknown');
+      setSelectedSellerUsername(data?.username || 'Unbekannt');
       setSellerProfileOpen(true);
     } catch (error) {
       console.error('Error fetching seller info:', error);
@@ -362,17 +352,16 @@ const Marketplace = () => {
                 onClick={() => setCartOpen(true)}
                 className="relative shrink-0"
               >
-                Cart ({getCartItemCount()})
+                Warenkorb ({getCartItemCount()})
               </Button>
               
               <Button variant="outline" size="sm" onClick={handleSignOut} className="shrink-0">
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">Sign Out</span>
+                <span className="hidden sm:inline ml-2">Abmelden</span>
               </Button>
             </div>
           </div>
           
-          {/* Second row for user info and navigation on mobile */}
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
             <span className="text-xs text-muted-foreground truncate">
               {profile?.username} ({profile?.role})
@@ -387,11 +376,11 @@ const Marketplace = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => navigate('/settings')}>
                   <Settings className="h-4 w-4 mr-2" />
-                  Settings
+                  Einstellungen
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/orders')}>
                   <ShoppingBag className="h-4 w-4 mr-2" />
-                  Orders
+                  Bestellungen
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/wallet')}>
                   <Wallet className="h-4 w-4 mr-2" />
@@ -399,7 +388,7 @@ const Marketplace = () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setConversationsModalOpen(true)}>
                   <MessageCircle className="h-4 w-4 mr-2" />
-                  Conversations
+                  Nachrichten
                 </DropdownMenuItem>
                 {profile?.role === 'admin' && (
                   <DropdownMenuItem onClick={() => window.location.href = '/admin'}>
@@ -410,7 +399,7 @@ const Marketplace = () => {
                 {(profile?.role === 'seller' || profile?.role === 'admin') && (
                   <DropdownMenuItem onClick={() => window.location.href = '/seller'}>
                     <Users className="h-4 w-4 mr-2" />
-                    Seller Dashboard
+                    Verkäufer Dashboard
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -441,7 +430,7 @@ const Marketplace = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Search products..."
+                  placeholder="Produkte suchen..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -450,11 +439,11 @@ const Marketplace = () => {
             </div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Select category" />
+                <SelectValue placeholder="Kategorie wählen" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">
-                  All Categories ({categoryCounts.all || 0})
+                  Alle Kategorien ({categoryCounts.all || 0})
                 </SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.name}>
@@ -465,12 +454,12 @@ const Marketplace = () => {
             </Select>
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder="Sortieren nach" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="newest">Newest</SelectItem>
-                <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                <SelectItem value="newest">Neueste</SelectItem>
+                <SelectItem value="price-asc">Preis: Aufsteigend</SelectItem>
+                <SelectItem value="price-desc">Preis: Absteigend</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -486,14 +475,20 @@ const Marketplace = () => {
               onProductClick={openProductModal}
               onAddToCart={handleAddToCart}
               onViewSeller={handleViewSellerProfile}
-              onStartChat={(prod) => {
-                setSelectedChatProduct(prod);
+              onStartChat={(p) => {
+                setSelectedChatProduct(p);
                 setChatModalOpen(true);
               }}
               isOwner={user?.id === product.seller_id}
             />
           ))}
         </div>
+
+        {filteredProducts.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Keine Produkte gefunden.</p>
+          </div>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -504,46 +499,21 @@ const Marketplace = () => {
               onClick={prevPage}
               disabled={!hasPrevPage}
             >
-              Previous
+              Zurück
             </Button>
-            
-            <div className="flex gap-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => goToPage(page)}
-                  className="w-10"
-                >
-                  {page}
-                </Button>
-              ))}
-            </div>
-            
+            <span className="text-sm text-muted-foreground">
+              Seite {currentPage} von {totalPages}
+            </span>
             <Button
               variant="outline"
               size="sm"
               onClick={nextPage}
               disabled={!hasNextPage}
             >
-              Next
+              Weiter
             </Button>
           </div>
         )}
-
-        {/* No Products Message */}
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-12 col-span-full">
-            <h3 className="text-lg font-semibold mb-2">No Products Found</h3>
-            <p className="text-muted-foreground">
-              {searchTerm || selectedCategory !== 'all'
-                ? 'Try different search terms or filters.'
-                : 'No products are currently available.'}
-            </p>
-          </div>
-        )}
-
       </main>
 
       {/* Product Modal */}
@@ -554,7 +524,7 @@ const Marketplace = () => {
         onStartChat={(product) => {
           setSelectedChatProduct(product);
           setChatModalOpen(true);
-          setModalOpen(false); // Close product modal when opening chat
+          setModalOpen(false);
         }}
       />
 
@@ -576,41 +546,36 @@ const Marketplace = () => {
         sellerUsername={selectedSellerUsername}
       />
 
-      {/* Chat Modal */}
-      <ChatModal
-        open={chatModalOpen}
-        onOpenChange={(open) => {
-          setChatModalOpen(open);
-          if (!open) {
-            setSelectedConversation(null);
-            setSelectedChatProduct(null);
-          }
-        }}
-        productId={selectedConversation?.product_id || selectedChatProduct?.id}
-        sellerId={selectedConversation?.seller_id || selectedChatProduct?.seller_id}
-        productTitle={selectedConversation?.product_title || selectedChatProduct?.title}
-        sellerUsername={
-          selectedConversation?.other_user_username || selectedSellerUsername
-        }
-        conversationId={selectedConversation?.id}
-        conversationStatus={selectedConversation?.status}
-        onBackToConversations={selectedConversation ? () => {
-          setChatModalOpen(false);
-          setConversationsModalOpen(true);
-        } : undefined}
-      />
-
-
       {/* Conversations Modal */}
       <ConversationsModal
         open={conversationsModalOpen}
         onOpenChange={setConversationsModalOpen}
         onSelectConversation={(conversation) => {
           setSelectedConversation(conversation);
-          setConversationsModalOpen(false);
           setChatModalOpen(true);
+          setConversationsModalOpen(false);
         }}
       />
+
+      {/* Chat Modal */}
+      {(selectedChatProduct || selectedConversation) && (
+        <ChatModal
+          open={chatModalOpen}
+          onOpenChange={(open) => {
+            setChatModalOpen(open);
+            if (!open) {
+              setSelectedChatProduct(null);
+              setSelectedConversation(null);
+            }
+          }}
+          productId={selectedChatProduct?.id || selectedConversation?.product_id}
+          sellerId={selectedChatProduct?.seller_id || selectedConversation?.seller_id}
+          productTitle={selectedChatProduct?.title || selectedConversation?.product_title}
+          sellerUsername={selectedConversation?.other_user_username}
+          conversationId={selectedConversation?.id}
+          conversationStatus={selectedConversation?.status}
+        />
+      )}
     </div>
   );
 };

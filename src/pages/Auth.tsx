@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { ShoppingBag, ArrowLeft } from 'lucide-react';
 import SignInForm from '@/components/auth/SignInForm';
-import SignUpForm from '@/components/auth/SignUpForm';
 
 const Auth = () => {
-  const { user, signIn, signUp, loading } = useAuth();
+  const { user, signIn, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -26,66 +22,14 @@ const Auth = () => {
     
     if (error) {
       toast({
-        title: "Sign in failed",
+        title: "Anmeldung fehlgeschlagen",
         description: error.message,
         variant: "destructive"
       });
     } else {
       toast({
-        title: "Successfully signed in",
-        description: "Welcome back!"
-      });
-    }
-    
-    setIsLoading(false);
-  };
-
-  const handleUserSignUp = async (username: string, password: string) => {
-    setIsLoading(true);
-
-    const { error } = await signUp(username, password, false);
-    
-    if (error) {
-      let errorMessage = error.message;
-      if (error.message.includes('User already registered')) {
-        errorMessage = 'This username is already registered';
-      }
-      
-      toast({
-        title: "Registration failed",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Registration successful",
-        description: "User account has been created!"
-      });
-    }
-    
-    setIsLoading(false);
-  };
-
-  const handleSellerSignUp = async (username: string, password: string) => {
-    setIsLoading(true);
-
-    const { error } = await signUp(username, password, true);
-    
-    if (error) {
-      let errorMessage = error.message;
-      if (error.message.includes('User already registered')) {
-        errorMessage = 'This username is already registered';
-      }
-      
-      toast({
-        title: "Registration failed",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Registration successful",
-        description: "Seller account has been created!"
+        title: "Erfolgreich angemeldet",
+        description: "Willkommen zurück!"
       });
     }
     
