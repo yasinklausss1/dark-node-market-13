@@ -71,19 +71,19 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
       
       if (error) {
         console.error('Error fetching seller username:', error);
-        setSellerUsername('Unknown');
+        setSellerUsername('Unbekannt');
       } else {
-        setSellerUsername(data?.username || 'Unknown');
+        setSellerUsername(data?.username || 'Unbekannt');
       }
     } catch (error) {
       console.error('Error fetching seller username:', error);
-      setSellerUsername('Unknown');
+      setSellerUsername('Unbekannt');
     }
   };
 
   const handleShare = () => {
     const productUrl = `${window.location.origin}/marketplace?product=${product.id}`;
-    const text = `🛍️ Check out this product: ${product.title} - €${product.price.toFixed(2)}`;
+    const text = `🛍️ Schau dir dieses Produkt an: ${product.title} - €${product.price.toFixed(2)}`;
     const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(productUrl)}&text=${encodeURIComponent(text)}`;
     window.open(telegramUrl, '_blank');
   };
@@ -115,7 +115,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
           <Badge variant="secondary" className="w-fit">{product.category}</Badge>
           <div className="flex items-center space-x-1 text-xs sm:text-sm text-muted-foreground">
             <User className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span>Seller: {sellerUsername}</span>
+            <span>Verkäufer: {sellerUsername}</span>
           </div>
         </div>
 
@@ -140,9 +140,9 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
         </div>
 
         <div>
-          <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-2">Description</h3>
+          <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-2">Beschreibung</h3>
           <p className="text-muted-foreground text-sm sm:text-base">
-            {product.description || 'No description available.'}
+            {product.description || 'Keine Beschreibung verfügbar.'}
           </p>
         </div>
 
@@ -150,12 +150,12 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
 
         {/* Quantity */}
         <div className="flex items-center gap-2">
-          <span className="text-sm">Quantity</span>
+          <span className="text-sm">Menge</span>
           <Button
             variant="outline"
             size="icon"
             onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-            aria-label="Decrease quantity"
+            aria-label="Menge verringern"
             className="h-8 w-8 sm:h-10 sm:w-10"
           >
             <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -176,7 +176,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
             variant="outline"
             size="icon"
             onClick={() => setQuantity((q) => Math.min(product.stock ?? 99, q + 1))}
-            aria-label="Increase quantity"
+            aria-label="Menge erhöhen"
             className="h-8 w-8 sm:h-10 sm:w-10"
           >
             <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -186,7 +186,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
         {/* Telegram Integration */}
         <Separator />
         <div>
-          <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-2">Share Product</h3>
+          <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-2">Produkt teilen</h3>
           <TelegramIntegration
             productId={product.id}
             productTitle={product.title}
@@ -208,7 +208,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
               className="flex-1 h-10"
             >
               <Share2 className="h-4 w-4 mr-2" />
-              <span className="text-sm">Share</span>
+              <span className="text-sm">Teilen</span>
             </Button>
             
             {/* Contact Seller Button - only show if not the owner and onStartChat is provided */}
@@ -219,7 +219,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
                 className="flex-1 h-10"
               >
                 <MessageCircle className="h-4 w-4 mr-2" />
-                <span className="text-sm">Contact</span>
+                <span className="text-sm">Kontakt</span>
               </Button>
             )}
           </div>
@@ -231,7 +231,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
               onClick={() => onOpenChange(false)}
               className="w-full sm:flex-1 h-10"
             >
-              Back
+              Zurück
             </Button>
             <Button
               className="w-full sm:flex-1 h-10"
@@ -240,8 +240,8 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
                 // Prevent purchasing own product if logged in
                 if (user && product.seller_id === user.id) {
                   toast({
-                    title: "Cannot Add to Cart",
-                    description: "You cannot purchase your own product.",
+                    title: "Nicht möglich",
+                    description: "Du kannst dein eigenes Produkt nicht kaufen.",
                     variant: "destructive"
                   });
                   return;
@@ -256,22 +256,22 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
                 }, quantity);
                 
                 toast({
-                  title: "Added to Cart",
-                  description: `${product.title} has been added to your cart.`
+                  title: "Zum Warenkorb hinzugefügt",
+                  description: `${product.title} wurde zum Warenkorb hinzugefügt.`
                 });
                 
                 onOpenChange(false);
               }}
             >
               <ShoppingCart className="h-4 w-4 mr-2" />
-              <span className="text-sm">Buy Now</span>
+              <span className="text-sm">Jetzt kaufen</span>
             </Button>
           </div>
         </div>
 
         {/* Product Meta */}
         <div className="text-xs text-muted-foreground">
-          Added on: {new Date(product.created_at).toLocaleDateString('en-US')}
+          Hinzugefügt am: {new Date(product.created_at).toLocaleDateString('de-DE')}
         </div>
       </div>
     </div>

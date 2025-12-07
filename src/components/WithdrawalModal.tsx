@@ -75,8 +75,8 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
     } catch (error) {
       console.error('Error fetching balance:', error);
       toast({
-        title: "Error",
-        description: "Failed to fetch wallet balance",
+        title: "Fehler",
+        description: "Wallet-Guthaben konnte nicht geladen werden",
         variant: "destructive",
       });
     }
@@ -167,40 +167,40 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
     const fee = getCurrentFee();
 
     if (!amountEur || !calculation || !fee || !balance || !limits) {
-      return { valid: false, error: 'Missing data' };
+      return { valid: false, error: 'Fehlende Daten' };
     }
 
     if (amountEur < fee.min_amount_eur) {
-      return { valid: false, error: `Minimum amount is ${fee.min_amount_eur} EUR` };
+      return { valid: false, error: `Mindestbetrag ist ${fee.min_amount_eur} EUR` };
     }
 
     if (calculation.netAmount <= 0) {
-      return { valid: false, error: 'Amount too small after fees' };
+      return { valid: false, error: 'Betrag nach Gebühren zu gering' };
     }
 
     const currentBalance = selectedCrypto === 'BTC' ? balance.balance_btc : balance.balance_ltc;
     if (currentBalance < calculation.cryptoAmount) {
-      return { valid: false, error: 'Insufficient balance' };
+      return { valid: false, error: 'Unzureichendes Guthaben' };
     }
 
     if (limits.daily_spent + amountEur > limits.withdrawal_limit_daily_eur) {
-      return { valid: false, error: 'Daily withdrawal limit exceeded' };
+      return { valid: false, error: 'Tägliches Auszahlungslimit überschritten' };
     }
 
     if (limits.monthly_spent + amountEur > limits.withdrawal_limit_monthly_eur) {
-      return { valid: false, error: 'Monthly withdrawal limit exceeded' };
+      return { valid: false, error: 'Monatliches Auszahlungslimit überschritten' };
     }
 
     // Basic address validation
     if (selectedCrypto === 'BTC') {
       const btcRegex = /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$|^bc1[a-z0-9]{39,59}$/;
       if (!btcRegex.test(destinationAddress)) {
-        return { valid: false, error: 'Invalid Bitcoin address' };
+        return { valid: false, error: 'Ungültige Bitcoin-Adresse' };
       }
     } else {
       const ltcRegex = /^[LM3][a-km-zA-HJ-NP-Z1-9]{26,33}$|^ltc1[a-z0-9]{39,59}$/;
       if (!ltcRegex.test(destinationAddress)) {
-        return { valid: false, error: 'Invalid Litecoin address' };
+        return { valid: false, error: 'Ungültige Litecoin-Adresse' };
       }
     }
 
@@ -213,7 +213,7 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
     const validation = validateWithdrawal();
     if (!validation.valid) {
       toast({
-        title: "Invalid withdrawal",
+        title: "Ungültige Auszahlung",
         description: validation.error,
         variant: "destructive",
       });
@@ -238,8 +238,8 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
       setDestinationAddress('');
       
       toast({
-        title: "Withdrawal initiated",
-        description: `Your ${selectedCrypto} withdrawal is being processed`,
+        title: "Auszahlung eingeleitet",
+        description: `Deine ${selectedCrypto}-Auszahlung wird verarbeitet`,
       });
 
       if (onWithdrawalSuccess) {
@@ -249,8 +249,8 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
     } catch (error) {
       console.error('Withdrawal error:', error);
       toast({
-        title: "Withdrawal failed",
-        description: error.message || "Failed to process withdrawal",
+        title: "Auszahlung fehlgeschlagen",
+        description: error.message || "Auszahlung konnte nicht verarbeitet werden",
         variant: "destructive",
       });
     } finally {
@@ -281,7 +281,7 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-500" />
-              Withdrawal Initiated
+              Auszahlung eingeleitet
             </DialogTitle>
           </DialogHeader>
           
@@ -289,31 +289,31 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Your withdrawal is being processed. You will receive {withdrawalResult.estimated_crypto_amount?.toFixed(8)} {selectedCrypto} at the destination address within {selectedCrypto === 'BTC' ? '1-3 hours' : selectedCrypto === 'LTC' ? '15-45 minutes' : '30-60 minutes'} depending on network congestion.
+                Deine Auszahlung wird verarbeitet. Du erhältst {withdrawalResult.estimated_crypto_amount?.toFixed(8)} {selectedCrypto} an die Zieladresse innerhalb von {selectedCrypto === 'BTC' ? '1-3 Stunden' : selectedCrypto === 'LTC' ? '15-45 Minuten' : '30-60 Minuten'} je nach Netzwerkauslastung.
               </AlertDescription>
             </Alert>
 
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span>Withdrawal ID:</span>
+                <span>Auszahlungs-ID:</span>
                 <span className="font-mono">{withdrawalResult.withdrawal_id?.slice(0, 8)}...</span>
               </div>
               <div className="flex justify-between">
-                <span>Amount:</span>
+                <span>Betrag:</span>
                 <span>{amount} EUR</span>
               </div>
               <div className="flex justify-between">
-                <span>Fees:</span>
+                <span>Gebühren:</span>
                 <span>{withdrawalResult.fee_eur?.toFixed(2)} EUR</span>
               </div>
               <div className="flex justify-between">
-                <span>Net Amount:</span>
+                <span>Nettobetrag:</span>
                 <span>{withdrawalResult.net_amount_eur?.toFixed(2)} EUR</span>
               </div>
             </div>
 
             <Button onClick={handleClose} className="w-full">
-              Close
+              Schließen
             </Button>
           </div>
         </DialogContent>
@@ -325,16 +325,16 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Withdraw Cryptocurrency</DialogTitle>
+          <DialogTitle>Kryptowährung auszahlen</DialogTitle>
           <DialogDescription>
-            Withdraw your crypto to an external wallet
+            Auszahlung auf externe Wallet
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Currency Selection */}
           <div className="space-y-3">
-            <Label>Select Currency</Label>
+            <Label>Währung auswählen</Label>
             <RadioGroup
               value={selectedCrypto}
               onValueChange={(value: 'BTC' | 'LTC') => setSelectedCrypto(value)}
@@ -367,11 +367,11 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
 
           {/* Amount Input */}
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount (EUR)</Label>
+            <Label htmlFor="amount">Betrag (EUR)</Label>
             <Input
               id="amount"
               type="number"
-              placeholder="Enter amount in EUR"
+              placeholder="Betrag in EUR eingeben"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               min={fee?.min_amount_eur || 0}
@@ -386,10 +386,10 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
 
           {/* Destination Address */}
           <div className="space-y-2">
-            <Label htmlFor="address">{selectedCrypto} Address</Label>
+            <Label htmlFor="address">{selectedCrypto}-Adresse</Label>
             <Input
               id="address"
-              placeholder={`Enter ${selectedCrypto} address`}
+              placeholder={`${selectedCrypto}-Adresse eingeben`}
               value={destinationAddress}
               onChange={(e) => setDestinationAddress(e.target.value)}
               className="font-mono text-sm"
@@ -399,26 +399,26 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
           {/* Fee Information */}
           {calculation && fee && (
             <div className="space-y-2 p-3 bg-muted rounded-lg">
-              <h4 className="font-medium">Transaction Details</h4>
+              <h4 className="font-medium">Transaktionsdetails</h4>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span>Amount:</span>
+                  <span>Betrag:</span>
                   <span>{amount} EUR</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Base Fee:</span>
+                  <span>Grundgebühr:</span>
                   <span>{fee.base_fee_eur.toFixed(2)} EUR</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Percentage Fee ({(fee.percentage_fee * 100).toFixed(1)}%):</span>
+                  <span>Prozentuale Gebühr ({(fee.percentage_fee * 100).toFixed(1)}%):</span>
                   <span>{((parseFloat(amount) || 0) * fee.percentage_fee).toFixed(2)} EUR</span>
                 </div>
                 <div className="flex justify-between font-medium">
-                  <span>Total Fees:</span>
+                  <span>Gebühren gesamt:</span>
                   <span>{calculation.totalFee.toFixed(2)} EUR</span>
                 </div>
                 <div className="flex justify-between font-medium">
-                  <span>You'll receive:</span>
+                  <span>Du erhältst:</span>
                   <span>≈ {calculation.cryptoAmount.toFixed(8)} {selectedCrypto}</span>
                 </div>
               </div>
@@ -426,16 +426,16 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
               {/* Transaction Time Information */}
               <div className="mt-3 pt-3 border-t space-y-1 text-xs text-muted-foreground">
                 <div className="flex justify-between">
-                  <span>Processing Time:</span>
-                  <span>~2-5 minutes</span>
+                  <span>Bearbeitungszeit:</span>
+                  <span>~2-5 Minuten</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Network Confirmation:</span>
-                  <span>{selectedCrypto === 'BTC' ? '~10-60 min' : selectedCrypto === 'LTC' ? '~2.5-15 min' : '~20-30 min'}</span>
+                  <span>Netzwerk-Bestätigung:</span>
+                  <span>{selectedCrypto === 'BTC' ? '~10-60 Min' : selectedCrypto === 'LTC' ? '~2,5-15 Min' : '~20-30 Min'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Full Settlement:</span>
-                  <span>{selectedCrypto === 'BTC' ? '~1-3 hours' : selectedCrypto === 'LTC' ? '~15-45 min' : '~30-60 min'}</span>
+                  <span>Vollständige Abwicklung:</span>
+                  <span>{selectedCrypto === 'BTC' ? '~1-3 Stunden' : selectedCrypto === 'LTC' ? '~15-45 Min' : '~30-60 Min'}</span>
                 </div>
               </div>
             </div>
@@ -444,22 +444,22 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
           {/* Limits Information */}
           {limits && (
             <div className="space-y-2 p-3 bg-muted rounded-lg">
-              <h4 className="font-medium">Withdrawal Limits</h4>
+              <h4 className="font-medium">Auszahlungslimits</h4>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span>Daily Limit:</span>
+                  <span>Tägliches Limit:</span>
                   <span>{limits.withdrawal_limit_daily_eur} EUR</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Daily Used:</span>
+                  <span>Heute verwendet:</span>
                   <span>{limits.daily_spent.toFixed(2)} EUR</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Monthly Limit:</span>
+                  <span>Monatliches Limit:</span>
                   <span>{limits.withdrawal_limit_monthly_eur} EUR</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Monthly Used:</span>
+                  <span>Monatlich verwendet:</span>
                   <span>{limits.monthly_spent.toFixed(2)} EUR</span>
                 </div>
               </div>
@@ -477,7 +477,7 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
           {/* Action Buttons */}
           <div className="flex gap-3">
             <Button variant="outline" onClick={handleClose} className="flex-1">
-              Cancel
+              Abbrechen
             </Button>
             <Button 
               onClick={handleWithdrawal}
@@ -485,7 +485,7 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
               className="flex-1"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Withdraw
+              Auszahlen
             </Button>
           </div>
         </div>

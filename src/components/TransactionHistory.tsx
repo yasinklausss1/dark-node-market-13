@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, Bitcoin, Coins } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { de } from "date-fns/locale";
 import { useCryptoPrices } from "@/hooks/useCryptoPrices";
 
 interface Transaction {
@@ -54,11 +55,11 @@ export function TransactionHistory() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Transaction History</CardTitle>
+          <CardTitle>Transaktionsverlauf</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">Wird geladen...</p>
           </div>
         </CardContent>
       </Card>
@@ -68,12 +69,12 @@ export function TransactionHistory() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Transactions</CardTitle>
+        <CardTitle>Letzte Transaktionen</CardTitle>
       </CardHeader>
       <CardContent>
         {transactions.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">
-            No transactions available yet.
+            Noch keine Transaktionen vorhanden.
           </p>
         ) : (
           <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -95,6 +96,28 @@ export function TransactionHistory() {
                 iconColor = 'text-blue-500';
               }
 
+              // Translate status
+              const getStatusLabel = (status: string) => {
+                switch (status) {
+                  case 'completed': return 'Abgeschlossen';
+                  case 'pending': return 'Ausstehend';
+                  case 'cancelled': return 'Storniert';
+                  case 'failed': return 'Fehlgeschlagen';
+                  default: return status;
+                }
+              };
+
+              // Translate type
+              const getTypeLabel = (type: string) => {
+                switch (type) {
+                  case 'deposit': return 'Einzahlung';
+                  case 'purchase': return 'Kauf';
+                  case 'sale': return 'Verkauf';
+                  case 'withdrawal': return 'Auszahlung';
+                  default: return type;
+                }
+              };
+
               return (
                 <div key={transaction.id} className="border rounded-lg p-3">
                   <div className="flex items-center justify-between">
@@ -111,7 +134,7 @@ export function TransactionHistory() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="font-medium capitalize">
-                            {transaction.type}
+                            {getTypeLabel(transaction.type)}
                           </span>
                           <span className={`px-2 py-1 rounded text-xs ${
                             transaction.status === 'completed' 
@@ -120,7 +143,7 @@ export function TransactionHistory() {
                               ? 'bg-yellow-100 text-yellow-700'
                               : 'bg-gray-100 text-gray-700'
                           }`}>
-                            {transaction.status}
+                            {getStatusLabel(transaction.status)}
                           </span>
                         </div>
                         
@@ -131,17 +154,17 @@ export function TransactionHistory() {
                         {/* Show sender/receiver if available */}
                         {transaction.from_username && isIncoming && (
                           <p className="text-xs text-muted-foreground">
-                            From: @{transaction.from_username}
+                            Von: @{transaction.from_username}
                           </p>
                         )}
                         {transaction.to_username && isOutgoing && (
                           <p className="text-xs text-muted-foreground">
-                            To: @{transaction.to_username}
+                            An: @{transaction.to_username}
                           </p>
                         )}
                         
                         <div className="text-xs text-muted-foreground">
-                          {format(new Date(transaction.created_at), 'MMM d, yyyy HH:mm')}
+                          {format(new Date(transaction.created_at), 'd. MMM yyyy HH:mm', { locale: de })}
                         </div>
                       </div>
                     </div>
@@ -164,7 +187,7 @@ export function TransactionHistory() {
                       
                       {transaction.btc_confirmations !== null && transaction.btc_confirmations >= 0 && (
                         <div className="text-xs text-muted-foreground">
-                          {transaction.btc_confirmations} confirmations
+                          {transaction.btc_confirmations} Bestätigungen
                         </div>
                       )}
                     </div>

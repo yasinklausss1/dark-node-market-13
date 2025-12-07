@@ -85,8 +85,8 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
   const handleCheckout = async () => {
     if (!walletBalance) {
       toast({
-        title: "Error",
-        description: "Wallet balance could not be loaded",
+        title: "Fehler",
+        description: "Wallet-Guthaben konnte nicht geladen werden",
         variant: "destructive",
       });
       return;
@@ -102,8 +102,8 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
 
     if (!hasBtc && !hasLtc) {
       toast({
-        title: "Insufficient Balance",
-        description: `You need either ${btcNeeded.toFixed(8)} BTC or ${ltcNeeded.toFixed(8)} LTC to complete this purchase.`,
+        title: "Unzureichendes Guthaben",
+        description: `Du benötigst entweder ${btcNeeded.toFixed(8)} BTC oder ${ltcNeeded.toFixed(8)} LTC um diesen Kauf abzuschließen.`,
         variant: "destructive",
       });
       return;
@@ -140,8 +140,8 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
 
       // Success
       toast({
-        title: "Order Successful",
-        description: "Your order has been successfully placed and sellers have been credited",
+        title: "Bestellung erfolgreich",
+        description: "Deine Bestellung wurde erfolgreich aufgegeben und die Verkäufer wurden gutgeschrieben",
       });
 
       onClearCart();
@@ -152,8 +152,8 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     } catch (error) {
       console.error('Error processing order:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Order could not be processed",
+        title: "Fehler",
+        description: error instanceof Error ? error.message : "Bestellung konnte nicht verarbeitet werden",
         variant: "destructive",
       });
     } finally {
@@ -232,7 +232,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
       {cartItems.length === 0 ? (
         <div className="text-center py-8">
           <ShoppingCartIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">Ihr Warenkorb ist leer</p>
+          <p className="text-muted-foreground">Dein Warenkorb ist leer</p>
         </div>
       ) : (
         <>

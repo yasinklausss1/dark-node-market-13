@@ -9,6 +9,7 @@ import { MessageCircle, Send, X, Clock } from 'lucide-react';
 import { useChat, ChatMessage } from '@/hooks/useChat';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
+import { de } from 'date-fns/locale';
 
 
 interface ChatModalProps {
@@ -124,12 +125,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
                 <AvatarFallback className="bg-primary/10 text-primary">
-                  {sellerUsername?.charAt(0).toUpperCase() || 'S'}
+                  {sellerUsername?.charAt(0).toUpperCase() || 'V'}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <DialogTitle className="text-lg">
-                  {user?.id === sellerId ? 'Conversation with customer' : `Chat with ${sellerUsername || 'Seller'}`}
+                  {user?.id === sellerId ? 'Unterhaltung mit Kunde' : `Chat mit ${sellerUsername || 'Verkäufer'}`}
                 </DialogTitle>
                 <p className="text-sm text-muted-foreground line-clamp-1">{productTitle}</p>
               </div>
@@ -144,14 +145,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({
               {loading && currentMessages.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading conversation...</p>
+                  <p className="text-muted-foreground">Unterhaltung wird geladen...</p>
                 </div>
               ) : currentMessages.length === 0 ? (
                 <div className="text-center py-8">
                   <MessageCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-                  <h3 className="text-lg font-semibold mb-2">Start the conversation!</h3>
+                  <h3 className="text-lg font-semibold mb-2">Starte die Unterhaltung!</h3>
                   <p className="text-muted-foreground">
-                    Send a message to the seller about this product.
+                    Sende eine Nachricht an den Verkäufer über dieses Produkt.
                   </p>
                 </div>
               ) : (
@@ -167,7 +168,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                           <Badge variant="outline" className="text-xs">
                             <Clock className="h-3 w-3 mr-1" />
                             {formatDistanceToNow(new Date(message.created_at), { 
-                              addSuffix: true
+                              addSuffix: true,
+                              locale: de
                             })}
                           </Badge>
                         </div>
@@ -186,7 +188,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                             
                             <div className="flex items-center justify-between mt-2 opacity-70">
                               <span className="text-xs">
-                                 {new Date(message.created_at).toLocaleTimeString('en-US', {
+                                 {new Date(message.created_at).toLocaleTimeString('de-DE', {
                                    hour: '2-digit',
                                    minute: '2-digit'
                                  })}
@@ -235,7 +237,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
               <div className="flex items-center gap-3">
                 <div className="flex-1 relative">
                   <Input
-                    placeholder="Type your message..."
+                    placeholder="Nachricht eingeben..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
@@ -262,10 +264,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
               
               <div className="flex items-center justify-between mt-2">
                 <p className="text-xs text-muted-foreground">
-                  Press Enter to send, Shift+Enter for new line
+                  Drücke Enter zum Senden, Shift+Enter für neue Zeile
                 </p>
                 <Badge variant="outline" className="text-xs">
-                  {currentMessages.length} messages
+                  {currentMessages.length} Nachrichten
                 </Badge>
               </div>
             </div>
@@ -274,10 +276,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
               <div className="text-center space-y-3">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200">
                   <MessageCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">Chat Closed</span>
+                  <span className="text-sm font-medium">Chat geschlossen</span>
                 </div>
                 <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                  This conversation has been closed. You can still read all previous messages, but new messages cannot be sent.
+                  Diese Unterhaltung wurde geschlossen. Du kannst alle vorherigen Nachrichten lesen, aber keine neuen Nachrichten senden.
                 </p>
               </div>
             </div>
