@@ -137,16 +137,19 @@ export function DepositRequest() {
     
     setGeneratingAddresses(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-crypto-addresses');
+      // Use generate-user-addresses which uses BlockCypher API for real addresses
+      const { data, error } = await supabase.functions.invoke('generate-user-addresses');
       if (error) throw error;
       
-      if (data && data.success) {
-        // Refresh addresses
-        setTimeout(() => getUserAddresses(), 1000);
+      if (data && data.success && data.btcAddress && data.ltcAddress) {
+        // Set addresses directly from response
+        setUserAddresses({ btc: data.btcAddress, ltc: data.ltcAddress });
         toast({
-          title: "Adressen erstellt",
-          description: "Deine Bitcoin- und Litecoin-Adressen wurden erstellt.",
+          title: "Wallet eingerichtet",
+          description: "Deine persönlichen Bitcoin- und Litecoin-Adressen wurden erstellt.",
         });
+      } else if (data && data.error) {
+        throw new Error(data.error);
       } else {
         throw new Error("Adressen konnten nicht erstellt werden");
       }
@@ -154,17 +157,16 @@ export function DepositRequest() {
       console.error('Error generating addresses:', error);
       toast({
         title: "Fehler", 
-        description: "Krypto-Adressen konnten nicht erstellt werden. Bitte lade die Seite neu.",
+        description: "Krypto-Adressen konnten nicht erstellt werden. Bitte versuche es erneut.",
         variant: "destructive",
       });
       
       // Retry after delay
       setTimeout(() => {
         setGeneratingAddresses(false);
-        getUserAddresses();
-      }, 2000);
+      }, 3000);
     } finally {
-      setTimeout(() => setGeneratingAddresses(false), 1000);
+      setGeneratingAddresses(false);
     }
   };
 
