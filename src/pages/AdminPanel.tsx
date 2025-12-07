@@ -7,10 +7,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Plus, Users, Edit, Eye, Wifi } from 'lucide-react';
+import { Trash2, Plus, Users, Edit, Eye, Wifi, Bitcoin, RefreshCw } from 'lucide-react';
 import EditProductModal from '@/components/EditProductModal';
 import NewsEditor from '@/components/NewsEditor';
 import { useUserPresence } from '@/hooks/useUserPresence';
+
+interface UserAddress {
+  username: string;
+  user_id: string;
+  currency: string;
+  address: string;
+  created_at: string;
+}
 
 const AdminPanel = () => {
   const { user, profile, loading } = useAuth();
@@ -24,6 +32,8 @@ const AdminPanel = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [userAddresses, setUserAddresses] = useState<UserAddress[]>([]);
+  const [regeneratingUser, setRegeneratingUser] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCategories();
