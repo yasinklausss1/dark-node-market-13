@@ -53,19 +53,20 @@ export default function Settings() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <div className="flex items-center gap-4 mb-8">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate('/marketplace')}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Zurück
-        </Button>
-        <h1 className="text-3xl font-bold">Einstellungen</h1>
-      </div>
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-2xl">
+        <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-8">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate('/marketplace')}
+            className="flex items-center gap-1 sm:gap-2 shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Zurück</span>
+          </Button>
+          <h1 className="text-xl sm:text-3xl font-bold truncate">Einstellungen</h1>
+        </div>
 
       <div className="space-y-6">
 
@@ -135,13 +136,13 @@ export default function Settings() {
               <div>
                 <h4 className="font-semibold mb-2">5. Zusätzliche Tools</h4>
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" size="sm" asChild className="text-xs sm:text-sm">
                     <a href="https://tails.boum.org/" target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-3 w-3 mr-1" />
                       Tails OS
                     </a>
                   </Button>
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" size="sm" asChild className="text-xs sm:text-sm">
                     <a href="https://www.whonix.org/" target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-3 w-3 mr-1" />
                       Whonix
@@ -194,6 +195,7 @@ export default function Settings() {
             </AlertDialog>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

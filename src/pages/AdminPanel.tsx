@@ -296,14 +296,15 @@ const AdminPanel = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-background p-3 sm:p-6 overflow-x-hidden">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
-            <h1 className="text-3xl font-bold font-cinzel">Admin Panel</h1>
+            <h1 className="text-xl sm:text-3xl font-bold font-cinzel">Admin Panel</h1>
           </div>
           <Button 
             variant="outline" 
+            size="sm"
             onClick={() => navigate('/marketplace')}
           >
             Zurück zum Marktplatz
@@ -311,46 +312,46 @@ const AdminPanel = () => {
         </div>
 
         {/* User Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Users className="h-5 w-5" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span>Registrierte Nutzer</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Gesamtanzahl registrierter Benutzer
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="text-2xl sm:text-3xl font-bold text-primary">
                 {userCount}
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Wifi className="h-5 w-5 text-green-500" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+                <Wifi className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                 <span>Live Online Nutzer</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Nutzer die gerade aktiv sind
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6 pt-0">
               <div className="space-y-3">
-                <div className="text-3xl font-bold text-green-500">
+                <div className="text-2xl sm:text-3xl font-bold text-green-500">
                   {onlineCount}
                 </div>
                 {onlineUsers.length > 0 && (
                   <div className="space-y-1 max-h-32 overflow-y-auto">
-                    <p className="text-sm font-medium text-muted-foreground">Online jetzt:</p>
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">Online jetzt:</p>
                     {onlineUsers.map((user) => (
-                      <div key={user.user_id} className="flex items-center space-x-2 text-sm">
+                      <div key={user.user_id} className="flex items-center space-x-2 text-xs sm:text-sm">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span>{user.username}</span>
+                        <span className="truncate">{user.username}</span>
                       </div>
                     ))}
                   </div>
@@ -362,19 +363,19 @@ const AdminPanel = () => {
 
         {/* Create New User */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <UserPlus className="h-5 w-5" />
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+              <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />
               <span>Neuen Nutzer erstellen</span>
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               Registriere einen neuen Benutzer manuell
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="new-username">Benutzername</Label>
+                <Label htmlFor="new-username" className="text-sm">Benutzername</Label>
                 <Input
                   id="new-username"
                   value={newUserForm.username}
@@ -382,13 +383,13 @@ const AdminPanel = () => {
                   placeholder="Benutzername"
                 />
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Alle neuen Nutzer werden automatisch als Verkäufer erstellt.
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="new-password">Passwort (min. 7 Zeichen)</Label>
+                <Label htmlFor="new-password" className="text-sm">Passwort (min. 7 Zeichen)</Label>
                 <Input
                   id="new-password"
                   type="password"
@@ -398,7 +399,7 @@ const AdminPanel = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirm-password">Passwort bestätigen</Label>
+                <Label htmlFor="confirm-password" className="text-sm">Passwort bestätigen</Label>
                 <Input
                   id="confirm-password"
                   type="password"
@@ -411,6 +412,7 @@ const AdminPanel = () => {
             <Button 
               onClick={createNewUser}
               disabled={creatingUser || !newUserForm.username.trim() || !newUserForm.password}
+              className="w-full sm:w-auto"
             >
               <UserPlus className="h-4 w-4 mr-2" />
               {creatingUser ? 'Wird erstellt...' : 'Nutzer erstellen'}
@@ -420,16 +422,16 @@ const AdminPanel = () => {
 
         {/* User Crypto Addresses */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Bitcoin className="h-5 w-5 text-orange-500" />
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+              <Bitcoin className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
               <span>Nutzer Krypto-Adressen</span>
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               Generierte BTC und LTC Adressen aller Nutzer
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0">
             <div className="space-y-4 max-h-96 overflow-y-auto">
               {(() => {
                 // Group addresses by user
@@ -442,25 +444,25 @@ const AdminPanel = () => {
                 }, {} as Record<string, { username: string; addresses: UserAddress[] }>);
 
                 return Object.entries(groupedByUser).map(([userId, data]) => (
-                  <div key={userId} className="border rounded-lg p-4 space-y-2">
+                  <div key={userId} className="border rounded-lg p-3 sm:p-4 space-y-2">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">{data.username}</h3>
+                      <h3 className="font-semibold text-sm sm:text-base truncate">{data.username}</h3>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => fetchUserAddresses()}
                       >
-                        <RefreshCw className="h-4 w-4" />
+                        <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                     </div>
                     {data.addresses.map((addr) => (
-                      <div key={`${userId}-${addr.currency}`} className="flex items-center justify-between text-sm bg-muted p-2 rounded">
+                      <div key={`${userId}-${addr.currency}`} className="flex flex-col sm:flex-row sm:items-center justify-between text-xs sm:text-sm bg-muted p-2 rounded gap-1">
                         <span className={`font-medium ${addr.currency === 'BTC' ? 'text-orange-500' : addr.currency === 'LTC' ? 'text-blue-500' : 'text-purple-500'}`}>
                           {addr.currency}:
                         </span>
-                        <code className="text-xs break-all max-w-[300px]">
+                        <code className="text-xs break-all">
                           {addr.address === 'pending' ? (
-                            <span className="text-yellow-500">Ausstehend - Wird bei Wallet-Zugriff generiert</span>
+                            <span className="text-yellow-500">Ausstehend</span>
                           ) : (
                             addr.address
                           )}
@@ -471,7 +473,7 @@ const AdminPanel = () => {
                 ));
               })()}
               {userAddresses.length === 0 && (
-                <p className="text-muted-foreground text-center py-8">
+                <p className="text-muted-foreground text-center py-8 text-sm">
                   Keine Nutzeradressen gefunden.
                 </p>
               )}

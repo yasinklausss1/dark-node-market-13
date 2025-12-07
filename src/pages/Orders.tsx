@@ -213,24 +213,26 @@ const Orders: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold font-cinzel">Meine Bestellungen</h1>
+    <div className="min-h-screen bg-background p-3 sm:p-6 overflow-x-hidden">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <h1 className="text-xl sm:text-3xl font-bold font-cinzel">Meine Bestellungen</h1>
           <Button 
             variant="outline" 
+            size="sm"
             onClick={() => navigate('/marketplace')}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Zurück zum Marktplatz
+            <span className="hidden sm:inline">Zurück zum Marktplatz</span>
+            <span className="sm:hidden">Zurück</span>
           </Button>
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Bestellverlauf ({orders.length})</CardTitle>
-            <CardDescription>Zeige deine vergangenen Einkäufe und deren Status</CardDescription>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-lg sm:text-xl">Bestellverlauf ({orders.length})</CardTitle>
+            <CardDescription className="text-sm">Zeige deine vergangenen Einkäufe und deren Status</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -240,17 +242,17 @@ const Orders: React.FC = () => {
             ) : (
               <div className="space-y-4 max-h-[70vh] overflow-y-auto">
                 {orders.map((order) => (
-                  <div key={order.id} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h3 className="font-semibold">Bestellung #{order.id.slice(0,8)}</h3>
-                        <p className="text-sm text-muted-foreground">{new Date(order.created_at).toLocaleString('de-DE')}</p>
+                  <div key={order.id} className="border rounded-lg p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-sm sm:text-base truncate">Bestellung #{order.id.slice(0,8)}</h3>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{new Date(order.created_at).toLocaleString('de-DE')}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-primary">€{Number(order.total_amount_eur).toFixed(2)}</p>
-                        <div className="flex items-center gap-2 justify-end mt-1">
+                      <div className="text-left sm:text-right flex sm:flex-col items-center sm:items-end gap-2">
+                        <p className="text-base sm:text-lg font-bold text-primary">€{Number(order.total_amount_eur).toFixed(2)}</p>
+                        <div className="flex items-center gap-2">
                           {getStatusIcon(order.order_status)}
-                          <Badge className={getStatusColor(order.order_status)}>
+                          <Badge className={`${getStatusColor(order.order_status)} text-xs`}>
                             {getStatusLabel(order.order_status)}
                           </Badge>
                         </div>
@@ -281,12 +283,12 @@ const Orders: React.FC = () => {
                       </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <h4 className="font-medium text-sm">Artikel</h4>
-                        <ul className="text-sm text-muted-foreground list-disc pl-5">
+                        <ul className="text-xs sm:text-sm text-muted-foreground list-disc pl-5">
                           {(itemsByOrder[order.id] || []).map((it) => (
-                            <li key={it.id}>
+                            <li key={it.id} className="break-words">
                               {it.quantity}x Produkt {it.product_id.slice(0,8)} (€{it.price_eur.toFixed(2)})
                             </li>
                           ))}
@@ -297,10 +299,10 @@ const Orders: React.FC = () => {
                             <h4 className="font-medium text-sm mb-2">Verkäufer</h4>
                             <div className="space-y-2">
                               {order.sellers.map((seller) => (
-                                <div key={seller.seller_id} className="flex items-center justify-between p-2 bg-muted rounded">
+                                <div key={seller.seller_id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-muted rounded">
                                   <button
                                     onClick={() => handleViewSellerProfile(seller.seller_id, seller.seller_username)}
-                                    className="text-sm font-medium text-primary hover:underline"
+                                    className="text-sm font-medium text-primary hover:underline text-left truncate"
                                   >
                                     @{seller.seller_username}
                                   </button>
@@ -310,7 +312,7 @@ const Orders: React.FC = () => {
                                       size="sm"
                                       onClick={() => handleReviewSeller(order.id, seller.seller_id, seller.seller_username)}
                                       disabled={seller.has_review}
-                                      className="flex items-center gap-1"
+                                      className="flex items-center gap-1 w-full sm:w-auto justify-center"
                                     >
                                       <Star className="h-3 w-3" />
                                       {seller.has_review ? 'Bewertet' : 'Bewerten'}
@@ -325,7 +327,7 @@ const Orders: React.FC = () => {
 
                       <div>
                         <h4 className="font-medium text-sm">Lieferadresse</h4>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-muted-foreground break-words">
                           {order.shipping_first_name} {order.shipping_last_name}, {order.shipping_street} {order.shipping_house_number}, {order.shipping_postal_code} {order.shipping_city}, {order.shipping_country}
                         </p>
                       </div>
