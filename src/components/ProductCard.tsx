@@ -35,7 +35,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
     const productUrl = `${window.location.origin}/marketplace?product=${product.id}`;
-    const text = `🛍️ Check out this product: ${product.title} - €${product.price.toFixed(2)}`;
+    const text = `🛍️ Schau dir dieses Produkt an: ${product.title} - €${product.price.toFixed(2)}`;
     const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(productUrl)}&text=${encodeURIComponent(text)}`;
     window.open(telegramUrl, '_blank');
   };
@@ -84,13 +84,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Stock Badge */}
         {product.stock === 0 && (
           <div className="absolute top-3 left-3">
-            <Badge variant="destructive">Out of Stock</Badge>
+            <Badge variant="destructive">Nicht vorrätig</Badge>
           </div>
         )}
         
         {product.stock > 0 && product.stock <= 5 && (
           <div className="absolute top-3 left-3">
-            <Badge variant="secondary">Low Stock</Badge>
+            <Badge variant="secondary">Wenig vorrätig</Badge>
           </div>
         )}
       </div>
@@ -127,7 +127,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Stock Info */}
           <div className="text-xs text-muted-foreground">
-            Stock: {product.stock > 0 ? `${product.stock} available` : 'Out of stock'}
+            Bestand: {product.stock > 0 ? `${product.stock} verfügbar` : 'Nicht vorrätig'}
           </div>
 
           {/* Action Button */}
@@ -138,10 +138,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             disabled={product.stock === 0 || isOwner}
           >
             {isOwner 
-              ? 'Your Product' 
+              ? 'Dein Produkt' 
               : product.stock === 0 
-                ? 'Out of Stock' 
-                : 'Add to Cart'}
+                ? 'Nicht vorrätig' 
+                : 'In den Warenkorb'}
           </Button>
         </div>
       </CardContent>

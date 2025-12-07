@@ -67,7 +67,6 @@ const Orders: React.FC = () => {
         if (ordersError) throw ordersError;
         const ordersList = ordersData || [];
 
-        // Get sellers for each order and check for existing reviews
         const ordersWithSellers = await Promise.all(
           ordersList.map(async (order: any) => {
             const { data: orderItems } = await supabase
@@ -84,7 +83,6 @@ const Orders: React.FC = () => {
               has_review: false
             })) || [];
 
-            // Check for existing reviews
             if (sellers.length > 0) {
               const { data: reviews } = await supabase
                 .from('reviews')
@@ -132,7 +130,7 @@ const Orders: React.FC = () => {
           setItemsByOrder({});
         }
       } catch (e) {
-        console.error('Error loading orders:', e);
+        console.error('Fehler beim Laden der Bestellungen:', e);
       } finally {
         setIsLoading(false);
       }
@@ -183,6 +181,25 @@ const Orders: React.FC = () => {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'Ausstehend';
+      case 'confirmed':
+        return 'Bestätigt';
+      case 'processing':
+        return 'In Bearbeitung';
+      case 'shipped':
+        return 'Versendet';
+      case 'delivered':
+        return 'Geliefert';
+      case 'cancelled':
+        return 'Storniert';
+      default:
+        return status;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -199,54 +216,53 @@ const Orders: React.FC = () => {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold font-cinzel">My Orders</h1>
+          <h1 className="text-3xl font-bold font-cinzel">Meine Bestellungen</h1>
           <Button 
             variant="outline" 
             onClick={() => navigate('/marketplace')}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Marketplace
+            Zurück zum Marktplatz
           </Button>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Order History ({orders.length})</CardTitle>
-            <CardDescription>View your past purchases and their status</CardDescription>
+            <CardTitle>Bestellverlauf ({orders.length})</CardTitle>
+            <CardDescription>Zeige deine vergangenen Einkäufe und deren Status</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <p className="text-muted-foreground">Loading orders...</p>
+              <p className="text-muted-foreground">Bestellungen werden geladen...</p>
             ) : orders.length === 0 ? (
-              <p className="text-muted-foreground">You have not placed any orders yet.</p>
+              <p className="text-muted-foreground">Du hast noch keine Bestellungen aufgegeben.</p>
             ) : (
               <div className="space-y-4 max-h-[70vh] overflow-y-auto">
                 {orders.map((order) => (
                   <div key={order.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <h3 className="font-semibold">Order #{order.id.slice(0,8)}</h3>
-                        <p className="text-sm text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
+                        <h3 className="font-semibold">Bestellung #{order.id.slice(0,8)}</h3>
+                        <p className="text-sm text-muted-foreground">{new Date(order.created_at).toLocaleString('de-DE')}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold text-primary">€{Number(order.total_amount_eur).toFixed(2)}</p>
                         <div className="flex items-center gap-2 justify-end mt-1">
                           {getStatusIcon(order.order_status)}
                           <Badge className={getStatusColor(order.order_status)}>
-                            {order.order_status}
+                            {getStatusLabel(order.order_status)}
                           </Badge>
                         </div>
                       </div>
                     </div>
 
-                    {/* Tracking Information */}
                     {order.tracking_number && (
                       <div className="mb-3 p-3 bg-muted rounded">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium">Tracking: {order.tracking_number}</p>
-                            <p className="text-xs text-muted-foreground">Track your package</p>
+                            <p className="text-sm font-medium">Sendungsnummer: {order.tracking_number}</p>
+                            <p className="text-xs text-muted-foreground">Verfolge dein Paket</p>
                           </div>
                           {order.tracking_url && (
                             <Button variant="outline" size="sm" asChild>
@@ -257,7 +273,7 @@ const Orders: React.FC = () => {
                                 className="flex items-center gap-1"
                               >
                                 <ExternalLink className="h-3 w-3" />
-                                Track
+                                Verfolgen
                               </a>
                             </Button>
                           )}
@@ -267,19 +283,18 @@ const Orders: React.FC = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <h4 className="font-medium text-sm">Items</h4>
+                        <h4 className="font-medium text-sm">Artikel</h4>
                         <ul className="text-sm text-muted-foreground list-disc pl-5">
                           {(itemsByOrder[order.id] || []).map((it) => (
                             <li key={it.id}>
-                              {it.quantity}x Product {it.product_id.slice(0,8)} (€{it.price_eur.toFixed(2)})
+                              {it.quantity}x Produkt {it.product_id.slice(0,8)} (€{it.price_eur.toFixed(2)})
                             </li>
                           ))}
                         </ul>
 
-                        {/* Sellers and Reviews */}
                         {order.sellers.length > 0 && (
                           <div className="mt-3">
-                            <h4 className="font-medium text-sm mb-2">Sellers</h4>
+                            <h4 className="font-medium text-sm mb-2">Verkäufer</h4>
                             <div className="space-y-2">
                               {order.sellers.map((seller) => (
                                 <div key={seller.seller_id} className="flex items-center justify-between p-2 bg-muted rounded">
@@ -298,7 +313,7 @@ const Orders: React.FC = () => {
                                       className="flex items-center gap-1"
                                     >
                                       <Star className="h-3 w-3" />
-                                      {seller.has_review ? 'Reviewed' : 'Review'}
+                                      {seller.has_review ? 'Bewertet' : 'Bewerten'}
                                     </Button>
                                   )}
                                 </div>
@@ -309,7 +324,7 @@ const Orders: React.FC = () => {
                       </div>
 
                       <div>
-                        <h4 className="font-medium text-sm">Shipping Address</h4>
+                        <h4 className="font-medium text-sm">Lieferadresse</h4>
                         <p className="text-sm text-muted-foreground">
                           {order.shipping_first_name} {order.shipping_last_name}, {order.shipping_street} {order.shipping_house_number}, {order.shipping_postal_code} {order.shipping_city}, {order.shipping_country}
                         </p>
@@ -322,7 +337,6 @@ const Orders: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Review Modal */}
         <ReviewModal
           open={reviewModalOpen}
           onOpenChange={setReviewModalOpen}
@@ -382,7 +396,7 @@ const Orders: React.FC = () => {
 
                 setOrders(ordersWithSellers as any);
               } catch (e) {
-                console.error('Error loading orders:', e);
+                console.error('Fehler beim Laden der Bestellungen:', e);
               } finally {
                 setIsLoading(false);
               }
@@ -392,7 +406,6 @@ const Orders: React.FC = () => {
           }}
         />
 
-        {/* Seller Profile Modal */}
         <SellerProfileModal
           open={sellerProfileOpen}
           onOpenChange={setSellerProfileOpen}

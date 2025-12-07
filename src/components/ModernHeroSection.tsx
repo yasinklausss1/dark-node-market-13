@@ -29,11 +29,11 @@ export const ModernHeroSection: React.FC<ModernHeroSectionProps> = ({
           <div className="flex items-center justify-center gap-2 mb-4">
             <Badge variant="secondary" className="animate-fade-in">
               <Star className="h-3 w-3 mr-1" />
-              Trusted Marketplace
+              Vertrauenswürdiger Marktplatz
             </Badge>
             <Badge variant="outline" className="animate-fade-in delay-100">
               <Users className="h-3 w-3 mr-1" />
-              300+ user
+              300+ Nutzer
             </Badge>
           </div>
 
@@ -42,8 +42,8 @@ export const ModernHeroSection: React.FC<ModernHeroSectionProps> = ({
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground mb-8 animate-fade-in delay-300">
-            Secure crypto marketplace with advanced verification, real-time chat, and instant transactions.
-            Shop with confidence using Bitcoin and Litecoin.
+            Sicherer Krypto-Marktplatz mit erweiterter Verifizierung, Echtzeit-Chat und sofortigen Transaktionen.
+            Kaufe mit Vertrauen mit Bitcoin und Litecoin.
           </p>
 
           

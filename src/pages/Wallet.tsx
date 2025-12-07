@@ -24,12 +24,12 @@ export default function Wallet() {
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
+            Zurück
           </Button>
         </div>
         <h1 className="text-3xl font-bold">Wallet</h1>
         <p className="text-muted-foreground mt-2">
-          Manage your balance, deposit and withdraw cryptocurrency
+          Verwalte dein Guthaben, zahle ein und hebe Kryptowährungen ab
         </p>
       </div>
 
@@ -43,7 +43,7 @@ export default function Wallet() {
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
-              Withdraw Crypto
+              Krypto abheben
             </Button>
           </div>
         </div>

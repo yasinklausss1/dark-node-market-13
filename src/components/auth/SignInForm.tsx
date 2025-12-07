@@ -29,20 +29,20 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sign In</CardTitle>
+        <CardTitle>Anmelden</CardTitle>
         <CardDescription>
-          Sign in with your credentials
+          Melde dich mit deinen Zugangsdaten an
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="signin-username">Username</Label>
+            <Label htmlFor="signin-username">Benutzername</Label>
             <Input
               id="signin-username"
               name="username"
               type="text"
-              placeholder="Your username"
+              placeholder="Dein Benutzername"
               value={formData.username}
               onChange={handleInputChange}
               required
@@ -50,13 +50,13 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading }) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="signin-password">Password</Label>
+            <Label htmlFor="signin-password">Passwort</Label>
             <div className="relative">
               <Input
                 id="signin-password"
                 name="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="Your password"
+                placeholder="Dein Passwort"
                 value={formData.password}
                 onChange={handleInputChange}
                 required
@@ -83,7 +83,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading }) => {
             disabled={isLoading}
             variant="auth"
           >
-            {isLoading ? "Signing in..." : "Sign In"}
+            {isLoading ? "Anmeldung läuft..." : "Anmelden"}
           </Button>
         </form>
       </CardContent>

@@ -46,8 +46,8 @@ const NewsPanel: React.FC = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>News</CardTitle>
-        <CardDescription>Updated: {formatDate(news.created_at)}</CardDescription>
+        <CardTitle>Neuigkeiten</CardTitle>
+        <CardDescription>Aktualisiert: {formatDate(news.created_at)}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="prose prose-sm max-w-none dark:prose-invert">
