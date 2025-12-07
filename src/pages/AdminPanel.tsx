@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Plus, Users, Edit, Eye, Wifi, Bitcoin, RefreshCw } from 'lucide-react';
+import { Trash2, Plus, Users, Edit, Eye, Wifi, Bitcoin, RefreshCw, UserPlus } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EditProductModal from '@/components/EditProductModal';
 import NewsEditor from '@/components/NewsEditor';
 import { useUserPresence } from '@/hooks/useUserPresence';
@@ -34,6 +35,8 @@ const AdminPanel = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [userAddresses, setUserAddresses] = useState<UserAddress[]>([]);
   const [regeneratingUser, setRegeneratingUser] = useState<string | null>(null);
+  const [newUserForm, setNewUserForm] = useState({ username: '', password: '', confirmPassword: '', role: 'user' as 'user' | 'seller' });
+  const [creatingUser, setCreatingUser] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -155,6 +158,83 @@ const AdminPanel = () => {
     }
 
     setProducts(data || []);
+  };
+
+  const createNewUser = async () => {
+    if (!newUserForm.username.trim() || !newUserForm.password) {
+      toast({
+        title: "Fehler",
+        description: "Bitte Benutzername und Passwort eingeben",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newUserForm.password.length < 7) {
+      toast({
+        title: "Fehler",
+        description: "Passwort muss mindestens 7 Zeichen lang sein",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newUserForm.password !== newUserForm.confirmPassword) {
+      toast({
+        title: "Fehler",
+        description: "Passwörter stimmen nicht überein",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setCreatingUser(true);
+    
+    try {
+      // Generate email from username (same pattern as normal signup)
+      const email = `${newUserForm.username.trim()}@example.com`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password: newUserForm.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            username: newUserForm.username.trim(),
+            role: newUserForm.role
+          }
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast({
+            title: "Fehler",
+            description: "Dieser Benutzername ist bereits vergeben",
+            variant: "destructive"
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({
+          title: "Nutzer erstellt",
+          description: `${newUserForm.username} wurde erfolgreich registriert.`
+        });
+        setNewUserForm({ username: '', password: '', confirmPassword: '', role: 'user' });
+        fetchUserCount();
+        fetchUserAddresses();
+      }
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      toast({
+        title: "Fehler",
+        description: error.message || "Nutzer konnte nicht erstellt werden",
+        variant: "destructive"
+      });
+    } finally {
+      setCreatingUser(false);
+    }
   };
 
   const removeCategory = async (categoryId: string, categoryName: string) => {
@@ -279,6 +359,76 @@ const AdminPanel = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Create New User */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <UserPlus className="h-5 w-5" />
+              <span>Neuen Nutzer erstellen</span>
+            </CardTitle>
+            <CardDescription>
+              Registriere einen neuen Benutzer manuell
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-username">Benutzername</Label>
+                <Input
+                  id="new-username"
+                  value={newUserForm.username}
+                  onChange={(e) => setNewUserForm(prev => ({ ...prev, username: e.target.value }))}
+                  placeholder="Benutzername"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-role">Rolle</Label>
+                <Select
+                  value={newUserForm.role}
+                  onValueChange={(value: 'user' | 'seller') => setNewUserForm(prev => ({ ...prev, role: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">Nutzer</SelectItem>
+                    <SelectItem value="seller">Verkäufer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Passwort (min. 7 Zeichen)</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newUserForm.password}
+                  onChange={(e) => setNewUserForm(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="Passwort"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Passwort bestätigen</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={newUserForm.confirmPassword}
+                  onChange={(e) => setNewUserForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  placeholder="Passwort bestätigen"
+                />
+              </div>
+            </div>
+            <Button 
+              onClick={createNewUser}
+              disabled={creatingUser || !newUserForm.username.trim() || !newUserForm.password}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              {creatingUser ? 'Wird erstellt...' : 'Nutzer erstellen'}
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* User Crypto Addresses */}
         <Card>
