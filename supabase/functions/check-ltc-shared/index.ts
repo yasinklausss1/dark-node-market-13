@@ -47,12 +47,13 @@ serve(async (req) => {
       if (amountLitoshi <= 0) continue;
 
       const amountLtc = amountLitoshi / LITOSHI;
+      const txHash = tx.txid || tx.hash;
 
       // Skip if already processed
       const { data: existingDeposit } = await supabase
         .from('deposit_requests')
         .select('id')
-        .eq('tx_hash', tx.hash)
+        .eq('tx_hash', txHash)
         .maybeSingle();
       if (existingDeposit) continue;
 
@@ -83,11 +84,13 @@ serve(async (req) => {
         confirmations = Math.max(0, tip - tx.status.block_height + 1);
       }
 
+      console.log(`Processing LTC deposit: ${amountLtc} LTC, ${confirmations} confirmations, tx: ${txHash}`);
+
       await supabase
         .from('deposit_requests')
         .update({
           status: confirmations >= 1 ? 'confirmed' : 'received',
-          tx_hash: tx.hash,
+          tx_hash: txHash,
           confirmations: confirmations
         })
         .eq('id', request.id);
@@ -98,34 +101,43 @@ serve(async (req) => {
         type: 'deposit',
         amount_eur: amountEur,
         amount_btc: amountLtc, // store LTC amount here
-        btc_tx_hash: tx.hash,
+        btc_tx_hash: txHash,
         btc_confirmations: confirmations,
         status: confirmations >= 1 ? 'completed' : 'pending',
-        description: 'Litecoin deposit (shared address)'
+        description: 'Litecoin Einzahlung',
+        transaction_direction: 'incoming'
       });
 
       if (confirmations >= 1) {
         const { data: bal } = await supabase
           .from('wallet_balances')
-          .select('balance_eur, balance_ltc')
+          .select('balance_eur, balance_ltc, balance_ltc_deposited')
           .eq('user_id', request.user_id)
           .maybeSingle();
         if (bal) {
           await supabase
             .from('wallet_balances')
             .update({
-              balance_eur: Number(bal.balance_eur) + amountEur,
-              balance_ltc: Number((bal as any).balance_ltc || 0) + amountLtc,
+              balance_ltc: Number(bal.balance_ltc || 0) + amountLtc,
+              balance_ltc_deposited: Number(bal.balance_ltc_deposited || 0) + amountLtc,
+              updated_at: new Date().toISOString()
             })
             .eq('user_id', request.user_id);
         } else {
           await supabase
             .from('wallet_balances')
-            .insert({ user_id: request.user_id, balance_eur: amountEur, balance_btc: 0, balance_ltc: amountLtc });
+            .insert({ 
+              user_id: request.user_id, 
+              balance_eur: 0, 
+              balance_btc: 0, 
+              balance_ltc: amountLtc,
+              balance_btc_deposited: 0,
+              balance_ltc_deposited: amountLtc
+            });
         }
+        console.log(`Credited ${amountLtc} LTC to user ${request.user_id}`);
       }
     }
-
     return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     console.error(e);

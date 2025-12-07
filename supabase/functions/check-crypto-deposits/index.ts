@@ -6,134 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface Database {
-  public: {
-    Tables: {
-      user_addresses: {
-        Row: {
-          id: string
-          user_id: string
-          currency: string
-          address: string
-          private_key_encrypted: string | null
-          is_active: boolean
-          created_at: string
-        }
-      }
-      deposit_requests: {
-        Row: {
-          id: string
-          user_id: string
-          currency: string
-          amount_crypto: number
-          amount_eur: number
-          address: string
-          status: string
-          transaction_hash: string | null
-          confirmations: number | null
-          expire_at: string
-          created_at: string
-          updated_at: string
-        }
-        Update: {
-          status?: string
-          transaction_hash?: string | null
-          confirmations?: number | null
-          updated_at?: string
-        }
-      }
-      transactions: {
-        Insert: {
-          user_id: string
-          type: string
-          amount_eur: number
-          amount_btc?: number | null
-          amount_ltc?: number | null
-          status: string
-          description?: string | null
-          transaction_hash?: string | null
-          confirmations?: number | null
-          sender_address?: string | null
-          receiver_address?: string | null
-        }
-      }
-      wallet_balances: {
-        Update: {
-          balance_eur?: number
-          balance_btc?: number
-          balance_ltc?: number
-          updated_at?: string
-        }
-      }
-    }
-  }
-}
-
-// Fetch Bitcoin transactions using Crypto APIs
-async function fetchBitcoinTransactions(address: string): Promise<any[]> {
-  const apiKey = Deno.env.get('CRYPTO_APIS_KEY')
-  if (!apiKey) {
-    throw new Error('Crypto APIs key not found')
-  }
-
-  const response = await fetch(
-    `https://rest.cryptoapis.io/v2/blockchain-data/bitcoin/mainnet/addresses/${address}/transactions?limit=10`,
-    {
-      headers: {
-        'X-API-Key': apiKey,
-      },
-    }
-  )
-
-  if (!response.ok) {
-    throw new Error(`Crypto APIs error: ${response.status}`)
-  }
-
-  const data = await response.json()
-  return data.data.items || []
-}
-
-// Fetch Litecoin transactions using Crypto APIs
-async function fetchLitecoinTransactions(address: string): Promise<any[]> {
-  const apiKey = Deno.env.get('CRYPTO_APIS_KEY')
-  if (!apiKey) {
-    throw new Error('Crypto APIs key not found')
-  }
-
-  const response = await fetch(
-    `https://rest.cryptoapis.io/v2/blockchain-data/litecoin/mainnet/addresses/${address}/transactions?limit=10`,
-    {
-      headers: {
-        'X-API-Key': apiKey,
-      },
-    }
-  )
-
-  if (!response.ok) {
-    throw new Error(`Crypto APIs error: ${response.status}`)
-  }
-
-  const data = await response.json()
-  return data.data.items || []
-}
-
-// Get current crypto prices from CoinGecko
-async function getCryptoPrices(): Promise<{ btc: number; ltc: number }> {
-  try {
-    const response = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,litecoin&vs_currencies=eur'
-    )
-    const data = await response.json()
-    return {
-      btc: data.bitcoin?.eur || 0,
-      ltc: data.litecoin?.eur || 0,
-    }
-  } catch (error) {
-    console.error('Error fetching prices:', error)
-    return { btc: 0, ltc: 0 }
-  }
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -141,163 +13,54 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient<Database>(
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log('Starting crypto deposit check...')
+    console.log('Starting comprehensive crypto deposit check...')
 
-    // Get current crypto prices
-    const prices = await getCryptoPrices()
-    console.log('Current prices:', prices)
-
-    // Get all active user addresses
-    const { data: addresses, error: addressError } = await supabaseClient
-      .from('user_addresses')
-      .select('*')
-      .eq('is_active', true)
-
-    if (addressError) {
-      throw new Error(`Error fetching addresses: ${addressError.message}`)
+    // Call both shared address check functions
+    const results = {
+      btc: { ok: false, message: '' },
+      ltc: { ok: false, message: '' }
     }
 
-    if (!addresses || addresses.length === 0) {
-      console.log('No active addresses found')
-      return new Response(
-        JSON.stringify({ message: 'No active addresses found' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    console.log(`Checking ${addresses.length} addresses for deposits`)
-
-    let totalProcessed = 0
-    let totalNewDeposits = 0
-
-    for (const address of addresses) {
-      try {
-        console.log(`Checking ${address.currency} address: ${address.address}`)
-
-        let transactions: any[] = []
-        if (address.currency === 'BTC') {
-          transactions = await fetchBitcoinTransactions(address.address)
-        } else if (address.currency === 'LTC') {
-          transactions = await fetchLitecoinTransactions(address.address)
-        }
-
-        console.log(`Found ${transactions.length} transactions for ${address.address}`)
-
-        for (const tx of transactions) {
-          // Check if we already processed this transaction
-          const { data: existingTx } = await supabaseClient
-            .from('transactions')
-            .select('id')
-            .eq('transaction_hash', tx.transactionId)
-            .single()
-
-          if (existingTx) {
-            console.log(`Transaction ${tx.transactionId} already processed`)
-            continue
-          }
-
-          // Calculate received amount for this address
-          let receivedAmount = 0
-          if (tx.recipients) {
-            for (const recipient of tx.recipients) {
-              if (recipient.address === address.address) {
-                receivedAmount += parseFloat(recipient.amount)
-              }
-            }
-          }
-
-          if (receivedAmount <= 0) {
-            console.log(`No funds received in transaction ${tx.transactionId}`)
-            continue
-          }
-
-          console.log(`Processing deposit: ${receivedAmount} ${address.currency} to ${address.address}`)
-
-          const currentPrice = address.currency === 'BTC' ? prices.btc : prices.ltc
-          const amountEur = receivedAmount * currentPrice
-          const confirmations = tx.blockHeight ? (tx.blockHeight > 0 ? 6 : 0) : 0
-
-          // Find matching deposit request
-          const { data: depositRequest } = await supabaseClient
-            .from('deposit_requests')
-            .select('*')
-            .eq('user_id', address.user_id)
-            .eq('address', address.address)
-            .eq('status', 'pending')
-            .gte('expire_at', new Date().toISOString())
-            .single()
-
-          if (depositRequest) {
-            // Update deposit request
-            await supabaseClient
-              .from('deposit_requests')
-              .update({
-                status: confirmations >= 1 ? 'confirmed' : 'received',
-                transaction_hash: tx.transactionId,
-                confirmations: confirmations,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', depositRequest.id)
-
-            console.log(`Updated deposit request ${depositRequest.id}`)
-          }
-
-          // Insert transaction record
-          await supabaseClient
-            .from('transactions')
-            .insert({
-              user_id: address.user_id,
-              type: 'deposit',
-              amount_eur: amountEur,
-              amount_btc: address.currency === 'BTC' ? receivedAmount : null,
-              amount_ltc: address.currency === 'LTC' ? receivedAmount : null,
-              status: confirmations >= 1 ? 'confirmed' : 'pending',
-              description: `${address.currency} deposit`,
-              transaction_hash: tx.transactionId,
-              confirmations: confirmations,
-              sender_address: tx.senders?.[0]?.address || null,
-              receiver_address: address.address,
-            })
-
-          // Update wallet balance if confirmed
-          if (confirmations >= 1) {
-            const balanceField = address.currency === 'BTC' ? 'balance_btc' : 'balance_ltc'
-            
-            await supabaseClient.rpc('sql', {
-              query: `
-                UPDATE wallet_balances 
-                SET 
-                  balance_eur = balance_eur + ${amountEur},
-                  ${balanceField} = ${balanceField} + ${receivedAmount},
-                  updated_at = NOW()
-                WHERE user_id = '${address.user_id}'
-              `
-            })
-
-            console.log(`Updated wallet balance for user ${address.user_id}`)
-          }
-
-          totalNewDeposits++
-        }
-
-        totalProcessed++
-      } catch (error) {
-        console.error(`Error processing address ${address.address}:`, error)
+    // Check BTC shared address
+    try {
+      const SHARED_BTC_ADDRESS = Deno.env.get('SHARED_BTC_ADDRESS')
+      if (SHARED_BTC_ADDRESS) {
+        const btcResult = await checkBtcDeposits(supabaseClient, SHARED_BTC_ADDRESS)
+        results.btc = { ok: true, message: `Processed ${btcResult.processed} BTC deposits` }
+        console.log('BTC check completed:', btcResult)
+      } else {
+        results.btc = { ok: false, message: 'SHARED_BTC_ADDRESS not configured' }
       }
+    } catch (error) {
+      console.error('BTC check error:', error)
+      results.btc = { ok: false, message: String(error) }
     }
 
-    console.log(`Deposit check completed. Processed ${totalProcessed} addresses, found ${totalNewDeposits} new deposits`)
+    // Check LTC shared address
+    try {
+      const SHARED_LTC_ADDRESS = Deno.env.get('SHARED_LTC_ADDRESS')
+      if (SHARED_LTC_ADDRESS) {
+        const ltcResult = await checkLtcDeposits(supabaseClient, SHARED_LTC_ADDRESS)
+        results.ltc = { ok: true, message: `Processed ${ltcResult.processed} LTC deposits` }
+        console.log('LTC check completed:', ltcResult)
+      } else {
+        results.ltc = { ok: false, message: 'SHARED_LTC_ADDRESS not configured' }
+      }
+    } catch (error) {
+      console.error('LTC check error:', error)
+      results.ltc = { ok: false, message: String(error) }
+    }
 
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
+        success: true,
         message: 'Deposit check completed',
-        addressesProcessed: totalProcessed,
-        newDeposits: totalNewDeposits,
+        results 
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
@@ -310,3 +73,257 @@ serve(async (req) => {
     )
   }
 })
+
+const SATS = 1e8
+const TOLERANCE = 2 / SATS // ±2 sats/litoshis
+
+async function checkBtcDeposits(supabase: any, sharedAddress: string) {
+  let processed = 0
+
+  // Fetch recent txs for the shared BTC address
+  const txRes = await fetch(`https://mempool.space/api/address/${sharedAddress}/txs`)
+  if (!txRes.ok) throw new Error(`mempool.space error: ${txRes.statusText}`)
+  const txs = await txRes.json()
+
+  // Current BTC-EUR rate
+  const priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur')
+  const priceJson = await priceRes.json()
+  const BTC_EUR = priceJson.bitcoin?.eur
+
+  if (!BTC_EUR) {
+    console.log('Warning: Unable to fetch BTC-EUR rate, using fallback')
+  }
+
+  for (const tx of txs || []) {
+    // Sum outputs to our shared address
+    let amountSats = 0
+    for (const vout of tx.vout || []) {
+      if (vout.scriptpubkey_address === sharedAddress) amountSats += vout.value
+    }
+    if (amountSats <= 0) continue
+
+    const amountBtc = amountSats / SATS
+
+    // Skip if we already processed this tx
+    const { data: existingDeposit } = await supabase
+      .from('deposit_requests')
+      .select('id')
+      .eq('tx_hash', tx.txid)
+      .maybeSingle()
+    if (existingDeposit) continue
+
+    const now = new Date()
+
+    // Find a matching pending deposit_request within tolerance and not expired
+    const minAmt = amountBtc - TOLERANCE
+    const maxAmt = amountBtc + TOLERANCE
+    const { data: requests, error: reqErr } = await supabase
+      .from('deposit_requests')
+      .select('id, user_id, requested_eur, crypto_amount, rate_locked, created_at, expires_at')
+      .eq('currency', 'BTC')
+      .eq('status', 'pending')
+      .gte('crypto_amount', minAmt)
+      .lte('crypto_amount', maxAmt)
+      .gt('expires_at', now.toISOString())
+      .limit(1)
+    if (reqErr) throw reqErr
+    if (!requests || requests.length === 0) continue
+
+    const request = requests[0]
+
+    // Confirmations
+    let confirmations = 0
+    if (tx.status?.confirmed && tx.status.block_height) {
+      const tipRes = await fetch('https://mempool.space/api/blocks/tip/height')
+      const tip = await tipRes.json()
+      confirmations = Math.max(0, tip - tx.status.block_height + 1)
+    }
+
+    console.log(`Processing BTC deposit: ${amountBtc} BTC for request ${request.id}, ${confirmations} confirmations`)
+
+    // Mark request as received/confirmed
+    await supabase
+      .from('deposit_requests')
+      .update({
+        status: confirmations >= 1 ? 'confirmed' : 'received',
+        tx_hash: tx.txid,
+        confirmations: confirmations
+      })
+      .eq('id', request.id)
+
+    // Create deposit transaction
+    const amountEur = request.requested_eur
+    await supabase.from('transactions').insert({
+      user_id: request.user_id,
+      type: 'deposit',
+      amount_eur: amountEur,
+      amount_btc: amountBtc,
+      btc_tx_hash: tx.txid,
+      btc_confirmations: confirmations,
+      status: confirmations >= 1 ? 'completed' : 'pending',
+      description: 'Bitcoin Einzahlung',
+      transaction_direction: 'incoming'
+    })
+
+    // Update wallet balance if confirmed
+    if (confirmations >= 1) {
+      const { data: bal } = await supabase
+        .from('wallet_balances')
+        .select('balance_eur, balance_btc, balance_btc_deposited')
+        .eq('user_id', request.user_id)
+        .maybeSingle()
+      
+      if (bal) {
+        await supabase
+          .from('wallet_balances')
+          .update({
+            balance_btc: Number(bal.balance_btc || 0) + amountBtc,
+            balance_btc_deposited: Number(bal.balance_btc_deposited || 0) + amountBtc,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', request.user_id)
+      } else {
+        await supabase
+          .from('wallet_balances')
+          .insert({ 
+            user_id: request.user_id, 
+            balance_eur: 0, 
+            balance_btc: amountBtc, 
+            balance_ltc: 0,
+            balance_btc_deposited: amountBtc,
+            balance_ltc_deposited: 0
+          })
+      }
+      
+      console.log(`Credited ${amountBtc} BTC to user ${request.user_id}`)
+    }
+
+    processed++
+  }
+
+  return { processed }
+}
+
+async function checkLtcDeposits(supabase: any, sharedAddress: string) {
+  let processed = 0
+
+  // Fetch recent txs for the shared LTC address
+  const txRes = await fetch(`https://litecoinspace.org/api/address/${sharedAddress}/txs`)
+  if (!txRes.ok) throw new Error(`litecoinspace.org error: ${txRes.statusText}`)
+  const txs = await txRes.json()
+
+  // Current LTC-EUR rate
+  const priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=eur')
+  const priceJson = await priceRes.json()
+  const LTC_EUR = priceJson.litecoin?.eur
+
+  if (!LTC_EUR) {
+    console.log('Warning: Unable to fetch LTC-EUR rate')
+  }
+
+  for (const tx of txs || []) {
+    // Sum outputs to our shared address
+    let amountLitoshi = 0
+    for (const vout of tx.vout || []) {
+      if (vout.scriptpubkey_address === sharedAddress) amountLitoshi += vout.value
+    }
+    if (amountLitoshi <= 0) continue
+
+    const amountLtc = amountLitoshi / SATS
+
+    // Skip if already processed
+    const { data: existingDeposit } = await supabase
+      .from('deposit_requests')
+      .select('id')
+      .eq('tx_hash', tx.txid)
+      .maybeSingle()
+    if (existingDeposit) continue
+
+    const now = new Date()
+
+    // Find a matching pending deposit_request within tolerance and not expired
+    const minAmt = amountLtc - TOLERANCE
+    const maxAmt = amountLtc + TOLERANCE
+    const { data: requests, error: reqErr } = await supabase
+      .from('deposit_requests')
+      .select('id, user_id, requested_eur, crypto_amount, rate_locked, created_at, expires_at')
+      .eq('currency', 'LTC')
+      .eq('status', 'pending')
+      .gte('crypto_amount', minAmt)
+      .lte('crypto_amount', maxAmt)
+      .gt('expires_at', now.toISOString())
+      .limit(1)
+    if (reqErr) throw reqErr
+    if (!requests || requests.length === 0) continue
+
+    const request = requests[0]
+
+    // Confirmations
+    let confirmations = 0
+    if (tx.status?.confirmed && tx.status.block_height) {
+      const tipRes = await fetch('https://litecoinspace.org/api/blocks/tip/height')
+      const tip = await tipRes.json()
+      confirmations = Math.max(0, tip - tx.status.block_height + 1)
+    }
+
+    console.log(`Processing LTC deposit: ${amountLtc} LTC for request ${request.id}, ${confirmations} confirmations`)
+
+    await supabase
+      .from('deposit_requests')
+      .update({
+        status: confirmations >= 1 ? 'confirmed' : 'received',
+        tx_hash: tx.txid,
+        confirmations: confirmations
+      })
+      .eq('id', request.id)
+
+    const amountEur = request.requested_eur
+    await supabase.from('transactions').insert({
+      user_id: request.user_id,
+      type: 'deposit',
+      amount_eur: amountEur,
+      amount_btc: amountLtc, // LTC amount stored in amount_btc field
+      btc_tx_hash: tx.txid,
+      btc_confirmations: confirmations,
+      status: confirmations >= 1 ? 'completed' : 'pending',
+      description: 'Litecoin Einzahlung',
+      transaction_direction: 'incoming'
+    })
+
+    if (confirmations >= 1) {
+      const { data: bal } = await supabase
+        .from('wallet_balances')
+        .select('balance_eur, balance_ltc, balance_ltc_deposited')
+        .eq('user_id', request.user_id)
+        .maybeSingle()
+      
+      if (bal) {
+        await supabase
+          .from('wallet_balances')
+          .update({
+            balance_ltc: Number(bal.balance_ltc || 0) + amountLtc,
+            balance_ltc_deposited: Number(bal.balance_ltc_deposited || 0) + amountLtc,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', request.user_id)
+      } else {
+        await supabase
+          .from('wallet_balances')
+          .insert({ 
+            user_id: request.user_id, 
+            balance_eur: 0, 
+            balance_btc: 0, 
+            balance_ltc: amountLtc,
+            balance_btc_deposited: 0,
+            balance_ltc_deposited: amountLtc
+          })
+      }
+      
+      console.log(`Credited ${amountLtc} LTC to user ${request.user_id}`)
+    }
+
+    processed++
+  }
+
+  return { processed }
+}

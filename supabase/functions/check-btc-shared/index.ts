@@ -51,12 +51,13 @@ serve(async (req) => {
       if (amountSats <= 0) continue;
 
       const amountBtc = amountSats / SATS;
+      const txHash = tx.txid || tx.hash;
 
       // Skip if we already processed this tx
       const { data: existingDeposit } = await supabase
         .from('deposit_requests')
         .select('id')
-        .eq('tx_hash', tx.hash)
+        .eq('tx_hash', txHash)
         .maybeSingle();
       if (existingDeposit) continue;
 
@@ -87,12 +88,14 @@ serve(async (req) => {
         confirmations = Math.max(0, tip - tx.status.block_height + 1);
       }
 
+      console.log(`Processing BTC deposit: ${amountBtc} BTC, ${confirmations} confirmations, tx: ${txHash}`);
+
       // Mark request as received/confirmed
       await supabase
         .from('deposit_requests')
         .update({
           status: confirmations >= 1 ? 'confirmed' : 'received',
-          tx_hash: tx.hash,
+          tx_hash: txHash,
           confirmations: confirmations
         })
         .eq('id', request.id);
@@ -104,35 +107,44 @@ serve(async (req) => {
         type: 'deposit',
         amount_eur: amountEur,
         amount_btc: amountBtc,
-        btc_tx_hash: tx.hash,
+        btc_tx_hash: txHash,
         btc_confirmations: confirmations,
         status: confirmations >= 1 ? 'completed' : 'pending',
-        description: 'Bitcoin deposit (shared address)'
+        description: 'Bitcoin Einzahlung',
+        transaction_direction: 'incoming'
       });
 
       // Update wallet balance if confirmed
       if (confirmations >= 1) {
         const { data: bal } = await supabase
           .from('wallet_balances')
-          .select('balance_eur, balance_btc')
+          .select('balance_eur, balance_btc, balance_btc_deposited')
           .eq('user_id', request.user_id)
           .maybeSingle();
         if (bal) {
           await supabase
             .from('wallet_balances')
             .update({
-              balance_eur: Number(bal.balance_eur) + amountEur,
-              balance_btc: Number(bal.balance_btc) + amountBtc,
+              balance_btc: Number(bal.balance_btc || 0) + amountBtc,
+              balance_btc_deposited: Number(bal.balance_btc_deposited || 0) + amountBtc,
+              updated_at: new Date().toISOString()
             })
             .eq('user_id', request.user_id);
         } else {
           await supabase
             .from('wallet_balances')
-            .insert({ user_id: request.user_id, balance_eur: amountEur, balance_btc: amountBtc, balance_ltc: 0 });
+            .insert({ 
+              user_id: request.user_id, 
+              balance_eur: 0, 
+              balance_btc: amountBtc, 
+              balance_ltc: 0,
+              balance_btc_deposited: amountBtc,
+              balance_ltc_deposited: 0
+            });
         }
+        console.log(`Credited ${amountBtc} BTC to user ${request.user_id}`);
       }
     }
-
     return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     console.error(e);
