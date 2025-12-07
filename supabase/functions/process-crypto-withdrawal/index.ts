@@ -6,6 +6,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Decrypt private key (AES-GCM)
+async function decryptPrivateKey(encryptedKey: string, userKey: string): Promise<string> {
+  const decoder = new TextDecoder()
+  const key = new TextEncoder().encode(userKey.slice(0, 32).padEnd(32, '0'))
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'AES-GCM' },
+    false,
+    ['decrypt']
+  )
+  
+  const data = Uint8Array.from(atob(encryptedKey), c => c.charCodeAt(0))
+  const iv = data.slice(0, 12)
+  const encrypted = data.slice(12)
+  
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    cryptoKey,
+    encrypted
+  )
+  
+  return decoder.decode(decrypted)
+}
+
 // Validate Bitcoin address format
 function validateBitcoinAddress(address: string): boolean {
   const btcRegex = /^([13][a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[a-z0-9]{39,59})$/
@@ -33,6 +59,154 @@ async function getCryptoPrices(): Promise<{ btc: number; ltc: number }> {
     console.error('Error fetching prices:', error)
     return { btc: 90000, ltc: 100 }
   }
+}
+
+// Send Bitcoin transaction via BlockCypher
+async function sendBitcoinTransaction(
+  privateKey: string, 
+  fromAddress: string, 
+  toAddress: string, 
+  amountSatoshi: number
+): Promise<string> {
+  const blockcypherToken = Deno.env.get('BLOCKCYPHER_TOKEN')
+  if (!blockcypherToken) {
+    throw new Error('BlockCypher Token nicht konfiguriert')
+  }
+
+  console.log(`Preparing BTC transaction: ${amountSatoshi} satoshi from ${fromAddress} to ${toAddress}`)
+
+  // Step 1: Create new transaction skeleton
+  const txResponse = await fetch(
+    `https://api.blockcypher.com/v1/btc/main/txs/new?token=${blockcypherToken}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        inputs: [{ addresses: [fromAddress] }],
+        outputs: [{ addresses: [toAddress], value: amountSatoshi }]
+      })
+    }
+  )
+
+  if (!txResponse.ok) {
+    const errorText = await txResponse.text()
+    console.error('BTC tx creation error:', errorText)
+    throw new Error(`BTC Transaktion erstellen fehlgeschlagen: ${errorText}`)
+  }
+
+  const txData = await txResponse.json()
+  
+  if (txData.errors && txData.errors.length > 0) {
+    console.error('BTC tx errors:', txData.errors)
+    throw new Error(`BTC Fehler: ${txData.errors.join(', ')}`)
+  }
+
+  console.log('Created BTC transaction skeleton, hash:', txData.tx?.hash)
+
+  // Step 2: Sign and send the transaction
+  const signedResponse = await fetch(
+    `https://api.blockcypher.com/v1/btc/main/txs/send?token=${blockcypherToken}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tx: txData,
+        private_keys: [privateKey]
+      })
+    }
+  )
+
+  if (!signedResponse.ok) {
+    const errorText = await signedResponse.text()
+    console.error('BTC send error:', errorText)
+    throw new Error(`BTC Transaktion senden fehlgeschlagen: ${errorText}`)
+  }
+
+  const signedData = await signedResponse.json()
+  
+  if (signedData.errors && signedData.errors.length > 0) {
+    console.error('BTC send errors:', signedData.errors)
+    throw new Error(`BTC Senden Fehler: ${signedData.errors.join(', ')}`)
+  }
+
+  const txHash = signedData.tx?.hash
+  console.log('BTC transaction sent successfully, tx hash:', txHash)
+  
+  return txHash
+}
+
+// Send Litecoin transaction via BlockCypher
+async function sendLitecoinTransaction(
+  privateKey: string,
+  fromAddress: string,
+  toAddress: string,
+  amountLitoshi: number
+): Promise<string> {
+  const blockcypherToken = Deno.env.get('BLOCKCYPHER_TOKEN')
+  if (!blockcypherToken) {
+    throw new Error('BlockCypher Token nicht konfiguriert')
+  }
+
+  console.log(`Preparing LTC transaction: ${amountLitoshi} litoshi from ${fromAddress} to ${toAddress}`)
+
+  // Step 1: Create new transaction skeleton
+  const txResponse = await fetch(
+    `https://api.blockcypher.com/v1/ltc/main/txs/new?token=${blockcypherToken}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        inputs: [{ addresses: [fromAddress] }],
+        outputs: [{ addresses: [toAddress], value: amountLitoshi }]
+      })
+    }
+  )
+
+  if (!txResponse.ok) {
+    const errorText = await txResponse.text()
+    console.error('LTC tx creation error:', errorText)
+    throw new Error(`LTC Transaktion erstellen fehlgeschlagen: ${errorText}`)
+  }
+
+  const txData = await txResponse.json()
+  
+  if (txData.errors && txData.errors.length > 0) {
+    console.error('LTC tx errors:', txData.errors)
+    throw new Error(`LTC Fehler: ${txData.errors.join(', ')}`)
+  }
+
+  console.log('Created LTC transaction skeleton, hash:', txData.tx?.hash)
+
+  // Step 2: Sign and send the transaction
+  const signedResponse = await fetch(
+    `https://api.blockcypher.com/v1/ltc/main/txs/send?token=${blockcypherToken}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tx: txData,
+        private_keys: [privateKey]
+      })
+    }
+  )
+
+  if (!signedResponse.ok) {
+    const errorText = await signedResponse.text()
+    console.error('LTC send error:', errorText)
+    throw new Error(`LTC Transaktion senden fehlgeschlagen: ${errorText}`)
+  }
+
+  const signedData = await signedResponse.json()
+  
+  if (signedData.errors && signedData.errors.length > 0) {
+    console.error('LTC send errors:', signedData.errors)
+    throw new Error(`LTC Senden Fehler: ${signedData.errors.join(', ')}`)
+  }
+
+  const txHash = signedData.tx?.hash
+  console.log('LTC transaction sent successfully, tx hash:', txHash)
+  
+  return txHash
 }
 
 serve(async (req) => {
@@ -72,12 +246,12 @@ serve(async (req) => {
 
     const { currency, amount, destinationAddress } = await req.json()
 
-    console.log(`Processing withdrawal request: ${amount} EUR in ${currency} to ${destinationAddress}`)
+    console.log(`Processing withdrawal request: ${amount} EUR in ${currency} to ${destinationAddress} for user ${user.id}`)
 
     // Validate currency
     if (!['BTC', 'LTC'].includes(currency)) {
       return new Response(
-        JSON.stringify({ error: 'Ungültige Währung' }),
+        JSON.stringify({ error: 'Ungültige Währung. Nur BTC und LTC unterstützt.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -122,7 +296,7 @@ serve(async (req) => {
     const prices = await getCryptoPrices()
     const currentPrice = currency === 'BTC' ? prices.btc : prices.ltc
 
-    // Calculate fees (using correct field names from database)
+    // Calculate fees
     const percentageFee = amountEur * feeData.percentage_fee
     const totalFeeEur = feeData.base_fee_eur + percentageFee
     const netAmountEur = amountEur - totalFeeEur
@@ -135,6 +309,7 @@ serve(async (req) => {
     }
 
     const cryptoAmount = netAmountEur / currentPrice
+    const totalCryptoNeeded = amountEur / currentPrice
 
     // Check user balance
     const { data: balance, error: balanceError } = await adminClient
@@ -150,8 +325,6 @@ serve(async (req) => {
       )
     }
 
-    // Check if user has enough crypto (convert EUR amount to crypto for check)
-    const totalCryptoNeeded = amountEur / currentPrice
     const userBalance = currency === 'BTC' ? Number(balance.balance_btc) : Number(balance.balance_ltc)
 
     if (userBalance < totalCryptoNeeded) {
@@ -176,7 +349,24 @@ serve(async (req) => {
       )
     }
 
-    // Create withdrawal request
+    // Get user's wallet address and encrypted private key
+    const { data: addressData, error: addressError } = await adminClient
+      .from('user_addresses')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('currency', currency)
+      .eq('is_active', true)
+      .single()
+
+    if (addressError || !addressData || !addressData.private_key_encrypted) {
+      console.error('Address error:', addressError)
+      return new Response(
+        JSON.stringify({ error: `Keine aktive ${currency}-Wallet gefunden. Bitte zuerst Wallet generieren.` }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Create withdrawal request with status 'processing'
     const { data: withdrawalRequest, error: insertError } = await adminClient
       .from('withdrawal_requests')
       .insert({
@@ -185,7 +375,7 @@ serve(async (req) => {
         amount_crypto: cryptoAmount,
         amount_eur: amountEur,
         destination_address: destinationAddress,
-        status: 'pending',
+        status: 'processing',
         fee_eur: totalFeeEur,
       })
       .select()
@@ -196,7 +386,7 @@ serve(async (req) => {
       throw new Error('Auszahlungsanfrage konnte nicht erstellt werden')
     }
 
-    console.log(`Created withdrawal request ${withdrawalRequest.id}`)
+    console.log(`Created withdrawal request ${withdrawalRequest.id}, now processing blockchain transaction...`)
 
     // Deduct balance immediately
     const balanceField = currency === 'BTC' ? 'balance_btc' : 'balance_ltc'
@@ -217,39 +407,123 @@ serve(async (req) => {
       throw new Error('Guthaben konnte nicht aktualisiert werden')
     }
 
-    // Create transaction record
-    await adminClient.from('transactions').insert({
+    // Create pending transaction record
+    const { data: txRecord } = await adminClient.from('transactions').insert({
       user_id: user.id,
       type: 'withdrawal',
       amount_eur: -amountEur,
-      amount_btc: currency === 'BTC' ? -totalCryptoNeeded : -totalCryptoNeeded, // Store in amount_btc for both
+      amount_btc: currency === 'BTC' ? -totalCryptoNeeded : 0,
       status: 'pending',
       description: `${currency} Auszahlung an ${destinationAddress.slice(0, 10)}...`,
       transaction_direction: 'outgoing',
-    })
+    }).select().single()
 
-    // Update status to processing (admin will complete manually or via cron)
-    await adminClient
-      .from('withdrawal_requests')
-      .update({ 
-        status: 'processing',
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', withdrawalRequest.id)
+    // Now attempt to send the actual blockchain transaction
+    try {
+      // Decrypt private key
+      const privateKey = await decryptPrivateKey(addressData.private_key_encrypted, user.id)
+      
+      let txHash: string
+      
+      if (currency === 'BTC') {
+        // Convert to satoshi (1 BTC = 100,000,000 satoshi)
+        const satoshiAmount = Math.floor(cryptoAmount * 100000000)
+        txHash = await sendBitcoinTransaction(
+          privateKey,
+          addressData.address,
+          destinationAddress,
+          satoshiAmount
+        )
+      } else {
+        // Convert to litoshi (1 LTC = 100,000,000 litoshi)
+        const litoshiAmount = Math.floor(cryptoAmount * 100000000)
+        txHash = await sendLitecoinTransaction(
+          privateKey,
+          addressData.address,
+          destinationAddress,
+          litoshiAmount
+        )
+      }
 
-    console.log(`Withdrawal request ${withdrawalRequest.id} is now processing`)
+      // Update withdrawal as completed
+      await adminClient
+        .from('withdrawal_requests')
+        .update({ 
+          status: 'completed',
+          tx_hash: txHash,
+          processed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', withdrawalRequest.id)
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        withdrawal_id: withdrawalRequest.id,
-        message: 'Auszahlungsanfrage erstellt und wird verarbeitet',
-        fee_eur: totalFeeEur,
-        net_amount_eur: netAmountEur,
-        estimated_crypto_amount: cryptoAmount,
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+      // Update transaction record
+      if (txRecord) {
+        await adminClient
+          .from('transactions')
+          .update({ 
+            status: 'confirmed',
+            btc_tx_hash: txHash,
+            confirmed_at: new Date().toISOString()
+          })
+          .eq('id', txRecord.id)
+      }
+
+      console.log(`Withdrawal ${withdrawalRequest.id} completed successfully. TX: ${txHash}`)
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          withdrawal_id: withdrawalRequest.id,
+          tx_hash: txHash,
+          message: 'Auszahlung erfolgreich gesendet!',
+          fee_eur: totalFeeEur,
+          net_amount_eur: netAmountEur,
+          crypto_amount: cryptoAmount,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+
+    } catch (txError) {
+      console.error('Blockchain transaction failed:', txError)
+      
+      // Mark withdrawal as failed
+      await adminClient
+        .from('withdrawal_requests')
+        .update({ 
+          status: 'failed',
+          notes: txError.message,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', withdrawalRequest.id)
+
+      // Refund the balance
+      await adminClient
+        .from('wallet_balances')
+        .update({
+          [balanceField]: userBalance, // Restore original balance
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+
+      // Update transaction as failed
+      if (txRecord) {
+        await adminClient
+          .from('transactions')
+          .update({ 
+            status: 'failed',
+            description: `${currency} Auszahlung fehlgeschlagen: ${txError.message}`
+          })
+          .eq('id', txRecord.id)
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          error: `Blockchain-Transaktion fehlgeschlagen: ${txError.message}`,
+          details: 'Dein Guthaben wurde zurückerstattet.'
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
   } catch (error) {
     console.error('Error in withdrawal processing:', error)
