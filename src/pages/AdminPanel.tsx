@@ -35,7 +35,7 @@ const AdminPanel = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [userAddresses, setUserAddresses] = useState<UserAddress[]>([]);
   const [regeneratingUser, setRegeneratingUser] = useState<string | null>(null);
-  const [newUserForm, setNewUserForm] = useState({ username: '', password: '', confirmPassword: '', role: 'user' as 'user' | 'seller' });
+  const [newUserForm, setNewUserForm] = useState({ username: '', password: '', confirmPassword: '' });
   const [creatingUser, setCreatingUser] = useState(false);
 
   useEffect(() => {
@@ -201,7 +201,7 @@ const AdminPanel = () => {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
             username: newUserForm.username.trim(),
-            role: newUserForm.role
+            role: 'seller'
           }
         }
       });
@@ -221,7 +221,7 @@ const AdminPanel = () => {
           title: "Nutzer erstellt",
           description: `${newUserForm.username} wurde erfolgreich registriert.`
         });
-        setNewUserForm({ username: '', password: '', confirmPassword: '', role: 'user' });
+        setNewUserForm({ username: '', password: '', confirmPassword: '' });
         fetchUserCount();
         fetchUserAddresses();
       }
@@ -382,21 +382,9 @@ const AdminPanel = () => {
                   placeholder="Benutzername"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="new-role">Rolle</Label>
-                <Select
-                  value={newUserForm.role}
-                  onValueChange={(value: 'user' | 'seller') => setNewUserForm(prev => ({ ...prev, role: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">Nutzer</SelectItem>
-                    <SelectItem value="seller">Verkäufer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Alle neuen Nutzer werden automatisch als Verkäufer erstellt.
+              </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

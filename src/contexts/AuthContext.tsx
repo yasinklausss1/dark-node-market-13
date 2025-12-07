@@ -122,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
-  const signUp = async (username: string, password: string, isSeller = false) => {
+  const signUp = async (username: string, password: string) => {
     // Generate email from username
     const email = `${username}@example.com`;
     
@@ -133,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         emailRedirectTo: `${window.location.origin}/`,
         data: {
           username,
-          role: isSeller ? 'seller' : 'user'
+          role: 'seller'
         }
       }
     });
