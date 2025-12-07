@@ -30,9 +30,7 @@ export const ModernHeroSection: React.FC<ModernHeroSectionProps> = ({
             <Badge variant="secondary" className="animate-fade-in">Safe Place<Star className="h-3 w-3 mr-1" />
               Vertrauenswürdiger Marktplatz
             </Badge>
-            <Badge variant="outline" className="animate-fade-in delay-100">300+ Nutzer<Users className="h-3 w-3 mr-1" />
-              300+ Nutzer
-            </Badge>
+            
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold font-cinzel bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-6 animate-fade-in delay-200">
