@@ -39,6 +39,7 @@ const AdminPanel = () => {
     fetchCategories();
     fetchUserCount();
     fetchAllProducts();
+    fetchUserAddresses();
     
     // Set up real-time listener for user count
     const channel = supabase
@@ -55,6 +56,35 @@ const AdminPanel = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const fetchUserAddresses = async () => {
+    const { data, error } = await supabase
+      .from('user_addresses')
+      .select('user_id, currency, address, created_at')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user addresses:', error);
+      return;
+    }
+
+    // Fetch profiles separately to get usernames
+    const userIds = [...new Set(data?.map(a => a.user_id) || [])];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, username')
+      .in('user_id', userIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.user_id, p.username]) || []);
+    
+    const addressesWithUsernames = data?.map(addr => ({
+      ...addr,
+      username: profileMap.get(addr.user_id) || 'Unbekannt'
+    })) || [];
+
+    setUserAddresses(addressesWithUsernames);
+  };
 
   const fetchCategories = async () => {
     const { data, error } = await supabase
@@ -249,6 +279,67 @@ const AdminPanel = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* User Crypto Addresses */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Bitcoin className="h-5 w-5 text-orange-500" />
+              <span>Nutzer Krypto-Adressen</span>
+            </CardTitle>
+            <CardDescription>
+              Generierte BTC und LTC Adressen aller Nutzer
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {(() => {
+                // Group addresses by user
+                const groupedByUser = userAddresses.reduce((acc, addr) => {
+                  if (!acc[addr.user_id]) {
+                    acc[addr.user_id] = { username: addr.username, addresses: [] };
+                  }
+                  acc[addr.user_id].addresses.push(addr);
+                  return acc;
+                }, {} as Record<string, { username: string; addresses: UserAddress[] }>);
+
+                return Object.entries(groupedByUser).map(([userId, data]) => (
+                  <div key={userId} className="border rounded-lg p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">{data.username}</h3>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fetchUserAddresses()}
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {data.addresses.map((addr) => (
+                      <div key={`${userId}-${addr.currency}`} className="flex items-center justify-between text-sm bg-muted p-2 rounded">
+                        <span className={`font-medium ${addr.currency === 'BTC' ? 'text-orange-500' : addr.currency === 'LTC' ? 'text-blue-500' : 'text-purple-500'}`}>
+                          {addr.currency}:
+                        </span>
+                        <code className="text-xs break-all max-w-[300px]">
+                          {addr.address === 'pending' ? (
+                            <span className="text-yellow-500">Ausstehend - Wird bei Wallet-Zugriff generiert</span>
+                          ) : (
+                            addr.address
+                          )}
+                        </code>
+                      </div>
+                    ))}
+                  </div>
+                ));
+              })()}
+              {userAddresses.length === 0 && (
+                <p className="text-muted-foreground text-center py-8">
+                  Keine Nutzeradressen gefunden.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
 <NewsEditor />
 
