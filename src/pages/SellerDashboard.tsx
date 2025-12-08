@@ -20,7 +20,8 @@ import { Switch } from '@/components/ui/switch';
 import { useChat } from '@/hooks/useChat';
 import { ConversationsModal } from '@/components/ConversationsModal';
 import { ChatModal } from '@/components/ChatModal';
-
+import DigitalContentModal from '@/components/DigitalContentModal';
+import { FileText } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -32,6 +33,16 @@ interface Product {
   is_active: boolean;
   created_at: string;
   stock: number;
+}
+
+interface OrderItem {
+  order_item_id: string;
+  quantity: number;
+  price_eur: number;
+  product_title: string | null;
+  product_type?: string;
+  digital_content?: string | null;
+  digital_content_delivered_at?: string | null;
 }
 
 interface Order {
@@ -50,12 +61,7 @@ interface Order {
   tracking_number: string | null;
   tracking_url: string | null;
   buyer_username: string;
-  items: {
-    order_item_id: string;
-    quantity: number;
-    price_eur: number;
-    product_title: string | null;
-  }[] | null;
+  items: OrderItem[] | null;
 }
 
 const SellerDashboard = () => {
@@ -94,6 +100,14 @@ const SellerDashboard = () => {
   const [conversationsModalOpen, setConversationsModalOpen] = useState(false);
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<any>(null);
+  
+  // Digital content modal state
+  const [digitalContentModalOpen, setDigitalContentModalOpen] = useState(false);
+  const [selectedOrderItem, setSelectedOrderItem] = useState<{
+    orderItemId: string;
+    productTitle: string;
+    currentContent: string | null;
+  } | null>(null);
   
   // Get chat data
   const { conversations } = useChat();
@@ -178,8 +192,7 @@ const fetchOrders = async () => {
         seller_id: user.id,
         is_active: true,
         stock: parseInt(formData.stock),
-        product_type: formData.productType,
-        digital_content: formData.productType === 'digital' ? formData.digitalContent : null
+        product_type: formData.productType
       })
       .select()
       .single();
@@ -449,18 +462,16 @@ const fetchOrders = async () => {
                     </div>
 
                     {formData.productType === 'digital' && (
-                      <div>
-                        <Label htmlFor="digitalContent">Digitaler Inhalt (Codes, Links, Text)</Label>
-                        <Textarea
-                          id="digitalContent"
-                          value={formData.digitalContent}
-                          onChange={(e) => setFormData({...formData, digitalContent: e.target.value})}
-                          placeholder="Gib hier den Inhalt ein, den der Käufer nach dem Kauf erhält (z.B. Download-Links, Lizenzschlüssel, Codes...)"
-                          rows={4}
-                          required
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Dieser Inhalt wird dem Käufer nach bestätigter Bestellung angezeigt.
+                      <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <FileText className="h-4 w-4 text-blue-600" />
+                          <span className="font-medium text-sm text-blue-800 dark:text-blue-200">
+                            Digitales Produkt
+                          </span>
+                        </div>
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          Bei digitalen Produkten gibst du die Daten (Codes, Account-Daten, Links) erst nach dem Kauf ein. 
+                          Du siehst die Bestellung im "Bestellungen"-Tab und kannst dort die Daten für jeden Käufer individuell eingeben.
                         </p>
                       </div>
                     )}
@@ -735,9 +746,56 @@ const fetchOrders = async () => {
                           <div className="mt-2">
                             <h4 className="font-medium text-sm">Artikel:</h4>
                             {order.items?.map((item) => (
-                              <p key={item.order_item_id} className="text-xs text-muted-foreground">
-                                {item.quantity}x {item.product_title || 'Produkt nicht verfügbar'} (€{item.price_eur.toFixed(2)})
-                              </p>
+                              <div key={item.order_item_id} className="text-xs text-muted-foreground mb-2">
+                                <p>
+                                  {item.quantity}x {item.product_title || 'Produkt nicht verfügbar'} (€{item.price_eur.toFixed(2)})
+                                  {item.product_type === 'digital' && (
+                                    <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded text-xs">Digital</span>
+                                  )}
+                                </p>
+                                {/* Digital content delivery button */}
+                                {item.product_type === 'digital' && (
+                                  <div className="mt-1">
+                                    {item.digital_content ? (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-green-600 text-xs">✓ Daten geliefert</span>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 text-xs"
+                                          onClick={() => {
+                                            setSelectedOrderItem({
+                                              orderItemId: item.order_item_id,
+                                              productTitle: item.product_title || 'Produkt',
+                                              currentContent: item.digital_content || null
+                                            });
+                                            setDigitalContentModalOpen(true);
+                                          }}
+                                        >
+                                          Bearbeiten
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <Button
+                                        variant="default"
+                                        size="sm"
+                                        className="h-6 text-xs mt-1"
+                                        onClick={() => {
+                                          setSelectedOrderItem({
+                                            orderItemId: item.order_item_id,
+                                            productTitle: item.product_title || 'Produkt',
+                                            currentContent: null
+                                          });
+                                          setDigitalContentModalOpen(true);
+                                        }}
+                                      >
+                                        <FileText className="h-3 w-3 mr-1" />
+                                        Daten eingeben
+                                      </Button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             ))}
                           </div>
 
@@ -819,6 +877,18 @@ const fetchOrders = async () => {
             setConversationsModalOpen(true);
           }}
         />
+
+        {/* Digital Content Modal */}
+        {selectedOrderItem && (
+          <DigitalContentModal
+            open={digitalContentModalOpen}
+            onOpenChange={setDigitalContentModalOpen}
+            orderItemId={selectedOrderItem.orderItemId}
+            productTitle={selectedOrderItem.productTitle}
+            currentContent={selectedOrderItem.currentContent}
+            onContentSaved={fetchOrders}
+          />
+        )}
       </div>
     </div>
   );
