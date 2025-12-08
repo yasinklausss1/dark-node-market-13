@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Bitcoin, Coins, AlertTriangle, Eye, EyeOff, Upload } from "lucide-react";
+import { Bitcoin, Coins, AlertTriangle, Eye, EyeOff, Upload, HelpCircle, ChevronDown } from "lucide-react";
 
 interface WalletImportModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ export const WalletImportModal = ({ open, onOpenChange, onSuccess }: WalletImpor
   const [address, setAddress] = useState('');
   const [showPrivateKey, setShowPrivateKey] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const { toast } = useToast();
 
   const handleImport = async () => {
@@ -108,6 +110,43 @@ export const WalletImportModal = ({ open, onOpenChange, onSuccess }: WalletImpor
             Nutze diese Funktion nur, wenn du die Risiken verstehst.
           </AlertDescription>
         </Alert>
+
+        <Collapsible open={helpOpen} onOpenChange={setHelpOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground hover:text-foreground">
+              <span className="flex items-center gap-2">
+                <HelpCircle className="h-4 w-4" />
+                Wo finde ich meinen Private Key?
+              </span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${helpOpen ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 pt-2">
+            <div className="rounded-lg border border-border/50 bg-muted/30 p-3 text-xs space-y-3">
+              <div>
+                <p className="font-semibold text-foreground">Exodus:</p>
+                <p className="text-muted-foreground">Wallet öffnen → Münze auswählen → ⋮ Menü → "View Private Keys" → Passwort eingeben</p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Electrum:</p>
+                <p className="text-muted-foreground">Wallet → Adressen → Rechtsklick auf Adresse → "Private Key"</p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Trust Wallet:</p>
+                <p className="text-muted-foreground">Einstellungen → Wallets → (i) Button → "Private Key anzeigen"</p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Atomic Wallet:</p>
+                <p className="text-muted-foreground">Einstellungen → Private Keys → Münze auswählen → Passwort</p>
+              </div>
+              <div className="pt-2 border-t border-border/50">
+                <p className="text-muted-foreground">
+                  <strong className="text-foreground">WIF-Format:</strong> BTC beginnt mit 5/K/L, LTC beginnt mit 6/T (51-52 Zeichen)
+                </p>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         <div className="space-y-4">
           <div className="space-y-2">
