@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,11 @@ const DigitalContentModal: React.FC<DigitalContentModalProps> = ({
   const { toast } = useToast();
   const [content, setContent] = useState(currentContent || '');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Update content when currentContent or orderItemId changes
+  useEffect(() => {
+    setContent(currentContent || '');
+  }, [currentContent, orderItemId, open]);
 
   const handleSave = async () => {
     if (!content.trim()) {
