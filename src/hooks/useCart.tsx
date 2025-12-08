@@ -54,13 +54,31 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (error) throw error;
 
+        // Fetch product_type for each cart item from products table
+        const productIds = (data || []).map((item: any) => item.product_id);
+        let productTypes: Record<string, string> = {};
+        
+        if (productIds.length > 0) {
+          const { data: products } = await supabase
+            .from('products')
+            .select('id, product_type')
+            .in('id', productIds);
+          
+          if (products) {
+            products.forEach((p: any) => {
+              productTypes[p.id] = p.product_type || 'physical';
+            });
+          }
+        }
+
         const dbCartItems: CartItem[] = (data || []).map((item: any) => ({
           id: item.product_id,
           title: item.title,
           price: Number(item.price),
           quantity: item.quantity,
           image_url: item.image_url,
-          category: item.category
+          category: item.category,
+          product_type: productTypes[item.product_id] || 'physical'
         }));
 
         setCartItems(dbCartItems);
@@ -201,6 +219,7 @@ const addToCart = useCallback((product: Product, quantity: number = 1) => {
           quantity: qty,
           image_url: product.image_url,
           category: product.category,
+          product_type: product.product_type,
         },
       ];
     }
