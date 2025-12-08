@@ -636,6 +636,8 @@ export type Database = {
       order_items: {
         Row: {
           created_at: string
+          digital_content: string | null
+          digital_content_delivered_at: string | null
           id: string
           order_id: string
           price_eur: number
@@ -644,6 +646,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          digital_content?: string | null
+          digital_content_delivered_at?: string | null
           id?: string
           order_id: string
           price_eur: number
@@ -652,6 +656,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          digital_content?: string | null
+          digital_content_delivered_at?: string | null
           id?: string
           order_id?: string
           price_eur?: number
