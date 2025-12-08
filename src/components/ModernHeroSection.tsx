@@ -26,7 +26,7 @@ export const ModernHeroSection: React.FC<ModernHeroSectionProps> = ({
           </h1>
 
           <p className="text-sm md:text-base text-muted-foreground">
-            Sicherer Krypto-Marktplatz mit Bitcoin & Litecoin
+            Der modernste und zuverlässigste Marktplatz ohne Grenzen - Oracle Market
           </p>
         </div>
       </div>
