@@ -11,6 +11,7 @@ import { Trash2, Plus, Users, Edit, Eye, Wifi, Bitcoin, RefreshCw, UserPlus } fr
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EditProductModal from '@/components/EditProductModal';
 import NewsEditor from '@/components/NewsEditor';
+import SellerReportsPanel from '@/components/SellerReportsPanel';
 import { useUserPresence } from '@/hooks/useUserPresence';
 
 interface UserAddress {
@@ -481,6 +482,8 @@ const AdminPanel = () => {
             </div>
           </CardContent>
         </Card>
+
+<SellerReportsPanel />
 
 <NewsEditor />
 

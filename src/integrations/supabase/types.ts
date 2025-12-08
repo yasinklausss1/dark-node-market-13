@@ -1070,6 +1070,41 @@ export type Database = {
           },
         ]
       }
+      report_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_admin: boolean | null
+          message: string
+          report_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean | null
+          message: string
+          report_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean | null
+          message?: string
+          report_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_messages_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "seller_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           comment: string | null
@@ -1134,6 +1169,51 @@ export type Database = {
           seller_id?: string
           total_rating_points?: number
           total_reviews?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      seller_reports: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          custom_note: string | null
+          evidence_image_url: string | null
+          handled_at: string | null
+          handled_by: string | null
+          id: string
+          reason: string
+          reported_seller_id: string
+          reporter_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          custom_note?: string | null
+          evidence_image_url?: string | null
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          reason: string
+          reported_seller_id: string
+          reporter_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          custom_note?: string | null
+          evidence_image_url?: string | null
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          reason?: string
+          reported_seller_id?: string
+          reporter_id?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []
