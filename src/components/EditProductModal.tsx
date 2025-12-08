@@ -21,6 +21,7 @@ interface Product {
   is_active: boolean;
   created_at: string;
   stock: number;
+  product_type?: string;
 }
 
 interface EditProductModalProps {
@@ -45,7 +46,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     price: '',
     category: '',
     imageUrls: [] as string[],
-    stock: ''
+    stock: '',
+    productType: 'physical' as 'physical' | 'digital'
   });
 
   useEffect(() => {
@@ -71,7 +73,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
           price: product.price.toString(),
           category: product.category,
           imageUrls: imageUrls,
-          stock: product.stock.toString()
+          stock: product.stock.toString(),
+          productType: (product.product_type as 'physical' | 'digital') || 'physical'
         });
       }
     };
@@ -122,7 +125,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         price: parseFloat(formData.price),
         category: formData.category,
         image_url: formData.imageUrls[0] || null,
-        stock: parseInt(formData.stock)
+        stock: parseInt(formData.stock),
+        product_type: formData.productType
       })
       .eq('id', product.id);
 
@@ -178,7 +182,23 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="edit-title">Product Name</Label>
+            <Label htmlFor="edit-productType">Produkttyp</Label>
+            <Select 
+              value={formData.productType} 
+              onValueChange={(value: 'physical' | 'digital') => setFormData({...formData, productType: value})}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Produkttyp wählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="physical">Materiell (Versand erforderlich)</SelectItem>
+                <SelectItem value="digital">Digital (kein Versand)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="edit-title">Produktname</Label>
             <Input
               id="edit-title"
               value={formData.title}

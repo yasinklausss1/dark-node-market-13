@@ -9,6 +9,7 @@ interface CartItem {
   quantity: number;
   image_url: string | null;
   category: string;
+  product_type?: string;
 }
 
 interface Product {
@@ -17,6 +18,7 @@ interface Product {
   price: number;
   image_url: string | null;
   category: string;
+  product_type?: string;
 }
 
 interface CartContextType {

@@ -21,6 +21,7 @@ interface CartItem {
   quantity: number;
   image_url: string | null;
   category: string;
+  product_type?: string;
 }
 
 interface ShoppingCartProps {
@@ -226,6 +227,10 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
   }, 0);
   const totalBTC = btcPrice ? totalEUR / btcPrice : null;
   const totalLTC = ltcPrice ? totalEUR / ltcPrice : null;
+  
+  // Check if cart contains only digital products
+  const isAllDigital = cartItems.every(item => item.product_type === 'digital');
+  const hasPhysicalProducts = cartItems.some(item => !item.product_type || item.product_type === 'physical');
 
   const CartContent = () => (
     <div className="space-y-4">
@@ -439,6 +444,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
         totalAmount={totalEUR}
         onConfirmOrder={handleConfirmOrder}
         loading={isProcessingOrder}
+        requiresShipping={hasPhysicalProducts}
       />
     </>
   );
