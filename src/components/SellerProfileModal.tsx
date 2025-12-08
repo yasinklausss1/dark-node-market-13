@@ -5,7 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-import { Star, User, Calendar, MessageCircle, Package, ShoppingBag } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Star, User, Calendar, MessageCircle, Package, ShoppingBag, Flag } from 'lucide-react';
+import ReportSellerModal from './ReportSellerModal';
 
 interface Review {
   id: string;
@@ -45,10 +47,12 @@ const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
   sellerUsername,
   onProductClick
 }) => {
+  const { user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [sellerRating, setSellerRating] = useState<SellerRating | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
   useEffect(() => {
     if (open && sellerId) {
@@ -127,10 +131,23 @@ const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Verkäuferprofil: @{sellerUsername}
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Verkäuferprofil: @{sellerUsername}
+            </DialogTitle>
+            {user && user.id !== sellerId && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => setReportModalOpen(true)}
+              >
+                <Flag className="h-4 w-4 mr-1" />
+                Melden
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         {isLoading ? (
@@ -274,6 +291,13 @@ const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
           </div>
         )}
       </DialogContent>
+
+      <ReportSellerModal
+        open={reportModalOpen}
+        onOpenChange={setReportModalOpen}
+        sellerId={sellerId}
+        sellerUsername={sellerUsername}
+      />
     </Dialog>
   );
 };
