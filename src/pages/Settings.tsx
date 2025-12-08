@@ -11,6 +11,7 @@ import { ArrowLeft, Moon, Sun, Trash2, Shield, Download, ExternalLink, Eye } fro
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import MyReportsPanel from '@/components/MyReportsPanel';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -69,6 +70,9 @@ export default function Settings() {
         </div>
 
       <div className="space-y-6">
+
+        {/* My Reports */}
+        <MyReportsPanel />
 
         {/* Privacy & Security Guide */}
         <Card id="privacy-guide">
