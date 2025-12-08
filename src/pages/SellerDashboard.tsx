@@ -713,12 +713,15 @@ const fetchOrders = async () => {
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <h3 className="font-semibold">Bestellung #{order.id.slice(0, 8)}</h3>
-                            <div className="flex items-center gap-2">
-                              {getStatusIcon(order.order_status)}
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.order_status)}`}>
-                                {getStatusLabel(order.order_status)}
-                              </span>
-                            </div>
+                            {/* Only show status for orders with physical products */}
+                            {order.items?.some(item => item.product_type !== 'digital') && (
+                              <div className="flex items-center gap-2">
+                                {getStatusIcon(order.order_status)}
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.order_status)}`}>
+                                  {getStatusLabel(order.order_status)}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {new Date(order.created_at).toLocaleDateString('de-DE')}
