@@ -568,6 +568,12 @@ const Marketplace = () => {
         onOpenChange={setSellerProfileOpen}
         sellerId={selectedSellerId}
         sellerUsername={selectedSellerUsername}
+        onProductClick={(productId) => {
+          const product = products.find(p => p.id === productId);
+          if (product) {
+            openProductModal(product);
+          }
+        }}
       />
 
       {/* Conversations Modal */}
