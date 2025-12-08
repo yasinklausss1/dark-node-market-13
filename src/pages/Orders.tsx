@@ -456,12 +456,15 @@ const Orders: React.FC = () => {
                         )}
                       </div>
 
-                      <div>
-                        <h4 className="font-medium text-sm">Lieferadresse</h4>
-                        <p className="text-xs sm:text-sm text-muted-foreground break-words">
-                          {order.shipping_first_name} {order.shipping_last_name}, {order.shipping_street} {order.shipping_house_number}, {order.shipping_postal_code} {order.shipping_city}, {order.shipping_country}
-                        </p>
-                      </div>
+                      {/* Only show shipping address if order has physical products */}
+                      {(itemsByOrder[order.id] || []).some(it => it.product_type !== 'digital') && (
+                        <div>
+                          <h4 className="font-medium text-sm">Lieferadresse</h4>
+                          <p className="text-xs sm:text-sm text-muted-foreground break-words">
+                            {order.shipping_first_name} {order.shipping_last_name}, {order.shipping_street} {order.shipping_house_number}, {order.shipping_postal_code} {order.shipping_city}, {order.shipping_country}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
