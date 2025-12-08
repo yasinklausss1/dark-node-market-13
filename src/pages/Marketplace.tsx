@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, LogOut, Bitcoin, Wallet, Settings, Users, Star, Share2, Menu, ShoppingBag, MessageCircle, Package, Download, Flag } from 'lucide-react';
+import { Search, LogOut, Bitcoin, Wallet, Settings, Users, Star, Share2, Menu, ShoppingBag, MessageCircle, Package, Download, Flag, LayoutGrid, LayoutList } from 'lucide-react';
 import ProductModal from '@/components/ProductModal';
 import ShoppingCart from '@/components/ShoppingCart';
 import SellerProfileModal from '@/components/SellerProfileModal';
@@ -54,6 +54,7 @@ const Marketplace = () => {
   const [sellerRatings, setSellerRatings] = useState<Record<string, { average: number; total: number }>>({});
   const [sortBy, setSortBy] = useState<'newest' | 'price-asc' | 'price-desc'>('newest');
   const [productTypeTab, setProductTypeTab] = useState<'physical' | 'digital'>('physical');
+  const [mobileGridCols, setMobileGridCols] = useState<1 | 2>(2);
   const { cartItems, addToCart, updateQuantity, removeItem, clearCart, getCartItemCount } = useCart();
   
   // New state for modals
@@ -680,12 +681,32 @@ const Marketplace = () => {
                   <SelectItem value="price-desc">Preis ↓</SelectItem>
                 </SelectContent>
               </Select>
+              
+              {/* Mobile Grid Toggle */}
+              <div className="flex md:hidden border border-border rounded-md overflow-hidden">
+                <Button
+                  variant={mobileGridCols === 1 ? "default" : "ghost"}
+                  size="icon"
+                  className="h-11 w-11 rounded-none"
+                  onClick={() => setMobileGridCols(1)}
+                >
+                  <LayoutList className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={mobileGridCols === 2 ? "default" : "ghost"}
+                  size="icon"
+                  className="h-11 w-11 rounded-none border-l border-border"
+                  onClick={() => setMobileGridCols(2)}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Products Grid with Modern Cards */}
-        <div id="products-grid" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6">
+        <div id="products-grid" className={`grid ${mobileGridCols === 1 ? 'grid-cols-1' : 'grid-cols-2'} md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6`}>
           {currentItems.map((product) => (
             <ProductCard
               key={product.id}
