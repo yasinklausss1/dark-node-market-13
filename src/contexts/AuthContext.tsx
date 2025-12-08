@@ -90,36 +90,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (username: string, password: string) => {
-    // First, find the user by username to get their email
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('user_id')
-      .eq('username', username)
-      .maybeSingle();
-    
-    if (profileError || !profileData) {
-      return { error: new Error('Benutzername nicht gefunden') };
+    try {
+      // Use edge function for brute-force protected login
+      const response = await fetch(
+        'https://iqeubhhqdurqoaxnnyng.supabase.co/functions/v1/check-login',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'login',
+            username,
+            password,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.blocked) {
+        return { error: new Error(data.message || 'IP blockiert'), blocked: true };
+      }
+
+      if (!response.ok) {
+        return { 
+          error: new Error(data.message || data.error || 'Anmeldung fehlgeschlagen'),
+          remainingAttempts: data.remainingAttempts
+        };
+      }
+
+      // Set the session from edge function response
+      if (data.session) {
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+      }
+
+      return { error: null };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { error: new Error('Verbindungsfehler. Versuche es später erneut.') };
     }
-
-    // Get the user's email from auth.users
-    const { data: userData, error: userError } = await supabase
-      .from('profiles')
-      .select('user_id')
-      .eq('user_id', profileData.user_id)
-      .maybeSingle();
-
-    if (userError || !userData) {
-      return { error: new Error('Benutzer nicht gefunden') };
-    }
-
-    // Generate the email from username (same pattern used in signup)
-    const email = `${username}@example.com`;
-    
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
   };
 
   const signUp = async (username: string, password: string) => {
