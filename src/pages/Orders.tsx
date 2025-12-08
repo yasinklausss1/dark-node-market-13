@@ -42,6 +42,7 @@ interface OrderItem {
   product_title?: string;
   product_type?: string;
   digital_content?: string | null;
+  digital_content_delivered_at?: string | null;
 }
 
 const Orders: React.FC = () => {
@@ -118,8 +119,7 @@ const Orders: React.FC = () => {
               *,
               products (
                 title,
-                product_type,
-                digital_content
+                product_type
               )
             `)
             .in('order_id', orderIds);
@@ -135,7 +135,8 @@ const Orders: React.FC = () => {
               price_eur: Number(it.price_eur),
               product_title: it.products?.title || undefined,
               product_type: it.products?.product_type || undefined,
-              digital_content: it.products?.digital_content || null,
+              digital_content: it.digital_content || null,
+              digital_content_delivered_at: it.digital_content_delivered_at || null,
             });
           });
           setItemsByOrder(grouped);
@@ -314,30 +315,59 @@ const Orders: React.FC = () => {
                         {['confirmed', 'processing', 'shipped', 'delivered'].includes(order.order_status) && (
                           (() => {
                             const digitalItems = (itemsByOrder[order.id] || []).filter(
-                              it => it.product_type === 'digital' && it.digital_content
+                              it => it.product_type === 'digital'
                             );
                             if (digitalItems.length === 0) return null;
                             
+                            // Check if any digital item has content delivered
+                            const hasDeliveredContent = digitalItems.some(it => it.digital_content);
+                            const hasWaitingContent = digitalItems.some(it => !it.digital_content);
+                            
                             return (
-                              <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Download className="h-4 w-4 text-green-600" />
-                                  <h4 className="font-medium text-sm text-green-800 dark:text-green-200">
-                                    Digitale Inhalte
-                                  </h4>
-                                </div>
-                                <div className="space-y-3">
-                                  {digitalItems.map((item) => (
-                                    <div key={item.id} className="bg-white dark:bg-background p-3 rounded border">
-                                      <p className="text-xs font-medium text-muted-foreground mb-1">
-                                        {item.product_title}:
-                                      </p>
-                                      <pre className="text-sm whitespace-pre-wrap break-all bg-muted p-2 rounded font-mono">
-                                        {item.digital_content}
-                                      </pre>
+                              <div className="mt-4 space-y-3">
+                                {/* Delivered content */}
+                                {hasDeliveredContent && (
+                                  <div className="p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Download className="h-4 w-4 text-green-600" />
+                                      <h4 className="font-medium text-sm text-green-800 dark:text-green-200">
+                                        Digitale Inhalte erhalten
+                                      </h4>
                                     </div>
-                                  ))}
-                                </div>
+                                    <div className="space-y-3">
+                                      {digitalItems.filter(it => it.digital_content).map((item) => (
+                                        <div key={item.id} className="bg-white dark:bg-background p-3 rounded border">
+                                          <p className="text-xs font-medium text-muted-foreground mb-1">
+                                            {item.product_title}:
+                                          </p>
+                                          <pre className="text-sm whitespace-pre-wrap break-all bg-muted p-2 rounded font-mono">
+                                            {item.digital_content}
+                                          </pre>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Waiting for seller */}
+                                {hasWaitingContent && (
+                                  <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                      <FileText className="h-4 w-4 text-yellow-600" />
+                                      <h4 className="font-medium text-sm text-yellow-800 dark:text-yellow-200">
+                                        Warte auf Verkäufer
+                                      </h4>
+                                    </div>
+                                    <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                                      Der Verkäufer bereitet die digitalen Daten für folgende Produkte vor:
+                                    </p>
+                                    <ul className="text-xs text-yellow-700 dark:text-yellow-300 mt-1 list-disc pl-4">
+                                      {digitalItems.filter(it => !it.digital_content).map((item) => (
+                                        <li key={item.id}>{item.product_title}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
                               </div>
                             );
                           })()
