@@ -365,8 +365,8 @@ const Orders: React.FC = () => {
                           ))}
                         </ul>
 
-                        {/* Digital Content Section - Show for confirmed/delivered orders */}
-                        {['confirmed', 'processing', 'shipped', 'delivered'].includes(order.order_status || order.status) && (
+                        {/* Digital Content Section - Show for confirmed orders */}
+                        {(order.status === 'confirmed' || ['confirmed', 'processing', 'shipped', 'delivered'].includes(order.order_status)) && (
                           (() => {
                             const digitalItems = (itemsByOrder[order.id] || []).filter(
                               it => it.product_type === 'digital'
