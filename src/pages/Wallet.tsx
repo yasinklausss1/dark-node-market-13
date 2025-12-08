@@ -1,5 +1,6 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { useState, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { WalletBalance } from "@/components/WalletBalance";
 import { DepositRequest } from "@/components/DepositRequest";
 import { TransactionHistory } from "@/components/TransactionHistory";
@@ -12,6 +13,7 @@ import { ArrowLeft, Download, Upload } from "lucide-react";
 
 export default function Wallet() {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [withdrawalModalOpen, setWithdrawalModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -19,6 +21,18 @@ export default function Wallet() {
   const handleBalanceChange = useCallback(() => {
     setRefreshKey(prev => prev + 1);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-background">

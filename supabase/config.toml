@@ -1,10 +1,10 @@
 project_id = "iqeubhhqdurqoaxnnyng"
 
 [functions.delete-all-users-except]
-verify_jwt = false
+verify_jwt = true
 
 [functions.import-wallet]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-login]
 verify_jwt = false
