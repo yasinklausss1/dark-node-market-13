@@ -62,6 +62,9 @@ const Marketplace = () => {
   const [conversationsModalOpen, setConversationsModalOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<any>(null);
   
+  // New orders notification for sellers
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
+  
   // Chat functionality
   const { conversations, fetchConversations } = useChat();
   
@@ -86,6 +89,66 @@ const Marketplace = () => {
     itemsPerPageDesktop: 36,
     isMobile
   });
+
+  // Fetch new orders count for sellers
+  const fetchNewOrdersCount = async () => {
+    if (!user || (profile?.role !== 'seller' && profile?.role !== 'admin')) return;
+    
+    try {
+      // Get orders for seller's products that are pending or confirmed (not yet processed)
+      const { data: sellerProducts } = await supabase
+        .from('products')
+        .select('id')
+        .eq('seller_id', user.id);
+      
+      if (!sellerProducts || sellerProducts.length === 0) {
+        setNewOrdersCount(0);
+        return;
+      }
+      
+      const productIds = sellerProducts.map(p => p.id);
+      
+      const { count, error } = await supabase
+        .from('order_items')
+        .select('order_id, orders!inner(status, order_status)', { count: 'exact', head: true })
+        .in('product_id', productIds)
+        .or('order_status.eq.confirmed,order_status.eq.pending', { referencedTable: 'orders' });
+      
+      if (error) {
+        console.error('Error fetching new orders count:', error);
+        return;
+      }
+      
+      setNewOrdersCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching new orders:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNewOrdersCount();
+    
+    // Subscribe to order changes for real-time updates
+    const channel = supabase
+      .channel('seller-orders-notification')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'orders' }, 
+        () => {
+          fetchNewOrdersCount();
+        }
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'order_items' },
+        () => {
+          fetchNewOrdersCount();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, profile]);
 
   useEffect(() => {
     fetchProducts();
@@ -411,9 +474,14 @@ const Marketplace = () => {
                     </DropdownMenuItem>
                   )}
                   {(profile?.role === 'seller' || profile?.role === 'admin') && (
-                    <DropdownMenuItem onClick={() => navigate('/seller')}>
+                    <DropdownMenuItem onClick={() => navigate('/seller')} className="relative">
                       <Users className="h-4 w-4 mr-2" />
                       Verkäufer Dashboard
+                      {newOrdersCount > 0 && (
+                        <Badge variant="destructive" className="ml-auto h-5 min-w-5 flex items-center justify-center text-xs px-1.5">
+                          {newOrdersCount}
+                        </Badge>
+                      )}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
