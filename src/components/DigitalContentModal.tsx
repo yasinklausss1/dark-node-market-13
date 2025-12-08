@@ -51,15 +51,22 @@ const DigitalContentModal: React.FC<DigitalContentModalProps> = ({
 
     setIsSaving(true);
     
-    const { error } = await supabase
+    console.log('Saving digital content for order item:', orderItemId);
+    console.log('Content:', content);
+    
+    const { data, error } = await supabase
       .from('order_items')
       .update({ 
         digital_content: content,
         digital_content_delivered_at: new Date().toISOString()
       })
-      .eq('id', orderItemId);
+      .eq('id', orderItemId)
+      .select();
+
+    console.log('Update result:', { data, error });
 
     if (error) {
+      console.error('Error saving digital content:', error);
       toast({
         title: "Fehler",
         description: error.message,
