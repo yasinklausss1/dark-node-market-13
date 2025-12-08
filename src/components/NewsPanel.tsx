@@ -44,13 +44,15 @@ const NewsPanel: React.FC = () => {
   if (!news) return null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Neuigkeiten</CardTitle>
-        <CardDescription>Aktualisiert: {formatDate(news.created_at)}</CardDescription>
+    <Card className="border-border/50">
+      <CardHeader className="p-4 pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">Neuigkeiten</CardTitle>
+          <CardDescription className="text-xs">{formatDate(news.created_at)}</CardDescription>
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="prose prose-sm max-w-none dark:prose-invert">
+      <CardContent className="p-4 pt-0">
+        <div className="prose prose-sm max-w-none dark:prose-invert text-sm">
           <ReactMarkdown>{news.content}</ReactMarkdown>
         </div>
       </CardContent>

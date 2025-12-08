@@ -359,76 +359,73 @@ const Marketplace = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 py-3">
+        <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl md:text-3xl font-bold font-cinzel">Oracle Market</h1>
+            <h1 className="text-lg md:text-2xl font-bold font-cinzel">Oracle Market</h1>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => setCartOpen(true)}
-                className="relative shrink-0"
+                className="relative shrink-0 h-9"
               >
-                Warenkorb ({getCartItemCount()})
+                <ShoppingBag className="h-4 w-4 mr-1" />
+                <span>{getCartItemCount()}</span>
               </Button>
               
-              <Button variant="outline" size="sm" onClick={handleSignOut} className="shrink-0">
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">Abmelden</span>
-              </Button>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
-            <span className="text-xs text-muted-foreground truncate">
-              {profile?.username} ({profile?.role})
-            </span>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-xs px-2">
-                  <Menu className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate('/settings')}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Einstellungen
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/orders')}>
-                  <ShoppingBag className="h-4 w-4 mr-2" />
-                  Bestellungen
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/wallet')}>
-                  <Wallet className="h-4 w-4 mr-2" />
-                  Wallet
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setConversationsModalOpen(true)}>
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Nachrichten
-                </DropdownMenuItem>
-                {profile?.role === 'admin' && (
-                  <DropdownMenuItem onClick={() => window.location.href = '/admin'}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-9 px-3">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem className="text-xs text-muted-foreground" disabled>
+                    {profile?.username}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/settings')}>
                     <Settings className="h-4 w-4 mr-2" />
-                    Admin Panel
+                    Einstellungen
                   </DropdownMenuItem>
-                )}
-                {(profile?.role === 'seller' || profile?.role === 'admin') && (
-                  <DropdownMenuItem onClick={() => window.location.href = '/seller'}>
-                    <Users className="h-4 w-4 mr-2" />
-                    Verkäufer Dashboard
+                  <DropdownMenuItem onClick={() => navigate('/orders')}>
+                    <ShoppingBag className="h-4 w-4 mr-2" />
+                    Bestellungen
                   </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem onClick={() => navigate('/wallet')}>
+                    <Wallet className="h-4 w-4 mr-2" />
+                    Wallet
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setConversationsModalOpen(true)}>
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Nachrichten
+                  </DropdownMenuItem>
+                  {profile?.role === 'admin' && (
+                    <DropdownMenuItem onClick={() => navigate('/admin')}>
+                      <Settings className="h-4 w-4 mr-2" />
+                      Admin Panel
+                    </DropdownMenuItem>
+                  )}
+                  {(profile?.role === 'seller' || profile?.role === 'admin') && (
+                    <DropdownMenuItem onClick={() => navigate('/seller')}>
+                      <Users className="h-4 w-4 mr-2" />
+                      Verkäufer Dashboard
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Abmelden
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6">
-        <div className="mb-6">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        <div className="mb-8">
           <NewsPanel />
         </div>
 
@@ -442,14 +439,14 @@ const Marketplace = () => {
         />
 
         {/* Product Type Tabs */}
-        <div className="mb-6">
+        <div className="mb-8">
           <Tabs value={productTypeTab} onValueChange={(v) => setProductTypeTab(v as 'physical' | 'digital')} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-              <TabsTrigger value="physical" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-2 max-w-md h-12">
+              <TabsTrigger value="physical" className="flex items-center gap-2 text-sm">
                 <Package className="h-4 w-4" />
                 <span>Produkte</span>
               </TabsTrigger>
-              <TabsTrigger value="digital" className="flex items-center gap-2">
+              <TabsTrigger value="digital" className="flex items-center gap-2 text-sm">
                 <Download className="h-4 w-4" />
                 <span>Digital</span>
               </TabsTrigger>
@@ -458,51 +455,51 @@ const Marketplace = () => {
         </div>
 
         {/* Search and Filter */}
-        <div className="mb-6 md:mb-8 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Produkte suchen..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Produkte suchen..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-12"
+              />
             </div>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Kategorie wählen" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  Alle Kategorien ({categoryCounts.all || 0})
-                </SelectItem>
-                {categories
-                  .filter((category) => category.product_type === productTypeTab)
-                  .map((category) => (
-                    <SelectItem key={category.id} value={category.name}>
-                      {category.name} ({categoryCounts[category.name] || 0})
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Sortieren nach" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Neueste</SelectItem>
-                <SelectItem value="price-asc">Preis: Aufsteigend</SelectItem>
-                <SelectItem value="price-desc">Preis: Absteigend</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-3">
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="flex-1 h-11">
+                  <SelectValue placeholder="Kategorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    Alle ({categoryCounts.all || 0})
+                  </SelectItem>
+                  {categories
+                    .filter((category) => category.product_type === productTypeTab)
+                    .map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name} ({categoryCounts[category.name] || 0})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                <SelectTrigger className="flex-1 h-11">
+                  <SelectValue placeholder="Sortieren" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Neueste</SelectItem>
+                  <SelectItem value="price-asc">Preis ↑</SelectItem>
+                  <SelectItem value="price-desc">Preis ↓</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
         {/* Products Grid with Modern Cards */}
-        <div id="products-grid" className="grid grid-cols-2 md:grid-cols-6 gap-3 md:gap-6">
+        <div id="products-grid" className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
           {currentItems.map((product) => (
             <ProductCard
               key={product.id}
