@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, LogOut, Bitcoin, Wallet, Settings, Users, Star, Share2, Menu, ShoppingBag, MessageCircle, Package, Download } from 'lucide-react';
+import { Search, LogOut, Bitcoin, Wallet, Settings, Users, Star, Share2, Menu, ShoppingBag, MessageCircle, Package, Download, Flag } from 'lucide-react';
 import ProductModal from '@/components/ProductModal';
 import ShoppingCart from '@/components/ShoppingCart';
 import SellerProfileModal from '@/components/SellerProfileModal';
@@ -387,6 +387,10 @@ const Marketplace = () => {
                   <DropdownMenuItem onClick={() => navigate('/settings')}>
                     <Settings className="h-4 w-4 mr-2" />
                     Einstellungen
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/reports')}>
+                    <Flag className="h-4 w-4 mr-2" />
+                    Meine Meldungen
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/orders')}>
                     <ShoppingBag className="h-4 w-4 mr-2" />
