@@ -432,28 +432,48 @@ const Orders: React.FC = () => {
                           <div className="mt-3">
                             <h4 className="font-medium text-sm mb-2">Verkäufer</h4>
                             <div className="space-y-2">
-                              {order.sellers.map((seller) => (
-                                <div key={seller.seller_id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-muted rounded">
-                                  <button
-                                    onClick={() => handleViewSellerProfile(seller.seller_id, seller.seller_username)}
-                                    className="text-sm font-medium text-primary hover:underline text-left truncate"
-                                  >
-                                    @{seller.seller_username}
-                                  </button>
-                                  {order.order_status === 'delivered' && (
-                                    <Button
-                                      variant={seller.has_review ? "outline" : "default"}
-                                      size="sm"
-                                      onClick={() => handleReviewSeller(order.id, seller.seller_id, seller.seller_username)}
-                                      disabled={seller.has_review}
-                                      className="flex items-center gap-1 w-full sm:w-auto justify-center"
+                              {order.sellers.map((seller) => {
+                                // Check if review should be enabled
+                                const orderItems = itemsByOrder[order.id] || [];
+                                const hasPhysicalProducts = orderItems.some(it => it.product_type !== 'digital');
+                                const hasDigitalProducts = orderItems.some(it => it.product_type === 'digital');
+                                
+                                // For physical products: check if order is delivered
+                                const physicalDelivered = hasPhysicalProducts && order.order_status === 'delivered';
+                                
+                                // For digital products: check if all digital content has been delivered
+                                const digitalItems = orderItems.filter(it => it.product_type === 'digital');
+                                const allDigitalDelivered = hasDigitalProducts && digitalItems.length > 0 && 
+                                  digitalItems.every(it => it.digital_content_delivered_at);
+                                
+                                // Can review if: physical delivered OR all digital delivered (for pure digital orders)
+                                // For mixed orders: physical must be delivered OR all digital must be delivered
+                                const canReview = (hasPhysicalProducts && physicalDelivered) || 
+                                  (!hasPhysicalProducts && allDigitalDelivered);
+                                
+                                return (
+                                  <div key={seller.seller_id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-muted rounded">
+                                    <button
+                                      onClick={() => handleViewSellerProfile(seller.seller_id, seller.seller_username)}
+                                      className="text-sm font-medium text-primary hover:underline text-left truncate"
                                     >
-                                      <Star className="h-3 w-3" />
-                                      {seller.has_review ? 'Bewertet' : 'Bewerten'}
-                                    </Button>
-                                  )}
-                                </div>
-                              ))}
+                                      @{seller.seller_username}
+                                    </button>
+                                    {canReview && (
+                                      <Button
+                                        variant={seller.has_review ? "outline" : "default"}
+                                        size="sm"
+                                        onClick={() => handleReviewSeller(order.id, seller.seller_id, seller.seller_username)}
+                                        disabled={seller.has_review}
+                                        className="flex items-center gap-1 w-full sm:w-auto justify-center"
+                                      >
+                                        <Star className="h-3 w-3" />
+                                        {seller.has_review ? 'Bewertet' : 'Bewerten'}
+                                      </Button>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
