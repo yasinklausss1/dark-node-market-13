@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import { Bitcoin, ShoppingCart, User, Coins, Minus, Plus, MessageCircle, Share2, Star } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Bitcoin, ShoppingCart, User, Coins, Minus, Plus, MessageCircle, Share2, Star, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,6 +44,14 @@ interface SellerRating {
   total_reviews: number;
 }
 
+interface Review {
+  id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  reviewer_username: string;
+}
+
 const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange, onStartChat }) => {
   const { addToCart } = useCart();
   const { user } = useAuth();
@@ -57,13 +66,17 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
   const [sellerProfileOpen, setSellerProfileOpen] = useState(false);
   const [productImages, setProductImages] = useState<string[]>([]);
   const [sellerRating, setSellerRating] = useState<SellerRating | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
 
   useEffect(() => {
     if (product && open) {
       fetchSellerUsername();
       fetchProductImages();
       fetchSellerRating();
+      fetchReviews();
       setQuantity(1);
+      setReviewsOpen(false);
     }
   }, [product, open]);
 
@@ -85,6 +98,46 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
     } catch (error) {
       console.error('Error fetching seller rating:', error);
       setSellerRating(null);
+    }
+  };
+
+  const fetchReviews = async () => {
+    if (!product) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('id, rating, comment, created_at, reviewer_id')
+        .eq('seller_id', product.seller_id)
+        .not('comment', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (error) {
+        console.error('Error fetching reviews:', error);
+        setReviews([]);
+        return;
+      }
+
+      // Fetch reviewer usernames
+      const reviewerIds = data.map(r => r.reviewer_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, username')
+        .in('user_id', reviewerIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p.username]) || []);
+      
+      setReviews(data.map(r => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment || '',
+        created_at: r.created_at,
+        reviewer_username: profileMap.get(r.reviewer_id) || 'Unbekannt'
+      })));
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      setReviews([]);
     }
   };
 
@@ -218,6 +271,50 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
             {product.description || 'Keine Beschreibung verfügbar.'}
           </p>
         </div>
+
+        {/* Reviews Collapsible */}
+        {sellerRating && sellerRating.total_reviews > 0 && (
+          <Collapsible open={reviewsOpen} onOpenChange={setReviewsOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                <span className="flex items-center gap-2">
+                  <Star className="h-4 w-4" />
+                  Bewertungen anzeigen ({sellerRating.total_reviews})
+                </span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${reviewsOpen ? 'rotate-180' : ''}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3 space-y-3">
+              {reviews.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-2">Lade Bewertungen...</p>
+              ) : (
+                reviews.map((review) => (
+                  <div key={review.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">@{review.reviewer_username}</span>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`h-3 w-3 ${
+                              star <= review.rating
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-muted-foreground/30'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{review.comment}</p>
+                    <p className="text-xs text-muted-foreground/70">
+                      {new Date(review.created_at).toLocaleDateString('de-DE')}
+                    </p>
+                  </div>
+                ))
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
 
         <Separator />
 

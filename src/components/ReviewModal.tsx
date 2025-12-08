@@ -42,6 +42,15 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       return;
     }
 
+    if (!comment.trim()) {
+      toast({
+        title: "Kommentar erforderlich",
+        description: "Bitte schreibe einen Kommentar zu deiner Bewertung.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -114,7 +123,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           </div>
 
           <div>
-            <Label htmlFor="comment">Kommentar (Optional)</Label>
+            <Label htmlFor="comment">Kommentar <span className="text-destructive">*</span></Label>
             <Textarea
               id="comment"
               value={comment}
@@ -122,6 +131,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
               placeholder="Teile deine Erfahrung mit diesem Verkäufer..."
               rows={4}
               maxLength={500}
+              required
             />
             <p className="text-xs text-muted-foreground mt-1">
               {comment.length}/500 Zeichen
