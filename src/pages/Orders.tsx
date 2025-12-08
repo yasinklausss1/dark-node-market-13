@@ -57,6 +57,43 @@ const Orders: React.FC = () => {
   const [selectedSellerUsername, setSelectedSellerUsername] = useState('');
   const [sellerProfileOpen, setSellerProfileOpen] = useState(false);
 
+  const fetchOrderItems = async (orderIds: string[]) => {
+    if (orderIds.length === 0) {
+      setItemsByOrder({});
+      return;
+    }
+    
+    const { data: itemsData, error: itemsError } = await supabase
+      .from('order_items')
+      .select(`
+        *,
+        products (
+          title,
+          product_type
+        )
+      `)
+      .in('order_id', orderIds);
+    
+    if (itemsError) throw itemsError;
+    
+    const grouped: Record<string, OrderItem[]> = {};
+    (itemsData || []).forEach((it: any) => {
+      if (!grouped[it.order_id]) grouped[it.order_id] = [];
+      grouped[it.order_id].push({
+        id: it.id,
+        order_id: it.order_id,
+        product_id: it.product_id,
+        quantity: it.quantity,
+        price_eur: Number(it.price_eur),
+        product_title: it.products?.title || undefined,
+        product_type: it.products?.product_type || undefined,
+        digital_content: it.digital_content || null,
+        digital_content_delivered_at: it.digital_content_delivered_at || null,
+      });
+    });
+    setItemsByOrder(grouped);
+  };
+
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
@@ -110,39 +147,9 @@ const Orders: React.FC = () => {
         );
 
         setOrders(ordersWithSellers as any);
-
+        
         const orderIds = ordersList.map((o: any) => o.id);
-        if (orderIds.length > 0) {
-          const { data: itemsData, error: itemsError } = await supabase
-            .from('order_items')
-            .select(`
-              *,
-              products (
-                title,
-                product_type
-              )
-            `)
-            .in('order_id', orderIds);
-          if (itemsError) throw itemsError;
-          const grouped: Record<string, OrderItem[]> = {};
-          (itemsData || []).forEach((it: any) => {
-            if (!grouped[it.order_id]) grouped[it.order_id] = [];
-            grouped[it.order_id].push({
-              id: it.id,
-              order_id: it.order_id,
-              product_id: it.product_id,
-              quantity: it.quantity,
-              price_eur: Number(it.price_eur),
-              product_title: it.products?.title || undefined,
-              product_type: it.products?.product_type || undefined,
-              digital_content: it.digital_content || null,
-              digital_content_delivered_at: it.digital_content_delivered_at || null,
-            });
-          });
-          setItemsByOrder(grouped);
-        } else {
-          setItemsByOrder({});
-        }
+        await fetchOrderItems(orderIds);
       } catch (e) {
         console.error('Fehler beim Laden der Bestellungen:', e);
       } finally {
@@ -151,6 +158,36 @@ const Orders: React.FC = () => {
     };
     fetchData();
   }, [user]);
+
+  // Real-time subscription for order_items updates (when seller delivers digital content)
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('order-items-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'order_items'
+        },
+        async (payload) => {
+          // Check if this update is for one of the user's orders
+          const updatedItem = payload.new as any;
+          if (itemsByOrder[updatedItem.order_id]) {
+            // Refresh order items when digital content is updated
+            const orderIds = Object.keys(itemsByOrder);
+            await fetchOrderItems(orderIds);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, itemsByOrder]);
 
   const handleReviewSeller = (orderId: string, sellerId: string, sellerUsername: string) => {
     setSelectedOrderId(orderId);

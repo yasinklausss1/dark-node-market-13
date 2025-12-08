@@ -757,23 +757,31 @@ const fetchOrders = async () => {
                                 {item.product_type === 'digital' && (
                                   <div className="mt-1">
                                     {item.digital_content ? (
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-green-600 text-xs">✓ Daten geliefert</span>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-6 text-xs"
-                                          onClick={() => {
-                                            setSelectedOrderItem({
-                                              orderItemId: item.order_item_id,
-                                              productTitle: item.product_title || 'Produkt',
-                                              currentContent: item.digital_content || null
-                                            });
-                                            setDigitalContentModalOpen(true);
-                                          }}
-                                        >
-                                          Bearbeiten
-                                        </Button>
+                                      <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-green-600 text-xs">✓ Daten geliefert</span>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 text-xs"
+                                            onClick={() => {
+                                              setSelectedOrderItem({
+                                                orderItemId: item.order_item_id,
+                                                productTitle: item.product_title || 'Produkt',
+                                                currentContent: item.digital_content || null
+                                              });
+                                              setDigitalContentModalOpen(true);
+                                            }}
+                                          >
+                                            Bearbeiten
+                                          </Button>
+                                        </div>
+                                        <div className="bg-muted p-2 rounded text-xs">
+                                          <p className="font-medium text-foreground mb-1">Eingegebene Daten:</p>
+                                          <pre className="whitespace-pre-wrap break-all font-mono text-muted-foreground">
+                                            {item.digital_content}
+                                          </pre>
+                                        </div>
                                       </div>
                                     ) : (
                                       <Button
