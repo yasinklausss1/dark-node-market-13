@@ -94,6 +94,20 @@ const Auth = () => {
           </p>
         </div>
 
+        <div className="bg-muted/50 border border-border rounded-lg p-4 text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Tritt gerne unserer Telegram-Gruppe bei:
+          </p>
+          <a 
+            href="https://t.me/+p0lqP_G22UU0OWY0" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-primary font-semibold hover:underline text-lg"
+          >
+            Oracle Market Chat
+          </a>
+        </div>
+
         <SignInForm
           onSubmit={handleSignIn}
           isLoading={isLoading}
