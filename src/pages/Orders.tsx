@@ -365,9 +365,8 @@ const Orders: React.FC = () => {
                           ))}
                         </ul>
 
-                        {/* Digital Content Section - Show for confirmed orders */}
-                        {(order.status === 'confirmed' || ['confirmed', 'processing', 'shipped', 'delivered'].includes(order.order_status)) && (
-                          (() => {
+                        {/* Digital Content Section - Show for all orders with digital items */}
+                        {(() => {
                             const digitalItems = (itemsByOrder[order.id] || []).filter(
                               it => it.product_type === 'digital'
                             );
@@ -424,8 +423,7 @@ const Orders: React.FC = () => {
                                 )}
                               </div>
                             );
-                          })()
-                        )}
+                          })()}
 
                         {order.sellers.length > 0 && (
                           <div className="mt-3">
