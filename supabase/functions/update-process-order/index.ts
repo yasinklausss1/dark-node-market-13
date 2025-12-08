@@ -24,7 +24,7 @@ serve(async (req) => {
       method: 'btc' | 'ltc';
       btcPrice?: number;
       ltcPrice?: number;
-      shippingAddress: {
+      shippingAddress?: {
         firstName: string;
         lastName: string;
         street: string;
@@ -32,10 +32,29 @@ serve(async (req) => {
         postalCode: string;
         city: string;
         country: string;
-      };
+      } | null;
     };
 
-    if (!userId || !items?.length || !method || !shippingAddress) throw new Error('Invalid payload');
+    if (!userId || !items?.length || !method) throw new Error('Invalid payload');
+
+    // Check if any product requires shipping (physical products)
+    let requiresShipping = false;
+    for (const it of items) {
+      const { data: product } = await supabase
+        .from('products')
+        .select('product_type')
+        .eq('id', it.id)
+        .maybeSingle();
+      if (product && product.product_type !== 'digital') {
+        requiresShipping = true;
+        break;
+      }
+    }
+
+    // Require shipping address only for physical products
+    if (requiresShipping && !shippingAddress) {
+      throw new Error('Shipping address required for physical products');
+    }
 
     // Load product info and compute totals + amounts per seller
     const sellerTotals: Record<string, { eur: number; btc: number; ltc: number }> = {};
@@ -95,21 +114,26 @@ serve(async (req) => {
     if (method === 'btc' && Number(buyerBal.balance_btc) + 1e-12 < totalBTC) throw new Error('Insufficient BTC balance');
     if (method === 'ltc' && Number((buyerBal as any).balance_ltc || 0) + 1e-12 < totalLTC) throw new Error('Insufficient LTC balance');
 
-    // Create order with shipping address
+    // Create order with shipping address (if provided)
+    const orderData: any = { 
+      user_id: userId, 
+      total_amount_eur: totalEUR, 
+      status: 'confirmed'
+    };
+    
+    if (shippingAddress) {
+      orderData.shipping_first_name = shippingAddress.firstName;
+      orderData.shipping_last_name = shippingAddress.lastName;
+      orderData.shipping_street = shippingAddress.street;
+      orderData.shipping_house_number = shippingAddress.houseNumber;
+      orderData.shipping_postal_code = shippingAddress.postalCode;
+      orderData.shipping_city = shippingAddress.city;
+      orderData.shipping_country = shippingAddress.country;
+    }
+
     const { data: order, error: orderErr } = await supabase
       .from('orders')
-      .insert({ 
-        user_id: userId, 
-        total_amount_eur: totalEUR, 
-        status: 'confirmed',
-        shipping_first_name: shippingAddress.firstName,
-        shipping_last_name: shippingAddress.lastName,
-        shipping_street: shippingAddress.street,
-        shipping_house_number: shippingAddress.houseNumber,
-        shipping_postal_code: shippingAddress.postalCode,
-        shipping_city: shippingAddress.city,
-        shipping_country: shippingAddress.country
-      })
+      .insert(orderData)
       .select()
       .maybeSingle();
     if (orderErr || !order) throw orderErr ?? new Error('Order creation failed');
