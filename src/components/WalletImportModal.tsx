@@ -103,11 +103,9 @@ export const WalletImportModal = ({ open, onOpenChange, onSuccess }: WalletImpor
           </DialogDescription>
         </DialogHeader>
 
-        <Alert variant="destructive" className="border-orange-500/50 bg-orange-500/10">
-          <AlertTriangle className="h-4 w-4 text-orange-500" />
-          <AlertDescription className="text-orange-200 text-xs">
-            <strong>Sicherheitswarnung:</strong> Das Importieren deines Private Keys bedeutet, dass du uns vertraust. 
-            Nutze diese Funktion nur, wenn du die Risiken verstehst.
+        <Alert className="border-green-500/50 bg-green-500/10">
+          <AlertDescription className="text-green-200 text-xs">
+            Dein Private Key wird sicher verschlüsselt gespeichert und ist nur für dich zugänglich.
           </AlertDescription>
         </Alert>
 
