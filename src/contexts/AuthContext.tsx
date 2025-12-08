@@ -163,6 +163,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setSession(null);
       setProfile(null);
+      
+      // Clear notification timestamps from localStorage
+      localStorage.removeItem('lastSeenOrders');
+      localStorage.removeItem('lastSeenReports');
     }
   };
 
