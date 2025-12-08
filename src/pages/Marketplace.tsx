@@ -625,6 +625,27 @@ const Marketplace = () => {
           }}
         />
 
+        {/* Feedback Notice */}
+        <div className="mb-4 p-3 bg-muted/50 border border-border rounded-lg text-center">
+          <p className="text-sm text-muted-foreground">
+            Für Vorschläge, Verbesserungen oder Bugs bitte in der{" "}
+            <a 
+              href="https://t.me/+p0lqP_G22UU0OWY0" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline font-medium"
+            >
+              Gruppe
+            </a>
+            {" "}melden oder privat schreiben:{" "}
+            <a href="https://t.me/elmatzo" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">@elmatzo</a>
+            {" / "}
+            <a href="https://t.me/xmlsfuak" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">@xmlsfuak</a>
+            {" / "}
+            <a href="https://t.me/veiyoo" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">@veiyoo</a>
+          </p>
+        </div>
+
         {/* Product Type Tabs */}
         <div className="mb-8">
           <Tabs value={productTypeTab} onValueChange={(v) => setProductTypeTab(v as 'physical' | 'digital')} className="w-full">
