@@ -99,7 +99,7 @@ const Auth = () => {
             Tritt gerne unserer Telegram-Gruppe bei:
           </p>
           <a 
-            href="https://t.me/+Rmj0152mXg8wMGE0" 
+            href="https://t.me/+mkuKrzzDCAVhNzVk" 
             target="_blank" 
             rel="noopener noreferrer"
             className="text-primary font-semibold hover:underline text-lg"
