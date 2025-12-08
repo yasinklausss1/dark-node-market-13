@@ -64,6 +64,8 @@ const Orders: React.FC = () => {
       return;
     }
     
+    console.log('Fetching order items for orders:', orderIds);
+    
     const { data: itemsData, error: itemsError } = await supabase
       .from('order_items')
       .select(`
@@ -75,7 +77,12 @@ const Orders: React.FC = () => {
       `)
       .in('order_id', orderIds);
     
-    if (itemsError) throw itemsError;
+    if (itemsError) {
+      console.error('Error fetching order items:', itemsError);
+      throw itemsError;
+    }
+    
+    console.log('Fetched order items:', itemsData);
     
     const grouped: Record<string, OrderItem[]> = {};
     (itemsData || []).forEach((it: any) => {
@@ -92,6 +99,8 @@ const Orders: React.FC = () => {
         digital_content_delivered_at: it.digital_content_delivered_at || null,
       });
     });
+    
+    console.log('Grouped items with digital content:', grouped);
     setItemsByOrder(grouped);
   };
 
@@ -162,10 +171,13 @@ const Orders: React.FC = () => {
 
   // Real-time subscription for order_items updates (when seller delivers digital content)
   useEffect(() => {
-    if (!user) return;
+    if (!user || orders.length === 0) return;
+
+    const orderIds = orders.map(o => o.id);
+    console.log('Setting up realtime subscription for orders:', orderIds);
 
     const channel = supabase
-      .channel('order-items-updates')
+      .channel('order-items-updates-' + user.id)
       .on(
         'postgres_changes',
         {
@@ -174,21 +186,25 @@ const Orders: React.FC = () => {
           table: 'order_items'
         },
         async (payload) => {
-          // Check if this update is for one of the user's orders
+          console.log('Received realtime update:', payload);
           const updatedItem = payload.new as any;
-          if (itemsByOrder[updatedItem.order_id]) {
-            // Refresh order items when digital content is updated
-            const orderIds = Object.keys(itemsByOrder);
+          
+          // Check if this update is for one of the user's orders
+          if (orderIds.includes(updatedItem.order_id)) {
+            console.log('Update is for user order, refreshing items...');
             await fetchOrderItems(orderIds);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
-  }, [user, itemsByOrder]);
+  }, [user, orders]);
 
   const handleReviewSeller = (orderId: string, sellerId: string, sellerUsername: string) => {
     setSelectedOrderId(orderId);
