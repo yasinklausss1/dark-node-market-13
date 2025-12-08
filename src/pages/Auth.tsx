@@ -18,12 +18,18 @@ const Auth = () => {
   const handleSignIn = async (username: string, password: string) => {
     setIsLoading(true);
 
-    const { error } = await signIn(username, password);
+    const result = await signIn(username, password);
     
-    if (error) {
+    if (result.error) {
+      const description = (result as any).blocked 
+        ? result.error.message 
+        : (result as any).remainingAttempts !== undefined
+          ? `${result.error.message}`
+          : result.error.message;
+      
       toast({
-        title: "Anmeldung fehlgeschlagen",
-        description: error.message,
+        title: (result as any).blocked ? "IP blockiert" : "Anmeldung fehlgeschlagen",
+        description,
         variant: "destructive"
       });
     } else {

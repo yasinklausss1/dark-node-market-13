@@ -49,6 +49,30 @@ export type Database = {
           },
         ]
       }
+      blocked_ips: {
+        Row: {
+          blocked_at: string
+          blocked_until: string | null
+          id: string
+          ip_address: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_at?: string
+          blocked_until?: string | null
+          id?: string
+          ip_address: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_at?: string
+          blocked_until?: string | null
+          id?: string
+          ip_address?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       bulk_discounts: {
         Row: {
           created_at: string | null
@@ -576,6 +600,30 @@ export type Database = {
           id?: string
           product_id?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      login_attempts: {
+        Row: {
+          attempted_at: string
+          id: string
+          ip_address: string
+          success: boolean
+          username: string | null
+        }
+        Insert: {
+          attempted_at?: string
+          id?: string
+          ip_address: string
+          success?: boolean
+          username?: string | null
+        }
+        Update: {
+          attempted_at?: string
+          id?: string
+          ip_address?: string
+          success?: boolean
+          username?: string | null
         }
         Relationships: []
       }
