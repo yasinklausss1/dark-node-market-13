@@ -318,12 +318,15 @@ const Orders: React.FC = () => {
                       </div>
                       <div className="text-left sm:text-right flex sm:flex-col items-center sm:items-end gap-2">
                         <p className="text-base sm:text-lg font-bold text-primary">€{Number(order.total_amount_eur).toFixed(2)}</p>
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(order.order_status)}
-                          <Badge className={`${getStatusColor(order.order_status)} text-xs`}>
-                            {getStatusLabel(order.order_status)}
-                          </Badge>
-                        </div>
+                        {/* Only show status for orders with physical products */}
+                        {(itemsByOrder[order.id] || []).some(it => it.product_type !== 'digital') && (
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(order.order_status)}
+                            <Badge className={`${getStatusColor(order.order_status)} text-xs`}>
+                              {getStatusLabel(order.order_status)}
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                     </div>
 
