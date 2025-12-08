@@ -57,13 +57,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <Card 
-      className="group relative overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border-border/50 hover:border-primary/50"
+      className="group relative overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border-border/50 hover:border-primary/50 bg-card"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => onProductClick(product)}
     >
       {/* Image Section */}
-      <div className="relative aspect-square overflow-hidden">
+      <div className="relative aspect-[4/3] overflow-hidden">
         {product.image_url ? (
           <img
             src={product.image_url}
@@ -77,37 +77,32 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-            <ShoppingCart className="h-16 w-16 text-muted-foreground/50" />
+            <ShoppingCart className="h-12 w-12 text-muted-foreground/50" />
           </div>
         )}
 
         {/* Stock Badge */}
         {product.stock === 0 && (
-          <div className="absolute top-3 left-3">
-            <Badge variant="destructive">Nicht vorrätig</Badge>
+          <div className="absolute top-2 left-2">
+            <Badge variant="destructive" className="text-xs">Ausverkauft</Badge>
           </div>
         )}
         
         {product.stock > 0 && product.stock <= 5 && (
-          <div className="absolute top-3 left-3">
-            <Badge variant="secondary">Wenig vorrätig</Badge>
+          <div className="absolute top-2 left-2">
+            <Badge variant="secondary" className="text-xs">Wenige</Badge>
           </div>
         )}
       </div>
 
       {/* Content Section */}
-      <CardHeader className="pb-2 px-4 pt-4">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-sm md:text-base line-clamp-2 flex-1">
-            {product.title}
-          </CardTitle>
-          <Badge variant="outline" className="text-xs shrink-0">
-            {product.category}
-          </Badge>
-        </div>
+      <CardHeader className="p-3 md:p-4 pb-2">
+        <CardTitle className="text-sm md:text-base line-clamp-2 leading-tight">
+          {product.title}
+        </CardTitle>
         
         {/* Seller Rating */}
-        <div className="flex items-center text-xs text-muted-foreground">
+        <div className="flex items-center text-xs text-muted-foreground mt-1">
           <Star className="h-3 w-3 text-primary mr-1 fill-current" />
           <span>
             {sellerRating 
@@ -117,31 +112,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       </CardHeader>
 
-      <CardContent className="px-4 pb-4">
+      <CardContent className="p-3 md:p-4 pt-0">
         {/* Price Section */}
-        <div className="space-y-3">
-          <div className="text-xl font-bold text-primary">
+        <div className="space-y-2">
+          <div className="text-lg md:text-xl font-bold text-primary">
             €{product.price.toFixed(2)}
-          </div>
-          
-
-          {/* Stock Info */}
-          <div className="text-xs text-muted-foreground">
-            Bestand: {product.stock > 0 ? `${product.stock} verfügbar` : 'Nicht vorrätig'}
           </div>
 
           {/* Action Button */}
           <Button 
             onClick={handleAddToCart}
-            className="w-full mt-3 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white shadow-md hover:shadow-lg transition-all duration-300"
+            className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white shadow-sm hover:shadow-md transition-all duration-300"
             size="sm"
             disabled={product.stock === 0 || isOwner}
           >
             {isOwner 
               ? 'Dein Produkt' 
               : product.stock === 0 
-                ? 'Nicht vorrätig' 
-                : 'In den Warenkorb'}
+                ? 'Ausverkauft' 
+                : 'Kaufen'}
           </Button>
         </div>
       </CardContent>
