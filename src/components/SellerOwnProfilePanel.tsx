@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { 
   Star, 
   User, 
@@ -14,7 +16,9 @@ import {
   MessageCircle,
   Award,
   BarChart3,
-  Clock
+  Clock,
+  Camera,
+  Loader2
 } from 'lucide-react';
 
 interface Review {
@@ -40,6 +44,7 @@ interface SellerStats {
 interface ProfileData {
   is_verified: boolean;
   created_at: string;
+  profile_picture_url: string | null;
 }
 
 const SellerOwnProfilePanel: React.FC = () => {
@@ -53,8 +58,10 @@ const SellerOwnProfilePanel: React.FC = () => {
     totalRevenue: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
   const [memberSince, setMemberSince] = useState<string>('');
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -67,10 +74,10 @@ const SellerOwnProfilePanel: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Fetch profile details including verification status
+      // Fetch profile details including verification status and picture
       const { data: profileDetails } = await supabase
         .from('profiles')
-        .select('is_verified, created_at')
+        .select('is_verified, created_at, profile_picture_url')
         .eq('user_id', user.id)
         .single();
       
@@ -132,6 +139,65 @@ const SellerOwnProfilePanel: React.FC = () => {
     }
   };
 
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Bitte wähle ein Bild aus');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Das Bild darf maximal 5MB groß sein');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Delete old profile picture if exists
+      if (profileData?.profile_picture_url) {
+        const oldPath = profileData.profile_picture_url.split('/').slice(-2).join('/');
+        await supabase.storage.from('profile-pictures').remove([oldPath]);
+      }
+
+      // Upload new picture
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-pictures')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-pictures')
+        .getPublicUrl(fileName);
+
+      // Update profile with new picture URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ profile_picture_url: publicUrl })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      setProfileData(prev => prev ? { ...prev, profile_picture_url: publicUrl } : null);
+      toast.success('Profilbild erfolgreich aktualisiert');
+
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      toast.error('Fehler beim Hochladen des Profilbilds');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const renderStars = (rating: number, size: string = 'h-5 w-5') => {
     return (
       <div className="flex gap-1">
@@ -172,9 +238,42 @@ const SellerOwnProfilePanel: React.FC = () => {
       <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            {/* Avatar */}
-            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center border-4 border-primary/30">
-              <User className="h-12 w-12 text-primary" />
+            {/* Avatar with Upload */}
+            <div className="relative group">
+              <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-primary/30 bg-muted">
+                {profileData?.profile_picture_url ? (
+                  <img 
+                    src={profileData.profile_picture_url} 
+                    alt="Profilbild"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                    <User className="h-14 w-14 text-primary" />
+                  </div>
+                )}
+              </div>
+              
+              {/* Upload Overlay */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+              >
+                {isUploading ? (
+                  <Loader2 className="h-6 w-6 text-white animate-spin" />
+                ) : (
+                  <Camera className="h-6 w-6 text-white" />
+                )}
+              </button>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePictureUpload}
+                className="hidden"
+              />
             </div>
             
             {/* Info */}
@@ -196,7 +295,7 @@ const SellerOwnProfilePanel: React.FC = () => {
 
               {/* Rating Display */}
               {sellerRating && sellerRating.total_reviews > 0 ? (
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   {renderStars(Math.round(sellerRating.average_rating))}
                   <span className="text-xl font-bold">{sellerRating.average_rating.toFixed(1)}</span>
                   <Badge variant="secondary">
@@ -209,6 +308,10 @@ const SellerOwnProfilePanel: React.FC = () => {
               ) : (
                 <p className="text-muted-foreground text-sm">Noch keine Bewertungen erhalten</p>
               )}
+
+              <p className="text-xs text-muted-foreground">
+                Fahre mit der Maus über das Bild um ein neues Profilbild hochzuladen
+              </p>
             </div>
           </div>
         </CardContent>
@@ -219,8 +322,8 @@ const SellerOwnProfilePanel: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 rounded-lg bg-blue-500/20">
+                <Package className="h-5 w-5 text-blue-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.totalProducts}</p>
@@ -233,8 +336,8 @@ const SellerOwnProfilePanel: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                <ShoppingBag className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <div className="p-2 rounded-lg bg-green-500/20">
+                <ShoppingBag className="h-5 w-5 text-green-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.activeProducts}</p>
@@ -247,8 +350,8 @@ const SellerOwnProfilePanel: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
-                <BarChart3 className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              <div className="p-2 rounded-lg bg-orange-500/20">
+                <BarChart3 className="h-5 w-5 text-orange-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.totalOrders}</p>
@@ -261,8 +364,8 @@ const SellerOwnProfilePanel: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                <TrendingUp className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <div className="p-2 rounded-lg bg-purple-500/20">
+                <TrendingUp className="h-5 w-5 text-purple-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold">€{stats.totalRevenue.toFixed(0)}</p>
@@ -372,25 +475,6 @@ const SellerOwnProfilePanel: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Info Note */}
-      <Card className="bg-muted/30">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <User className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h4 className="font-medium">So sehen Käufer dein Profil</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                Käufer können dein Profil über deine Produktseiten einsehen. 
-                Dort werden deine Bewertungen, aktiven Produkte und dein Benutzername angezeigt.
-                Eine gute Bewertung erhöht das Vertrauen und kann zu mehr Verkäufen führen.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
