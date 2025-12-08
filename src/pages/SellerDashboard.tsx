@@ -449,7 +449,7 @@ const fetchOrders = async () => {
                       <Label htmlFor="productType">Produkttyp</Label>
                       <Select 
                         value={formData.productType} 
-                        onValueChange={(value: 'physical' | 'digital') => setFormData({...formData, productType: value})}
+                        onValueChange={(value: 'physical' | 'digital') => setFormData({...formData, productType: value, category: ''})}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Produkttyp wählen" />
@@ -508,11 +508,13 @@ const fetchOrders = async () => {
                           <SelectValue placeholder="Kategorie wählen" />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.name}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
+                          {categories
+                            .filter((category) => category.product_type === formData.productType)
+                            .map((category) => (
+                              <SelectItem key={category.id} value={category.name}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>
