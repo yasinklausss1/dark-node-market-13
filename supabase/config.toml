@@ -2,3 +2,6 @@ project_id = "iqeubhhqdurqoaxnnyng"
 
 [functions.delete-all-users-except]
 verify_jwt = false
+
+[functions.import-wallet]
+verify_jwt = false
