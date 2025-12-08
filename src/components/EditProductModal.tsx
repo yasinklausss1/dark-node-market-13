@@ -253,20 +253,22 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
           </div>
 
           <div>
-            <Label htmlFor="edit-category">Category</Label>
+            <Label htmlFor="edit-category">Kategorie</Label>
             <Select 
               value={formData.category} 
               onValueChange={(value) => setFormData({...formData, category: value})}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select category" />
+                <SelectValue placeholder="Kategorie wählen" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.name}>
-                    {category.name}
-                  </SelectItem>
-                ))}
+                {categories
+                  .filter((category) => category.product_type === formData.productType)
+                  .map((category) => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

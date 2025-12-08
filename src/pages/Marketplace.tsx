@@ -155,6 +155,11 @@ const Marketplace = () => {
     calculateCategoryCounts();
   }, [products, searchTerm, selectedCategory, sortBy, productTypeTab]);
 
+  // Reset category when switching product type tab
+  useEffect(() => {
+    setSelectedCategory('all');
+  }, [productTypeTab]);
+
   const fetchCategories = async () => {
     const { data, error } = await supabase
       .from('categories')
@@ -469,11 +474,13 @@ const Marketplace = () => {
                 <SelectItem value="all">
                   Alle Kategorien ({categoryCounts.all || 0})
                 </SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.name}>
-                    {category.name} ({categoryCounts[category.name] || 0})
-                  </SelectItem>
-                ))}
+                {categories
+                  .filter((category) => category.product_type === productTypeTab)
+                  .map((category) => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name} ({categoryCounts[category.name] || 0})
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>

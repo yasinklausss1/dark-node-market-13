@@ -28,6 +28,7 @@ const AdminPanel = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
   const [newCategory, setNewCategory] = useState('');
+  const [newCategoryType, setNewCategoryType] = useState<'physical' | 'digital'>('physical');
   const [isLoading, setIsLoading] = useState(false);
   const [userCount, setUserCount] = useState(0);
   const [products, setProducts] = useState<any[]>([]);
@@ -123,7 +124,7 @@ const AdminPanel = () => {
     
     const { error } = await supabase
       .from('categories')
-      .insert({ name: newCategory.trim() });
+      .insert({ name: newCategory.trim(), product_type: newCategoryType });
     
     if (error) {
       toast({
@@ -134,7 +135,7 @@ const AdminPanel = () => {
     } else {
       toast({
         title: "Kategorie hinzugefügt",
-        description: `${newCategory} wurde erfolgreich hinzugefügt.`
+        description: `${newCategory} (${newCategoryType === 'physical' ? 'Physisch' : 'Digital'}) wurde erfolgreich hinzugefügt.`
       });
       setNewCategory('');
       fetchCategories();
@@ -487,11 +488,11 @@ const AdminPanel = () => {
           <CardHeader>
             <CardTitle>Kategorie Management</CardTitle>
             <CardDescription>
-              Verwalten Sie die verfügbaren Produktkategorien
+              Verwalten Sie die verfügbaren Produktkategorien für physische und digitale Produkte
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="flex-1">
                 <Label htmlFor="new-category">Neue Kategorie</Label>
                 <Input
@@ -501,6 +502,18 @@ const AdminPanel = () => {
                   placeholder="Kategorie Name"
                   onKeyPress={(e) => e.key === 'Enter' && addCategory()}
                 />
+              </div>
+              <div className="w-full sm:w-40">
+                <Label htmlFor="category-type">Produkttyp</Label>
+                <Select value={newCategoryType} onValueChange={(v) => setNewCategoryType(v as 'physical' | 'digital')}>
+                  <SelectTrigger id="category-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="physical">Physisch</SelectItem>
+                    <SelectItem value="digital">Digital</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex items-end">
                 <Button 
@@ -513,10 +526,11 @@ const AdminPanel = () => {
               </div>
             </div>
             
+            {/* Physical Categories */}
             <div className="space-y-2">
-              <Label>Aktuelle Kategorien</Label>
+              <Label className="text-base font-semibold">Physische Produkte</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {categories.map((category) => (
+                {categories.filter(c => c.product_type === 'physical').map((category) => (
                   <div
                     key={category.id}
                     className="flex items-center justify-between p-3 border rounded-lg"
@@ -532,6 +546,35 @@ const AdminPanel = () => {
                     </Button>
                   </div>
                 ))}
+                {categories.filter(c => c.product_type === 'physical').length === 0 && (
+                  <p className="text-sm text-muted-foreground col-span-full">Keine physischen Kategorien</p>
+                )}
+              </div>
+            </div>
+
+            {/* Digital Categories */}
+            <div className="space-y-2">
+              <Label className="text-base font-semibold">Digitale Produkte</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {categories.filter(c => c.product_type === 'digital').map((category) => (
+                  <div
+                    key={category.id}
+                    className="flex items-center justify-between p-3 border rounded-lg border-blue-500/30 bg-blue-500/5"
+                  >
+                    <span>{category.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeCategory(category.id, category.name)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                {categories.filter(c => c.product_type === 'digital').length === 0 && (
+                  <p className="text-sm text-muted-foreground col-span-full">Keine digitalen Kategorien</p>
+                )}
               </div>
             </div>
           </CardContent>
