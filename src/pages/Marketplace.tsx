@@ -65,6 +65,10 @@ const Marketplace = () => {
   // New orders notification for sellers
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   
+  // Buyer notifications
+  const [orderUpdatesCount, setOrderUpdatesCount] = useState(0);
+  const [newReportMessagesCount, setNewReportMessagesCount] = useState(0);
+  
   // Chat functionality
   const { conversations, fetchConversations } = useChat();
   
@@ -125,8 +129,81 @@ const Marketplace = () => {
     }
   };
 
+  // Fetch order updates count for buyers (orders with recent status changes)
+  const fetchOrderUpdatesCount = async () => {
+    if (!user) return;
+    
+    try {
+      // Get last seen timestamp from localStorage
+      const lastSeenOrdersKey = `lastSeenOrders_${user.id}`;
+      const lastSeen = localStorage.getItem(lastSeenOrdersKey);
+      const lastSeenDate = lastSeen ? new Date(lastSeen) : new Date(0);
+      
+      // Count orders updated after last seen
+      const { count, error } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gt('status_updated_at', lastSeenDate.toISOString())
+        .in('order_status', ['processing', 'shipped', 'delivered']);
+      
+      if (error) {
+        console.error('Error fetching order updates:', error);
+        return;
+      }
+      
+      setOrderUpdatesCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching order updates:', error);
+    }
+  };
+
+  // Fetch new report messages count
+  const fetchNewReportMessagesCount = async () => {
+    if (!user) return;
+    
+    try {
+      // Get last seen timestamp from localStorage
+      const lastSeenReportsKey = `lastSeenReports_${user.id}`;
+      const lastSeen = localStorage.getItem(lastSeenReportsKey);
+      const lastSeenDate = lastSeen ? new Date(lastSeen) : new Date(0);
+      
+      // Get user's reports
+      const { data: reports, error: reportsError } = await supabase
+        .from('seller_reports')
+        .select('id')
+        .eq('reporter_id', user.id);
+      
+      if (reportsError || !reports || reports.length === 0) {
+        setNewReportMessagesCount(0);
+        return;
+      }
+      
+      const reportIds = reports.map(r => r.id);
+      
+      // Count new admin messages
+      const { count, error } = await supabase
+        .from('report_messages')
+        .select('*', { count: 'exact', head: true })
+        .in('report_id', reportIds)
+        .eq('is_admin', true)
+        .gt('created_at', lastSeenDate.toISOString());
+      
+      if (error) {
+        console.error('Error fetching report messages:', error);
+        return;
+      }
+      
+      setNewReportMessagesCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching report messages:', error);
+    }
+  };
+
   useEffect(() => {
     fetchNewOrdersCount();
+    fetchOrderUpdatesCount();
+    fetchNewReportMessagesCount();
     
     // Subscribe to order changes for real-time updates
     const channel = supabase
@@ -135,12 +212,19 @@ const Marketplace = () => {
         { event: '*', schema: 'public', table: 'orders' }, 
         () => {
           fetchNewOrdersCount();
+          fetchOrderUpdatesCount();
         }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'order_items' },
         () => {
           fetchNewOrdersCount();
+        }
+      )
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'report_messages' },
+        () => {
+          fetchNewReportMessagesCount();
         }
       )
       .subscribe();
@@ -451,13 +535,43 @@ const Marketplace = () => {
                     <Settings className="h-4 w-4 mr-2" />
                     Einstellungen
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/reports')}>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      // Mark reports as seen
+                      if (user) {
+                        localStorage.setItem(`lastSeenReports_${user.id}`, new Date().toISOString());
+                        setNewReportMessagesCount(0);
+                      }
+                      navigate('/reports');
+                    }} 
+                    className="relative"
+                  >
                     <Flag className="h-4 w-4 mr-2" />
                     Meine Meldungen
+                    {newReportMessagesCount > 0 && (
+                      <Badge variant="destructive" className="ml-auto h-5 min-w-5 flex items-center justify-center text-xs px-1.5">
+                        {newReportMessagesCount}
+                      </Badge>
+                    )}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/orders')}>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      // Mark orders as seen
+                      if (user) {
+                        localStorage.setItem(`lastSeenOrders_${user.id}`, new Date().toISOString());
+                        setOrderUpdatesCount(0);
+                      }
+                      navigate('/orders');
+                    }} 
+                    className="relative"
+                  >
                     <ShoppingBag className="h-4 w-4 mr-2" />
                     Bestellungen
+                    {orderUpdatesCount > 0 && (
+                      <Badge variant="destructive" className="ml-auto h-5 min-w-5 flex items-center justify-center text-xs px-1.5">
+                        {orderUpdatesCount}
+                      </Badge>
+                    )}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/wallet')}>
                     <Wallet className="h-4 w-4 mr-2" />
