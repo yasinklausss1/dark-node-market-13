@@ -49,51 +49,9 @@ function validateLtcAddress(address: string): boolean {
   return false;
 }
 
-// Encrypt private key using AES-GCM
-async function encryptPrivateKey(privateKey: string): Promise<string> {
-  const encryptionKey = Deno.env.get('ENCRYPTION_KEY') || 'default-key-change-me-in-production';
-  
-  const encoder = new TextEncoder();
-  const data = encoder.encode(privateKey);
-  
-  // Derive key from password
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(encryptionKey),
-    { name: 'PBKDF2' },
-    false,
-    ['deriveBits', 'deriveKey']
-  );
-  
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const key = await crypto.subtle.deriveKey(
-    {
-      name: 'PBKDF2',
-      salt,
-      iterations: 100000,
-      hash: 'SHA-256'
-    },
-    keyMaterial,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt']
-  );
-  
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    data
-  );
-  
-  // Combine salt + iv + encrypted data
-  const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength);
-  combined.set(salt, 0);
-  combined.set(iv, salt.length);
-  combined.set(new Uint8Array(encrypted), salt.length + iv.length);
-  
-  // Convert to base64
-  return btoa(String.fromCharCode(...combined));
+// Simple base64 encoding for storage
+function encodePrivateKey(privateKey: string): string {
+  return btoa(privateKey);
 }
 
 serve(async (req) => {
@@ -177,8 +135,8 @@ serve(async (req) => {
       );
     }
 
-    // Encrypt the private key
-    const encryptedKey = await encryptPrivateKey(privateKey);
+    // Encode the private key for storage
+    const encodedKey = encodePrivateKey(privateKey);
 
     // Deactivate existing addresses for this currency
     const { error: deactivateError } = await supabase
@@ -198,7 +156,7 @@ serve(async (req) => {
         user_id: user.id,
         currency: normalizedCurrency,
         address: address,
-        private_key_encrypted: encryptedKey,
+        private_key_encrypted: encodedKey,
         is_active: true
       });
 
