@@ -244,9 +244,14 @@ const Marketplace = () => {
   };
 
   const calculateCategoryCounts = () => {
-    const counts: {[key: string]: number} = { all: products.length };
+    // Filter products by current product type tab first
+    const filteredByType = products.filter(product => 
+      (product.product_type || 'physical') === productTypeTab
+    );
     
-    products.forEach(product => {
+    const counts: {[key: string]: number} = { all: filteredByType.length };
+    
+    filteredByType.forEach(product => {
       counts[product.category] = (counts[product.category] || 0) + 1;
     });
     
