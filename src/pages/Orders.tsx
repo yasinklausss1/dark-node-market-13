@@ -550,6 +550,9 @@ const Orders: React.FC = () => {
           onOpenChange={setSellerProfileOpen}
           sellerId={selectedSellerId}
           sellerUsername={selectedSellerUsername}
+          onProductClick={(productId) => {
+            navigate(`/marketplace?product=${productId}`);
+          }}
         />
       </div>
     </div>
