@@ -12,6 +12,7 @@ import SellerProfileModal from '@/components/SellerProfileModal';
 interface Order {
   id: string;
   total_amount_eur: number;
+  status: string;
   order_status: string;
   created_at: string;
   tracking_number: string | null;
@@ -349,7 +350,7 @@ const Orders: React.FC = () => {
                         </ul>
 
                         {/* Digital Content Section - Show for confirmed/delivered orders */}
-                        {['confirmed', 'processing', 'shipped', 'delivered'].includes(order.order_status) && (
+                        {['confirmed', 'processing', 'shipped', 'delivered'].includes(order.order_status || order.status) && (
                           (() => {
                             const digitalItems = (itemsByOrder[order.id] || []).filter(
                               it => it.product_type === 'digital'
