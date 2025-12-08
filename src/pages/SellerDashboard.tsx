@@ -22,6 +22,7 @@ import { ConversationsModal } from '@/components/ConversationsModal';
 import { ChatModal } from '@/components/ChatModal';
 import DigitalContentModal from '@/components/DigitalContentModal';
 import { FileText } from 'lucide-react';
+import SellerOwnProfilePanel from '@/components/SellerOwnProfilePanel';
 
 interface Product {
   id: string;
@@ -413,14 +414,19 @@ const fetchOrders = async () => {
         </Card>
 
         <Tabs defaultValue="products" className="w-full">
-          <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-3' : 'grid-cols-2'} h-auto`}>
+          <TabsList className={`grid w-full ${profile?.role === 'admin' ? 'grid-cols-4' : 'grid-cols-3'} h-auto`}>
+            <TabsTrigger value="profile" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <User className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Mein Profil</span>
+              <span className="sm:hidden">Profil</span>
+            </TabsTrigger>
             <TabsTrigger value="products" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
               <Package className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Produkte</span>
               <span className="sm:hidden">Prod.</span>
             </TabsTrigger>
             <TabsTrigger value="orders" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
-              <User className="h-3 w-3 sm:h-4 sm:w-4" />
+              <Truck className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Bestellungen</span>
               <span className="sm:hidden">Best.</span>
             </TabsTrigger>
@@ -432,6 +438,10 @@ const fetchOrders = async () => {
               </TabsTrigger>
             )}
           </TabsList>
+
+          <TabsContent value="profile" className="space-y-6">
+            <SellerOwnProfilePanel />
+          </TabsContent>
 
           <TabsContent value="products" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
