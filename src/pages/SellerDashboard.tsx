@@ -366,6 +366,45 @@ const fetchOrders = async () => {
     }
   };
 
+  const getCountryName = (countryCode: string | null): string => {
+    if (!countryCode) return '';
+    const countryMap: Record<string, string> = {
+      'DE': 'Deutschland',
+      'AT': 'Österreich',
+      'CH': 'Schweiz',
+      'NL': 'Niederlande',
+      'BE': 'Belgien',
+      'FR': 'Frankreich',
+      'IT': 'Italien',
+      'ES': 'Spanien',
+      'PT': 'Portugal',
+      'PL': 'Polen',
+      'CZ': 'Tschechien',
+      'DK': 'Dänemark',
+      'SE': 'Schweden',
+      'NO': 'Norwegen',
+      'FI': 'Finnland',
+      'GB': 'Großbritannien',
+      'UK': 'Großbritannien',
+      'US': 'USA',
+      'CA': 'Kanada',
+      'AU': 'Australien',
+      'LU': 'Luxemburg',
+      'IE': 'Irland',
+      'GR': 'Griechenland',
+      'HU': 'Ungarn',
+      'SK': 'Slowakei',
+      'SI': 'Slowenien',
+      'HR': 'Kroatien',
+      'RO': 'Rumänien',
+      'BG': 'Bulgarien',
+      'LT': 'Litauen',
+      'LV': 'Lettland',
+      'EE': 'Estland'
+    };
+    return countryMap[countryCode.toUpperCase()] || countryCode;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -839,7 +878,7 @@ const fetchOrders = async () => {
                             <p>{order.shipping_first_name} {order.shipping_last_name}</p>
                             <p>{order.shipping_street} {order.shipping_house_number}</p>
                             <p>{order.shipping_postal_code} {order.shipping_city}</p>
-                            <p>{order.shipping_country}</p>
+                            <p>{getCountryName(order.shipping_country)}</p>
                           </div>
                         </div>
                       </div>
