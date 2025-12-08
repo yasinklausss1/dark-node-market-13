@@ -1,0 +1,190 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Bitcoin, Coins, AlertTriangle, Eye, EyeOff, Upload } from "lucide-react";
+
+interface WalletImportModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
+}
+
+export const WalletImportModal = ({ open, onOpenChange, onSuccess }: WalletImportModalProps) => {
+  const [currency, setCurrency] = useState<'BTC' | 'LTC'>('BTC');
+  const [privateKey, setPrivateKey] = useState('');
+  const [address, setAddress] = useState('');
+  const [showPrivateKey, setShowPrivateKey] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleImport = async () => {
+    if (!privateKey.trim() || !address.trim()) {
+      toast({
+        title: "Fehler",
+        description: "Bitte gib Private Key und Adresse ein",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Fehler",
+          description: "Nicht angemeldet",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('import-wallet', {
+        body: { currency, privateKey, address }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Import fehlgeschlagen');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: "Erfolg",
+        description: `${currency} Wallet erfolgreich importiert`
+      });
+
+      // Reset form
+      setPrivateKey('');
+      setAddress('');
+      onOpenChange(false);
+      onSuccess?.();
+
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast({
+        title: "Fehler",
+        description: error.message || "Import fehlgeschlagen",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setPrivateKey('');
+    setAddress('');
+    setShowPrivateKey(false);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Wallet importieren
+          </DialogTitle>
+          <DialogDescription>
+            Importiere eine existierende Wallet mit Private Key
+          </DialogDescription>
+        </DialogHeader>
+
+        <Alert variant="destructive" className="border-orange-500/50 bg-orange-500/10">
+          <AlertTriangle className="h-4 w-4 text-orange-500" />
+          <AlertDescription className="text-orange-200 text-xs">
+            <strong>Sicherheitswarnung:</strong> Das Importieren deines Private Keys bedeutet, dass du uns vertraust. 
+            Nutze diese Funktion nur, wenn du die Risiken verstehst.
+          </AlertDescription>
+        </Alert>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Währung</Label>
+            <Select value={currency} onValueChange={(v) => setCurrency(v as 'BTC' | 'LTC')}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="BTC">
+                  <div className="flex items-center gap-2">
+                    <Bitcoin className="h-4 w-4 text-orange-500" />
+                    Bitcoin (BTC)
+                  </div>
+                </SelectItem>
+                <SelectItem value="LTC">
+                  <div className="flex items-center gap-2">
+                    <Coins className="h-4 w-4 text-blue-500" />
+                    Litecoin (LTC)
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Wallet-Adresse</Label>
+            <Input
+              placeholder={currency === 'BTC' ? '1A1zP1eP5QGefi2...' : 'LQTpS3VaYTjCr3...'}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              {currency === 'BTC' 
+                ? 'Beginnt mit 1, 3 oder bc1' 
+                : 'Beginnt mit L, M oder ltc1'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Private Key (WIF-Format)</Label>
+            <div className="relative">
+              <Input
+                type={showPrivateKey ? "text" : "password"}
+                placeholder={currency === 'BTC' ? '5HueCGU8rMjxEXx...' : '6uGkQ2KiJvBvbr...'}
+                value={privateKey}
+                onChange={(e) => setPrivateKey(e.target.value)}
+                className="font-mono text-sm pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3"
+                onClick={() => setShowPrivateKey(!showPrivateKey)}
+              >
+                {showPrivateKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {currency === 'BTC' 
+                ? 'Beginnt mit 5, K oder L' 
+                : 'Beginnt mit 6 oder T'}
+            </p>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" onClick={handleClose} className="flex-1">
+              Abbrechen
+            </Button>
+            <Button onClick={handleImport} disabled={loading} className="flex-1">
+              {loading ? 'Importiere...' : 'Importieren'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};

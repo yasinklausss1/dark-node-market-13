@@ -6,12 +6,14 @@ import { TransactionHistory } from "@/components/TransactionHistory";
 import WithdrawalModal from "@/components/WithdrawalModal";
 import WithdrawalHistory from "@/components/WithdrawalHistory";
 import { WalletTestPanel } from "@/components/WalletTestPanel";
+import { WalletImportModal } from "@/components/WalletImportModal";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Upload } from "lucide-react";
 
 export default function Wallet() {
   const navigate = useNavigate();
   const [withdrawalModalOpen, setWithdrawalModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleBalanceChange = useCallback(() => {
@@ -44,13 +46,21 @@ export default function Wallet() {
             <WalletTestPanel onBalanceChange={handleBalanceChange} />
             <WalletBalance key={refreshKey} />
             <DepositRequest />
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button 
                 onClick={() => setWithdrawalModalOpen(true)}
                 className="flex items-center gap-2 w-full sm:w-auto"
               >
                 <Download className="h-4 w-4" />
                 Krypto abheben
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setImportModalOpen(true)}
+                className="flex items-center gap-2 w-full sm:w-auto"
+              >
+                <Upload className="h-4 w-4" />
+                Wallet importieren
               </Button>
             </div>
           </div>
@@ -66,6 +76,12 @@ export default function Wallet() {
         open={withdrawalModalOpen}
         onOpenChange={setWithdrawalModalOpen}
         onWithdrawalSuccess={() => setRefreshKey(prev => prev + 1)}
+      />
+
+      <WalletImportModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        onSuccess={() => setRefreshKey(prev => prev + 1)}
       />
     </div>
   );
