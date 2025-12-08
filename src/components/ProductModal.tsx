@@ -14,6 +14,7 @@ import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { TelegramIntegration } from '@/components/TelegramIntegration';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ImageCarousel } from '@/components/ui/image-carousel';
+import SellerProfileModal from '@/components/SellerProfileModal';
 
 
 interface Product {
@@ -48,6 +49,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
   const [ltcAmount, setLtcAmount] = useState<number | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [sellerUsername, setSellerUsername] = useState<string>('');
+  const [sellerProfileOpen, setSellerProfileOpen] = useState(false);
   const [productImages, setProductImages] = useState<string[]>([]);
 
   useEffect(() => {
@@ -129,10 +131,13 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
       <div className="space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <Badge variant="secondary" className="w-fit">{product.category}</Badge>
-          <div className="flex items-center space-x-1 text-xs sm:text-sm text-muted-foreground">
+          <button 
+            onClick={() => setSellerProfileOpen(true)}
+            className="flex items-center space-x-1 text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer group"
+          >
             <User className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span>Verkäufer: {sellerUsername}</span>
-          </div>
+            <span className="group-hover:underline">Verkäufer: @{sellerUsername}</span>
+          </button>
         </div>
 
         <div className="space-y-1 sm:space-y-2">
@@ -296,32 +301,48 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
 
   if (isMobile) {
     return (
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
-          <SheetHeader className="pb-2">
-            <SheetTitle className="flex items-center space-x-2 text-sm">
-              <ShoppingCart className="h-4 w-4" />
-              <span className="line-clamp-2">{product.title}</span>
-            </SheetTitle>
-          </SheetHeader>
-          {productContent}
-        </SheetContent>
-      </Sheet>
+      <>
+        <Sheet open={open} onOpenChange={onOpenChange}>
+          <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
+            <SheetHeader className="pb-2">
+              <SheetTitle className="flex items-center space-x-2 text-sm">
+                <ShoppingCart className="h-4 w-4" />
+                <span className="line-clamp-2">{product.title}</span>
+              </SheetTitle>
+            </SheetHeader>
+            {productContent}
+          </SheetContent>
+        </Sheet>
+        <SellerProfileModal
+          open={sellerProfileOpen}
+          onOpenChange={setSellerProfileOpen}
+          sellerId={product.seller_id}
+          sellerUsername={sellerUsername}
+        />
+      </>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[95vh] overflow-y-auto sm:max-w-2xl w-[95vw] sm:w-full p-3 sm:p-6">
-        <DialogHeader className="pb-2">
-          <DialogTitle className="flex items-center space-x-2 text-sm sm:text-base">
-            <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span className="line-clamp-2">{product.title}</span>
-          </DialogTitle>
-        </DialogHeader>
-        {productContent}
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[95vh] overflow-y-auto sm:max-w-2xl w-[95vw] sm:w-full p-3 sm:p-6">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center space-x-2 text-sm sm:text-base">
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="line-clamp-2">{product.title}</span>
+            </DialogTitle>
+          </DialogHeader>
+          {productContent}
+        </DialogContent>
+      </Dialog>
+      <SellerProfileModal
+        open={sellerProfileOpen}
+        onOpenChange={setSellerProfileOpen}
+        sellerId={product.seller_id}
+        sellerUsername={sellerUsername}
+      />
+    </>
   );
 };
 
