@@ -948,6 +948,7 @@ export type Database = {
           date_of_birth: string | null
           id: string
           is_verified: boolean
+          profile_picture_url: string | null
           role: Database["public"]["Enums"]["user_role"]
           theme_preference: string | null
           updated_at: string
@@ -962,6 +963,7 @@ export type Database = {
           date_of_birth?: string | null
           id?: string
           is_verified?: boolean
+          profile_picture_url?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           theme_preference?: string | null
           updated_at?: string
@@ -976,6 +978,7 @@ export type Database = {
           date_of_birth?: string | null
           id?: string
           is_verified?: boolean
+          profile_picture_url?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           theme_preference?: string | null
           updated_at?: string
