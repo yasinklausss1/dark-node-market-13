@@ -22,6 +22,7 @@ interface Product {
   created_at: string;
   stock: number;
   product_type?: string;
+  digital_content?: string | null;
 }
 
 interface EditProductModalProps {
@@ -47,7 +48,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     category: '',
     imageUrls: [] as string[],
     stock: '',
-    productType: 'physical' as 'physical' | 'digital'
+    productType: 'physical' as 'physical' | 'digital',
+    digitalContent: ''
   });
 
   useEffect(() => {
@@ -74,7 +76,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
           category: product.category,
           imageUrls: imageUrls,
           stock: product.stock.toString(),
-          productType: (product.product_type as 'physical' | 'digital') || 'physical'
+          productType: (product.product_type as 'physical' | 'digital') || 'physical',
+          digitalContent: product.digital_content || ''
         });
       }
     };
@@ -126,7 +129,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         category: formData.category,
         image_url: formData.imageUrls[0] || null,
         stock: parseInt(formData.stock),
-        product_type: formData.productType
+        product_type: formData.productType,
+        digital_content: formData.productType === 'digital' ? formData.digitalContent : null
       })
       .eq('id', product.id);
 
@@ -196,6 +200,23 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
               </SelectContent>
             </Select>
           </div>
+
+          {formData.productType === 'digital' && (
+            <div>
+              <Label htmlFor="edit-digitalContent">Digitaler Inhalt (Codes, Links, Text)</Label>
+              <Textarea
+                id="edit-digitalContent"
+                value={formData.digitalContent}
+                onChange={(e) => setFormData({...formData, digitalContent: e.target.value})}
+                placeholder="Gib hier den Inhalt ein, den der Käufer nach dem Kauf erhält (z.B. Download-Links, Lizenzschlüssel, Codes...)"
+                rows={4}
+                required
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Dieser Inhalt wird dem Käufer nach bestätigter Bestellung angezeigt.
+              </p>
+            </div>
+          )}
 
           <div>
             <Label htmlFor="edit-title">Produktname</Label>

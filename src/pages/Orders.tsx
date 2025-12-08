@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Package, Truck, CheckCircle, ExternalLink, ArrowLeft } from 'lucide-react';
+import { Star, Package, Truck, CheckCircle, ExternalLink, ArrowLeft, Download, FileText } from 'lucide-react';
 import ReviewModal from '@/components/ReviewModal';
 import SellerProfileModal from '@/components/SellerProfileModal';
 
@@ -39,6 +39,9 @@ interface OrderItem {
   product_id: string;
   quantity: number;
   price_eur: number;
+  product_title?: string;
+  product_type?: string;
+  digital_content?: string | null;
 }
 
 const Orders: React.FC = () => {
@@ -111,7 +114,14 @@ const Orders: React.FC = () => {
         if (orderIds.length > 0) {
           const { data: itemsData, error: itemsError } = await supabase
             .from('order_items')
-            .select('*')
+            .select(`
+              *,
+              products (
+                title,
+                product_type,
+                digital_content
+              )
+            `)
             .in('order_id', orderIds);
           if (itemsError) throw itemsError;
           const grouped: Record<string, OrderItem[]> = {};
@@ -123,6 +133,9 @@ const Orders: React.FC = () => {
               product_id: it.product_id,
               quantity: it.quantity,
               price_eur: Number(it.price_eur),
+              product_title: it.products?.title || undefined,
+              product_type: it.products?.product_type || undefined,
+              digital_content: it.products?.digital_content || null,
             });
           });
           setItemsByOrder(grouped);
@@ -289,10 +302,46 @@ const Orders: React.FC = () => {
                         <ul className="text-xs sm:text-sm text-muted-foreground list-disc pl-5">
                           {(itemsByOrder[order.id] || []).map((it) => (
                             <li key={it.id} className="break-words">
-                              {it.quantity}x Produkt {it.product_id.slice(0,8)} (€{it.price_eur.toFixed(2)})
+                              {it.quantity}x {it.product_title || `Produkt ${it.product_id.slice(0,8)}`} (€{it.price_eur.toFixed(2)})
+                              {it.product_type === 'digital' && (
+                                <Badge variant="secondary" className="ml-2 text-xs">Digital</Badge>
+                              )}
                             </li>
                           ))}
                         </ul>
+
+                        {/* Digital Content Section - Show for confirmed/delivered orders */}
+                        {['confirmed', 'processing', 'shipped', 'delivered'].includes(order.order_status) && (
+                          (() => {
+                            const digitalItems = (itemsByOrder[order.id] || []).filter(
+                              it => it.product_type === 'digital' && it.digital_content
+                            );
+                            if (digitalItems.length === 0) return null;
+                            
+                            return (
+                              <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Download className="h-4 w-4 text-green-600" />
+                                  <h4 className="font-medium text-sm text-green-800 dark:text-green-200">
+                                    Digitale Inhalte
+                                  </h4>
+                                </div>
+                                <div className="space-y-3">
+                                  {digitalItems.map((item) => (
+                                    <div key={item.id} className="bg-white dark:bg-background p-3 rounded border">
+                                      <p className="text-xs font-medium text-muted-foreground mb-1">
+                                        {item.product_title}:
+                                      </p>
+                                      <pre className="text-sm whitespace-pre-wrap break-all bg-muted p-2 rounded font-mono">
+                                        {item.digital_content}
+                                      </pre>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()
+                        )}
 
                         {order.sellers.length > 0 && (
                           <div className="mt-3">
