@@ -71,7 +71,8 @@ const SellerDashboard = () => {
     price: '',
     category: '',
     imageUrls: [] as string[],
-    stock: ''
+    stock: '',
+    productType: 'physical' as 'physical' | 'digital'
   });
   const [enableBulkDiscount, setEnableBulkDiscount] = useState(false);
   const [bulkDiscountData, setBulkDiscountData] = useState({
@@ -175,7 +176,8 @@ const fetchOrders = async () => {
         image_url: formData.imageUrls[0] || null,
         seller_id: user.id,
         is_active: true,
-        stock: parseInt(formData.stock)
+        stock: parseInt(formData.stock),
+        product_type: formData.productType
       })
       .select()
       .single();
@@ -239,7 +241,8 @@ const fetchOrders = async () => {
         price: '',
         category: '',
         imageUrls: [],
-        stock: ''
+        stock: '',
+        productType: 'physical'
       });
       setEnableBulkDiscount(false);
       setBulkDiscountData({
@@ -426,6 +429,22 @@ const fetchOrders = async () => {
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="productType">Produkttyp</Label>
+                      <Select 
+                        value={formData.productType} 
+                        onValueChange={(value: 'physical' | 'digital') => setFormData({...formData, productType: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Produkttyp wählen" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="physical">Materiell (Versand erforderlich)</SelectItem>
+                          <SelectItem value="digital">Digital (kein Versand)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     <div>
                       <Label htmlFor="title">Produktname</Label>
                       <Input

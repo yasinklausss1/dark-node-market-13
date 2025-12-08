@@ -26,8 +26,9 @@ interface CheckoutModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   totalAmount: number;
-  onConfirmOrder: (address: CheckoutFormData) => void;
+  onConfirmOrder: (address: CheckoutFormData | null) => void;
   loading?: boolean;
+  requiresShipping?: boolean;
 }
 
 const countries = [
@@ -82,10 +83,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onOpenChange,
   totalAmount,
   onConfirmOrder,
-  loading = false
+  loading = false,
+  requiresShipping = true
 }) => {
   const form = useForm<CheckoutFormData>({
-    resolver: zodResolver(checkoutSchema),
+    resolver: requiresShipping ? zodResolver(checkoutSchema) : undefined,
     defaultValues: {
       firstName: '',
       lastName: '',
@@ -98,7 +100,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   });
 
   const onSubmit = (data: CheckoutFormData) => {
-    onConfirmOrder(data);
+    onConfirmOrder(requiresShipping ? data : null);
+  };
+
+  // For digital products, confirm directly without form
+  const handleDigitalConfirm = () => {
+    onConfirmOrder(null);
   };
 
   return (
@@ -116,46 +123,30 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <p className="text-lg font-semibold">Gesamtbetrag: €{totalAmount.toFixed(2)}</p>
           </div>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Vorname</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nachname</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2">
+          {requiresShipping ? (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="street"
+                    name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Straße</FormLabel>
+                        <FormLabel>Vorname</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nachname</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -164,44 +155,30 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     )}
                   />
                 </div>
-                
-                <FormField
-                  control={form.control}
-                  name="houseNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nr.</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="postalCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>PLZ</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="col-span-2">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-2">
+                    <FormField
+                      control={form.control}
+                      name="street"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Straße</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
                   <FormField
                     control={form.control}
-                    name="city"
+                    name="houseNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Stadt</FormLabel>
+                        <FormLabel>Nr.</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -210,33 +187,93 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     )}
                   />
                 </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="postalCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>PLZ</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="col-span-2">
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Stadt</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Land</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Land auswählen" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {countries.map((country) => (
+                            <SelectItem key={country.value} value={country.value}>
+                              {country.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex space-x-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    className="flex-1 flex items-center gap-2"
+                    disabled={loading}
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Zurück
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1"
+                    disabled={loading}
+                  >
+                    {loading ? 'Wird verarbeitet...' : 'Bestellung aufgeben'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          ) : (
+            <div className="space-y-4">
+              <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                <p className="text-sm text-center text-muted-foreground">
+                  Dies ist eine digitale Bestellung. Keine Lieferadresse erforderlich.
+                </p>
               </div>
-
-              <FormField
-                control={form.control}
-                name="country"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Land</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Land auswählen" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {countries.map((country) => (
-                          <SelectItem key={country.value} value={country.value}>
-                            {country.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+              
               <div className="flex space-x-2 pt-4">
                 <Button
                   type="button"
@@ -249,15 +286,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   Zurück
                 </Button>
                 <Button
-                  type="submit"
+                  onClick={handleDigitalConfirm}
                   className="flex-1"
                   disabled={loading}
                 >
                   {loading ? 'Wird verarbeitet...' : 'Bestellung aufgeben'}
                 </Button>
               </div>
-            </form>
-          </Form>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

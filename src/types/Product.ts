@@ -9,4 +9,5 @@ export interface Product {
   created_at: string;
   seller_id: string;
   stock: number;
+  product_type?: string;
 }

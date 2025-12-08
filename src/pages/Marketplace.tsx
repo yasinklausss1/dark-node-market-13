@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, LogOut, Bitcoin, Wallet, Settings, Users, Star, Share2, Menu, ShoppingBag, MessageCircle } from 'lucide-react';
+import { Search, LogOut, Bitcoin, Wallet, Settings, Users, Star, Share2, Menu, ShoppingBag, MessageCircle, Package, Download } from 'lucide-react';
 import ProductModal from '@/components/ProductModal';
 import ShoppingCart from '@/components/ShoppingCart';
 import SellerProfileModal from '@/components/SellerProfileModal';
@@ -52,6 +53,7 @@ const Marketplace = () => {
   const [selectedSellerUsername, setSelectedSellerUsername] = useState('');
   const [sellerRatings, setSellerRatings] = useState<Record<string, { average: number; total: number }>>({});
   const [sortBy, setSortBy] = useState<'newest' | 'price-asc' | 'price-desc'>('newest');
+  const [productTypeTab, setProductTypeTab] = useState<'physical' | 'digital'>('physical');
   const { cartItems, addToCart, updateQuantity, removeItem, clearCart, getCartItemCount } = useCart();
   
   // New state for modals
@@ -151,7 +153,7 @@ const Marketplace = () => {
   useEffect(() => {
     filterProducts();
     calculateCategoryCounts();
-  }, [products, searchTerm, selectedCategory, sortBy]);
+  }, [products, searchTerm, selectedCategory, sortBy, productTypeTab]);
 
   const fetchCategories = async () => {
     const { data, error } = await supabase
@@ -248,6 +250,11 @@ const Marketplace = () => {
 
   const filterProducts = () => {
     let filtered = products;
+
+    // Filter by product type
+    filtered = filtered.filter(product => 
+      (product.product_type || 'physical') === productTypeTab
+    );
 
     if (searchTerm) {
       filtered = filtered.filter(product =>
@@ -422,6 +429,22 @@ const Marketplace = () => {
             element?.scrollIntoView({ behavior: 'smooth' });
           }}
         />
+
+        {/* Product Type Tabs */}
+        <div className="mb-6">
+          <Tabs value={productTypeTab} onValueChange={(v) => setProductTypeTab(v as 'physical' | 'digital')} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsTrigger value="physical" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                <span>Produkte</span>
+              </TabsTrigger>
+              <TabsTrigger value="digital" className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                <span>Digital</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
         {/* Search and Filter */}
         <div className="mb-6 md:mb-8 space-y-4">

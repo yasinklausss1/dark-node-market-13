@@ -830,6 +830,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           price: number
+          product_type: string
           requires_verification: boolean
           seller_id: string
           stock: number
@@ -846,6 +847,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           price: number
+          product_type?: string
           requires_verification?: boolean
           seller_id: string
           stock?: number
@@ -862,6 +864,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           price?: number
+          product_type?: string
           requires_verification?: boolean
           seller_id?: string
           stock?: number
