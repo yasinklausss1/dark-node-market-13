@@ -27,6 +27,7 @@ interface Product {
   created_at: string;
   seller_id: string;
   stock: number;
+  product_type?: string;
 }
 
 interface ProductModalProps {
@@ -267,7 +268,8 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
                   title: product.title,
                   price: product.price,
                   category: product.category,
-                  image_url: product.image_url
+                  image_url: product.image_url,
+                  product_type: product.product_type
                 }, quantity);
                 
                 toast({

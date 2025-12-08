@@ -301,7 +301,8 @@ const Marketplace = () => {
       title: product.title,
       price: product.price,
       image_url: product.image_url,
-      category: product.category
+      category: product.category,
+      product_type: product.product_type
     });
     
     toast({
