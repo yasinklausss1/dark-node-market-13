@@ -685,7 +685,7 @@ const Marketplace = () => {
         </div>
 
         {/* Products Grid with Modern Cards */}
-        <div id="products-grid" className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+        <div id="products-grid" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6">
           {currentItems.map((product) => (
             <ProductCard
               key={product.id}
