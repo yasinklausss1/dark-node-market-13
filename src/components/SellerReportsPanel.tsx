@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +17,8 @@ import {
   ChevronLeft,
   Send,
   Image,
-  User
+  User,
+  Maximize2
 } from 'lucide-react';
 
 interface Report {
@@ -55,6 +57,7 @@ const SellerReportsPanel: React.FC = () => {
   const [adminNotes, setAdminNotes] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile?.role === 'admin') {
@@ -273,11 +276,22 @@ const SellerReportsPanel: React.FC = () => {
                     <Image className="h-4 w-4" />
                     Beweis-Bild:
                   </p>
-                  <img 
-                    src={selectedReport.evidence_image_url} 
-                    alt="Beweis" 
-                    className="max-w-full h-auto max-h-64 rounded-lg border"
-                  />
+                  <div className="relative group">
+                    <img 
+                      src={selectedReport.evidence_image_url} 
+                      alt="Beweis" 
+                      className="max-w-full h-auto max-h-64 rounded-lg border cursor-pointer"
+                      onClick={() => setFullscreenImage(selectedReport.evidence_image_url)}
+                    />
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => setFullscreenImage(selectedReport.evidence_image_url)}
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -404,6 +418,19 @@ const SellerReportsPanel: React.FC = () => {
           </div>
         )}
       </CardContent>
+
+      {/* Fullscreen Image Dialog */}
+      <Dialog open={!!fullscreenImage} onOpenChange={() => setFullscreenImage(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-2">
+          {fullscreenImage && (
+            <img 
+              src={fullscreenImage} 
+              alt="Beweis Vollansicht" 
+              className="w-full h-full object-contain max-h-[90vh]"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
