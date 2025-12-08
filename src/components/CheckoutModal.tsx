@@ -268,9 +268,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </Form>
           ) : (
             <div className="space-y-4">
-              <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                <p className="text-sm text-center text-muted-foreground">
-                  Dies ist eine digitale Bestellung. Keine Lieferadresse erforderlich.
+              <div className="p-4 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
+                <p className="text-sm text-center font-medium text-amber-800 dark:text-amber-200 mb-2">
+                  ⚠️ Kaufbestätigung
+                </p>
+                <p className="text-sm text-center text-amber-700 dark:text-amber-300">
+                  Möchtest du dieses digitale Produkt wirklich kaufen?
+                </p>
+                <p className="text-xs text-center text-amber-600 dark:text-amber-400 mt-2">
+                  Der Betrag wird sofort von deinem Guthaben abgebucht. Nach dem Kauf erhältst du den digitalen Inhalt in deinen Bestellungen.
                 </p>
               </div>
               
@@ -283,14 +289,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   disabled={loading}
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Zurück
+                  Abbrechen
                 </Button>
                 <Button
                   onClick={handleDigitalConfirm}
                   className="flex-1"
                   disabled={loading}
                 >
-                  {loading ? 'Wird verarbeitet...' : 'Bestellung aufgeben'}
+                  {loading ? 'Wird verarbeitet...' : 'Ja, jetzt kaufen'}
                 </Button>
               </div>
             </div>
