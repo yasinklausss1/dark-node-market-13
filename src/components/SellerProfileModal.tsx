@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-import { Star, User, Calendar, MessageCircle } from 'lucide-react';
+import { Star, User, Calendar, MessageCircle, Package, ShoppingBag } from 'lucide-react';
 
 interface Review {
   id: string;
@@ -20,21 +20,34 @@ interface SellerRating {
   average_rating: number;
 }
 
+interface Product {
+  id: string;
+  title: string;
+  price: number;
+  category: string;
+  image_url: string | null;
+  stock: number;
+  product_type: string;
+}
+
 interface SellerProfileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sellerId: string;
   sellerUsername: string;
+  onProductClick?: (productId: string) => void;
 }
 
 const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
   open,
   onOpenChange,
   sellerId,
-  sellerUsername
+  sellerUsername,
+  onProductClick
 }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [sellerRating, setSellerRating] = useState<SellerRating | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -72,6 +85,20 @@ const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
       } else {
         setReviews(reviewsData || []);
       }
+
+      // Fetch seller's active products
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('id, title, price, category, image_url, stock, product_type')
+        .eq('seller_id', sellerId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (productsError) {
+        console.error('Error fetching products:', productsError);
+      } else {
+        setProducts(productsData || []);
+      }
     } catch (error) {
       console.error('Error fetching seller data:', error);
     } finally {
@@ -102,7 +129,7 @@ const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
-            Seller Profile: @{sellerUsername}
+            Verkäuferprofil: @{sellerUsername}
           </DialogTitle>
         </DialogHeader>
 
@@ -114,8 +141,8 @@ const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
           <div className="space-y-6">
             {/* Rating Summary */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Rating Overview</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Bewertungsübersicht</CardTitle>
               </CardHeader>
               <CardContent>
                 {sellerRating && sellerRating.total_reviews > 0 ? (
@@ -128,27 +155,88 @@ const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
                         </span>
                       </div>
                       <Badge variant="secondary">
-                        {sellerRating.total_reviews} review{sellerRating.total_reviews !== 1 ? 's' : ''}
+                        {sellerRating.total_reviews} Bewertung{sellerRating.total_reviews !== 1 ? 'en' : ''}
                       </Badge>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">No ratings yet</p>
+                  <p className="text-muted-foreground">Noch keine Bewertungen</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Products */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ShoppingBag className="h-4 w-4" />
+                  Produkte ({products.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {products.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto">
+                    {products.map((product) => (
+                      <div 
+                        key={product.id} 
+                        className="flex gap-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() => {
+                          if (onProductClick) {
+                            onProductClick(product.id);
+                            onOpenChange(false);
+                          }
+                        }}
+                      >
+                        <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden bg-muted">
+                          {product.image_url ? (
+                            <img 
+                              src={product.image_url} 
+                              alt={product.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm truncate">{product.title}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs">
+                              {product.category}
+                            </Badge>
+                            {product.product_type === 'digital' && (
+                              <Badge variant="secondary" className="text-xs">Digital</Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-sm font-bold text-primary">€{Number(product.price).toFixed(2)}</span>
+                            <span className={`text-xs ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {product.stock > 0 ? `${product.stock} verfügbar` : 'Ausverkauft'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">Keine aktiven Produkte</p>
                 )}
               </CardContent>
             </Card>
 
             {/* Reviews */}
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <MessageCircle className="h-4 w-4" />
-                  Recent Reviews
+                  Letzte Bewertungen
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {reviews.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-4 max-h-[200px] overflow-y-auto">
                     {reviews.map((review) => (
                       <div key={review.id} className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -160,7 +248,7 @@ const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
                           </div>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3" />
-                            {new Date(review.created_at).toLocaleDateString()}
+                            {new Date(review.created_at).toLocaleDateString('de-DE')}
                           </div>
                         </div>
                         {review.comment && (
@@ -173,14 +261,14 @@ const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">No reviews yet</p>
+                  <p className="text-muted-foreground">Noch keine Bewertungen</p>
                 )}
               </CardContent>
             </Card>
 
             <div className="flex justify-end">
               <Button onClick={() => onOpenChange(false)}>
-                Close
+                Schließen
               </Button>
             </div>
           </div>
