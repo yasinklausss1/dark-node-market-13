@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import { Bitcoin, ShoppingCart, User, Coins, Minus, Plus, MessageCircle, Share2 } from 'lucide-react';
+import { Bitcoin, ShoppingCart, User, Coins, Minus, Plus, MessageCircle, Share2, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,6 +38,11 @@ interface ProductModalProps {
   onStartChat?: (product: Product) => void;
 }
 
+interface SellerRating {
+  average_rating: number;
+  total_reviews: number;
+}
+
 const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange, onStartChat }) => {
   const { addToCart } = useCart();
   const { user } = useAuth();
@@ -51,14 +56,37 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
   const [sellerUsername, setSellerUsername] = useState<string>('');
   const [sellerProfileOpen, setSellerProfileOpen] = useState(false);
   const [productImages, setProductImages] = useState<string[]>([]);
+  const [sellerRating, setSellerRating] = useState<SellerRating | null>(null);
 
   useEffect(() => {
     if (product && open) {
       fetchSellerUsername();
       fetchProductImages();
+      fetchSellerRating();
       setQuantity(1);
     }
   }, [product, open]);
+
+  const fetchSellerRating = async () => {
+    if (!product) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('seller_ratings')
+        .select('average_rating, total_reviews')
+        .eq('seller_id', product.seller_id)
+        .single();
+      
+      if (error) {
+        setSellerRating(null);
+      } else {
+        setSellerRating(data);
+      }
+    } catch (error) {
+      console.error('Error fetching seller rating:', error);
+      setSellerRating(null);
+    }
+  };
 
   const fetchProductImages = async () => {
     if (!product) return;
@@ -131,13 +159,37 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
       <div className="space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <Badge variant="secondary" className="w-fit">{product.category}</Badge>
-          <button 
-            onClick={() => setSellerProfileOpen(true)}
-            className="flex items-center space-x-1 text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer group"
-          >
-            <User className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="group-hover:underline">Verkäufer: @{sellerUsername}</span>
-          </button>
+          <div className="flex flex-col items-start sm:items-end gap-1">
+            <button 
+              onClick={() => setSellerProfileOpen(true)}
+              className="flex items-center space-x-1 text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer group"
+            >
+              <User className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="group-hover:underline">Verkäufer: @{sellerUsername}</span>
+            </button>
+            {sellerRating && sellerRating.total_reviews > 0 && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <div className="flex items-center">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`h-3 w-3 ${
+                        star <= Math.round(sellerRating.average_rating)
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-muted-foreground/30'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="ml-1">
+                  {sellerRating.average_rating.toFixed(1)} ({sellerRating.total_reviews} {sellerRating.total_reviews === 1 ? 'Bewertung' : 'Bewertungen'})
+                </span>
+              </div>
+            )}
+            {(!sellerRating || sellerRating.total_reviews === 0) && (
+              <span className="text-xs text-muted-foreground">Noch keine Bewertungen</span>
+            )}
+          </div>
         </div>
 
         <div className="space-y-1 sm:space-y-2">
