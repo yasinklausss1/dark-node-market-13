@@ -13,6 +13,17 @@ import EditProductModal from '@/components/EditProductModal';
 import NewsEditor from '@/components/NewsEditor';
 import SellerReportsPanel from '@/components/SellerReportsPanel';
 import { useUserPresence } from '@/hooks/useUserPresence';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface UserAddress {
   username: string;
@@ -335,10 +346,6 @@ const AdminPanel = () => {
   };
 
   const deleteProduct = async (productId: string, productTitle: string) => {
-    if (!confirm(`Sind Sie sicher, dass Sie das Produkt "${productTitle}" löschen möchten?`)) {
-      return;
-    }
-
     const { error } = await supabase
       .from('products')
       .delete()
@@ -646,14 +653,35 @@ const AdminPanel = () => {
                 <div key={category.id} className="space-y-2">
                   <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
                     <span className="font-medium">{category.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeCategory(category.id, category.name)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Kategorie löschen?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Sind Sie sicher, dass Sie die Kategorie "{category.name}" löschen möchten? 
+                            Alle zugehörigen Unterkategorien werden ebenfalls gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => removeCategory(category.id, category.name)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Löschen
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                   {/* Subcategories */}
                   <div className="ml-6 space-y-1">
@@ -665,14 +693,35 @@ const AdminPanel = () => {
                           className="flex items-center justify-between p-2 border rounded-lg bg-background text-sm"
                         >
                           <span className="text-muted-foreground">↳ {sub.name}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeSubcategory(sub.id, sub.name)}
-                            className="text-destructive hover:text-destructive h-7 w-7"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive h-7 w-7"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Unterkategorie löschen?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Sind Sie sicher, dass Sie die Unterkategorie "{sub.name}" löschen möchten? 
+                                  Diese Aktion kann nicht rückgängig gemacht werden.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => removeSubcategory(sub.id, sub.name)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Löschen
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       ))}
                     {subcategories.filter(s => s.category_id === category.id).length === 0 && (
@@ -693,14 +742,35 @@ const AdminPanel = () => {
                 <div key={category.id} className="space-y-2">
                   <div className="flex items-center justify-between p-3 border rounded-lg border-blue-500/30 bg-blue-500/5">
                     <span className="font-medium">{category.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeCategory(category.id, category.name)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Kategorie löschen?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Sind Sie sicher, dass Sie die Kategorie "{category.name}" löschen möchten? 
+                            Alle zugehörigen Unterkategorien werden ebenfalls gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => removeCategory(category.id, category.name)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Löschen
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                   {/* Subcategories */}
                   <div className="ml-6 space-y-1">
@@ -712,14 +782,35 @@ const AdminPanel = () => {
                           className="flex items-center justify-between p-2 border rounded-lg bg-background text-sm border-blue-500/20"
                         >
                           <span className="text-muted-foreground">↳ {sub.name}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeSubcategory(sub.id, sub.name)}
-                            className="text-destructive hover:text-destructive h-7 w-7"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive h-7 w-7"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Unterkategorie löschen?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Sind Sie sicher, dass Sie die Unterkategorie "{sub.name}" löschen möchten? 
+                                  Diese Aktion kann nicht rückgängig gemacht werden.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => removeSubcategory(sub.id, sub.name)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Löschen
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       ))}
                     {subcategories.filter(s => s.category_id === category.id).length === 0 && (
@@ -770,14 +861,35 @@ const AdminPanel = () => {
                         <Edit className="h-4 w-4 mr-1" />
                         Bearbeiten
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteProduct(product.id, product.title)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Löschen
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Löschen
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Produkt löschen?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Sind Sie sicher, dass Sie das Produkt "{product.title}" löschen möchten? 
+                              Diese Aktion kann nicht rückgängig gemacht werden.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteProduct(product.id, product.title)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Löschen
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </div>
