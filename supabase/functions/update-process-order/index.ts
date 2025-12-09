@@ -166,12 +166,17 @@ serve(async (req) => {
       const basePrice = Number(product.price);
       const discountedPrice = basePrice * (1 - bestDiscount / 100);
 
-      await supabase.from('order_items').insert({
+      const { error: itemErr } = await supabase.from('order_items').insert({
         order_id: order.id,
         product_id: it.id,
         quantity: it.quantity,
         price_eur: discountedPrice, // Store the discounted price
       });
+      
+      if (itemErr) {
+        console.error('Failed to insert order_item:', itemErr);
+        throw new Error(`Failed to create order item: ${itemErr.message}`);
+      }
 
       const newStock = Math.max(0, Number(product.stock) - it.quantity);
       await supabase.from('products').update({ stock: newStock }).eq('id', it.id);
