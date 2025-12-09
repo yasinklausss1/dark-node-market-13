@@ -42,6 +42,8 @@ const Marketplace = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<any[]>([]);
+  const [selectedSubcategory, setSelectedSubcategory] = useState('all');
   const [categoryCounts, setCategoryCounts] = useState<{[key: string]: number}>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [btcPrices, setBtcPrices] = useState<{[key: string]: number}>({});
@@ -301,12 +303,18 @@ const Marketplace = () => {
   useEffect(() => {
     filterProducts();
     calculateCategoryCounts();
-  }, [products, searchTerm, selectedCategory, sortBy, productTypeTab]);
+  }, [products, searchTerm, selectedCategory, selectedSubcategory, sortBy, productTypeTab]);
 
-  // Reset category when switching product type tab
+  // Reset category and subcategory when switching product type tab
   useEffect(() => {
     setSelectedCategory('all');
+    setSelectedSubcategory('all');
   }, [productTypeTab]);
+
+  // Reset subcategory when category changes
+  useEffect(() => {
+    setSelectedSubcategory('all');
+  }, [selectedCategory]);
 
   const fetchCategories = async () => {
     const { data, error } = await supabase
@@ -320,6 +328,19 @@ const Marketplace = () => {
     }
 
     setCategories(data || []);
+
+    // Also fetch subcategories
+    const { data: subData, error: subError } = await supabase
+      .from('subcategories')
+      .select('*')
+      .order('name');
+    
+    if (subError) {
+      console.error('Error fetching subcategories:', subError);
+      return;
+    }
+
+    setSubcategories(subData || []);
   };
 
   const fetchUserCount = async () => {
@@ -355,7 +376,7 @@ const Marketplace = () => {
   const fetchProducts = async () => {
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select('*, subcategories(name)')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
@@ -369,22 +390,28 @@ const Marketplace = () => {
       return;
     }
 
-    setProducts(data || []);
-    const sellerIds = Array.from(new Set((data || []).map((p: any) => p.seller_id)));
+    // Map subcategory names to products
+    const productsWithSubcategory = (data || []).map((p: any) => ({
+      ...p,
+      subcategory_name: p.subcategories?.name || null
+    }));
+
+    setProducts(productsWithSubcategory);
+    const sellerIds = Array.from(new Set((productsWithSubcategory || []).map((p: any) => p.seller_id)));
     if (sellerIds.length) {
       fetchSellerRatings(sellerIds);
     }
-    if (currentBtcPrice && data) {
+    if (currentBtcPrice && productsWithSubcategory) {
       const btcPricesMap: {[key: string]: number} = {};
-      data.forEach(product => {
+      productsWithSubcategory.forEach(product => {
         btcPricesMap[product.id] = product.price / currentBtcPrice;
       });
       setBtcPrices(btcPricesMap);
     }
     
-    if (currentLtcPrice && data) {
+    if (currentLtcPrice && productsWithSubcategory) {
       const ltcPricesMap: {[key: string]: number} = {};
-      data.forEach(product => {
+      productsWithSubcategory.forEach(product => {
         ltcPricesMap[product.id] = product.price / currentLtcPrice;
       });
       setLtcPrices(ltcPricesMap);
@@ -425,6 +452,11 @@ const Marketplace = () => {
       filtered = filtered.filter(product => product.category === selectedCategory);
     }
 
+    // Filter by subcategory
+    if (selectedSubcategory !== 'all') {
+      filtered = filtered.filter(product => product.subcategory_id === selectedSubcategory);
+    }
+
     switch (sortBy) {
       case 'price-asc':
         filtered = [...filtered].sort((a, b) => a.price - b.price);
@@ -437,6 +469,16 @@ const Marketplace = () => {
     }
 
     setFilteredProducts(filtered);
+  };
+
+  const getSelectedCategoryId = () => {
+    const category = categories.find(c => c.name === selectedCategory);
+    return category?.id || '';
+  };
+
+  const getSubcategoriesForSelectedCategory = () => {
+    if (selectedCategory === 'all') return [];
+    return subcategories.filter(s => s.category_id === getSelectedCategoryId());
   };
 
   const openProductModal = (product: Product) => {
@@ -674,9 +716,9 @@ const Marketplace = () => {
                 className="pl-10 h-12"
               />
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="flex-1 h-11">
+                <SelectTrigger className="flex-1 min-w-[140px] h-11">
                   <SelectValue placeholder="Kategorie" />
                 </SelectTrigger>
                 <SelectContent>
@@ -692,6 +734,23 @@ const Marketplace = () => {
                     ))}
                 </SelectContent>
               </Select>
+
+              {/* Subcategory Filter - only show if category is selected and has subcategories */}
+              {getSubcategoriesForSelectedCategory().length > 0 && (
+                <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
+                  <SelectTrigger className="flex-1 min-w-[140px] h-11">
+                    <SelectValue placeholder="Unterkategorie" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle Unterkategorien</SelectItem>
+                    {getSubcategoriesForSelectedCategory().map((sub) => (
+                      <SelectItem key={sub.id} value={sub.id}>
+                        {sub.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
                 <SelectTrigger className="flex-1 h-11">
                   <SelectValue placeholder="Sortieren" />

@@ -24,6 +24,8 @@ interface Product {
   description: string;
   price: number;
   category: string;
+  subcategory_id?: string | null;
+  subcategory_name?: string | null;
   image_url: string | null;
   is_active: boolean;
   created_at: string;
@@ -211,7 +213,14 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
       {/* Product Info */}
       <div className="space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <Badge variant="secondary" className="w-fit">{product.category}</Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary" className="w-fit">{product.category}</Badge>
+            {product.subcategory_name && (
+              <Badge variant="outline" className="w-fit text-xs">
+                {product.subcategory_name}
+              </Badge>
+            )}
+          </div>
           <div className="flex flex-col items-start sm:items-end gap-1">
             <button 
               onClick={() => setSellerProfileOpen(true)}

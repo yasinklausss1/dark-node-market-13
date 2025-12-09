@@ -28,8 +28,11 @@ const AdminPanel = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<any[]>([]);
   const [newCategory, setNewCategory] = useState('');
   const [newCategoryType, setNewCategoryType] = useState<'physical' | 'digital'>('physical');
+  const [newSubcategory, setNewSubcategory] = useState('');
+  const [selectedCategoryForSub, setSelectedCategoryForSub] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userCount, setUserCount] = useState(0);
   const [products, setProducts] = useState<any[]>([]);
@@ -42,6 +45,7 @@ const AdminPanel = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetchSubcategories();
     fetchUserCount();
     fetchAllProducts();
     fetchUserAddresses();
@@ -105,6 +109,20 @@ const AdminPanel = () => {
     setCategories(data || []);
   };
 
+  const fetchSubcategories = async () => {
+    const { data, error } = await supabase
+      .from('subcategories')
+      .select('*')
+      .order('name');
+    
+    if (error) {
+      console.error('Error fetching subcategories:', error);
+      return;
+    }
+
+    setSubcategories(data || []);
+  };
+
   const fetchUserCount = async () => {
     const { count, error } = await supabase
       .from('profiles')
@@ -143,6 +161,62 @@ const AdminPanel = () => {
     }
     
     setIsLoading(false);
+  };
+
+  const addSubcategory = async () => {
+    if (!newSubcategory.trim() || !selectedCategoryForSub) return;
+    
+    const category = categories.find(c => c.id === selectedCategoryForSub);
+    if (!category) return;
+    
+    setIsLoading(true);
+    
+    const { error } = await supabase
+      .from('subcategories')
+      .insert({ 
+        name: newSubcategory.trim(), 
+        category_id: selectedCategoryForSub,
+        product_type: category.product_type 
+      });
+    
+    if (error) {
+      toast({
+        title: "Fehler",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Unterkategorie hinzugefügt",
+        description: `${newSubcategory} wurde zu ${category.name} hinzugefügt.`
+      });
+      setNewSubcategory('');
+      setSelectedCategoryForSub('');
+      fetchSubcategories();
+    }
+    
+    setIsLoading(false);
+  };
+
+  const removeSubcategory = async (subcategoryId: string, subcategoryName: string) => {
+    const { error } = await supabase
+      .from('subcategories')
+      .delete()
+      .eq('id', subcategoryId);
+    
+    if (error) {
+      toast({
+        title: "Fehler",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Unterkategorie entfernt",
+        description: `${subcategoryName} wurde entfernt.`
+      });
+      fetchSubcategories();
+    }
   };
 
   const fetchAllProducts = async () => {
@@ -491,54 +565,87 @@ const AdminPanel = () => {
           <CardHeader>
             <CardTitle>Kategorie Management</CardTitle>
             <CardDescription>
-              Verwalten Sie die verfügbaren Produktkategorien für physische und digitale Produkte
+              Verwalten Sie die verfügbaren Produktkategorien und Unterkategorien
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex-1">
-                <Label htmlFor="new-category">Neue Kategorie</Label>
-                <Input
-                  id="new-category"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  placeholder="Kategorie Name"
-                  onKeyPress={(e) => e.key === 'Enter' && addCategory()}
-                />
-              </div>
-              <div className="w-full sm:w-40">
-                <Label htmlFor="category-type">Produkttyp</Label>
-                <Select value={newCategoryType} onValueChange={(v) => setNewCategoryType(v as 'physical' | 'digital')}>
-                  <SelectTrigger id="category-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="physical">Physisch</SelectItem>
-                    <SelectItem value="digital">Digital</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-end">
+          <CardContent className="space-y-6">
+            {/* Add Main Category */}
+            <div className="space-y-2">
+              <Label className="text-base font-semibold">Neue Hauptkategorie</Label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex-1">
+                  <Input
+                    id="new-category"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    placeholder="Kategorie Name"
+                    onKeyPress={(e) => e.key === 'Enter' && addCategory()}
+                  />
+                </div>
+                <div className="w-full sm:w-40">
+                  <Select value={newCategoryType} onValueChange={(v) => setNewCategoryType(v as 'physical' | 'digital')}>
+                    <SelectTrigger id="category-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="physical">Physisch</SelectItem>
+                      <SelectItem value="digital">Digital</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button 
                   onClick={addCategory}
                   disabled={isLoading || !newCategory.trim()}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Hinzufügen
+                  Kategorie
+                </Button>
+              </div>
+            </div>
+
+            {/* Add Subcategory */}
+            <div className="space-y-2 border-t pt-4">
+              <Label className="text-base font-semibold">Neue Unterkategorie</Label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="w-full sm:w-48">
+                  <Select value={selectedCategoryForSub} onValueChange={setSelectedCategoryForSub}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Hauptkategorie" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name} ({category.product_type === 'physical' ? 'Phys.' : 'Dig.'})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <Input
+                    value={newSubcategory}
+                    onChange={(e) => setNewSubcategory(e.target.value)}
+                    placeholder="Unterkategorie Name"
+                    onKeyPress={(e) => e.key === 'Enter' && addSubcategory()}
+                  />
+                </div>
+                <Button 
+                  onClick={addSubcategory}
+                  disabled={isLoading || !newSubcategory.trim() || !selectedCategoryForSub}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Unterkategorie
                 </Button>
               </div>
             </div>
             
             {/* Physical Categories */}
-            <div className="space-y-2">
+            <div className="space-y-3 border-t pt-4">
               <Label className="text-base font-semibold">Physische Produkte</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {categories.filter(c => c.product_type === 'physical').map((category) => (
-                  <div
-                    key={category.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <span>{category.name}</span>
+              {categories.filter(c => c.product_type === 'physical').map((category) => (
+                <div key={category.id} className="space-y-2">
+                  <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                    <span className="font-medium">{category.name}</span>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -548,23 +655,44 @@ const AdminPanel = () => {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                ))}
-                {categories.filter(c => c.product_type === 'physical').length === 0 && (
-                  <p className="text-sm text-muted-foreground col-span-full">Keine physischen Kategorien</p>
-                )}
-              </div>
+                  {/* Subcategories */}
+                  <div className="ml-6 space-y-1">
+                    {subcategories
+                      .filter(s => s.category_id === category.id)
+                      .map((sub) => (
+                        <div
+                          key={sub.id}
+                          className="flex items-center justify-between p-2 border rounded-lg bg-background text-sm"
+                        >
+                          <span className="text-muted-foreground">↳ {sub.name}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeSubcategory(sub.id, sub.name)}
+                            className="text-destructive hover:text-destructive h-7 w-7"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    {subcategories.filter(s => s.category_id === category.id).length === 0 && (
+                      <p className="text-xs text-muted-foreground ml-4">Keine Unterkategorien</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {categories.filter(c => c.product_type === 'physical').length === 0 && (
+                <p className="text-sm text-muted-foreground">Keine physischen Kategorien</p>
+              )}
             </div>
 
             {/* Digital Categories */}
-            <div className="space-y-2">
+            <div className="space-y-3 border-t pt-4">
               <Label className="text-base font-semibold">Digitale Produkte</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {categories.filter(c => c.product_type === 'digital').map((category) => (
-                  <div
-                    key={category.id}
-                    className="flex items-center justify-between p-3 border rounded-lg border-blue-500/30 bg-blue-500/5"
-                  >
-                    <span>{category.name}</span>
+              {categories.filter(c => c.product_type === 'digital').map((category) => (
+                <div key={category.id} className="space-y-2">
+                  <div className="flex items-center justify-between p-3 border rounded-lg border-blue-500/30 bg-blue-500/5">
+                    <span className="font-medium">{category.name}</span>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -574,11 +702,35 @@ const AdminPanel = () => {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                ))}
-                {categories.filter(c => c.product_type === 'digital').length === 0 && (
-                  <p className="text-sm text-muted-foreground col-span-full">Keine digitalen Kategorien</p>
-                )}
-              </div>
+                  {/* Subcategories */}
+                  <div className="ml-6 space-y-1">
+                    {subcategories
+                      .filter(s => s.category_id === category.id)
+                      .map((sub) => (
+                        <div
+                          key={sub.id}
+                          className="flex items-center justify-between p-2 border rounded-lg bg-background text-sm border-blue-500/20"
+                        >
+                          <span className="text-muted-foreground">↳ {sub.name}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeSubcategory(sub.id, sub.name)}
+                            className="text-destructive hover:text-destructive h-7 w-7"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    {subcategories.filter(s => s.category_id === category.id).length === 0 && (
+                      <p className="text-xs text-muted-foreground ml-4">Keine Unterkategorien</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {categories.filter(c => c.product_type === 'digital').length === 0 && (
+                <p className="text-sm text-muted-foreground">Keine digitalen Kategorien</p>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -77,6 +77,7 @@ const SellerDashboard = () => {
     description: '',
     price: '',
     category: '',
+    subcategoryId: '' as string,
     imageUrls: [] as string[],
     stock: '',
     productType: 'physical' as 'physical' | 'digital',
@@ -91,6 +92,7 @@ const SellerDashboard = () => {
   const [newProductTitle, setNewProductTitle] = useState<string>('');
 
   const [categories, setCategories] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<any[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -115,6 +117,7 @@ const SellerDashboard = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetchSubcategories();
     if (profile?.role === 'seller' || profile?.role === 'admin') {
       fetchProducts();
       fetchOrders();
@@ -133,6 +136,25 @@ const SellerDashboard = () => {
     }
 
     setCategories(data || []);
+  };
+
+  const fetchSubcategories = async () => {
+    const { data, error } = await supabase
+      .from('subcategories')
+      .select('*')
+      .order('name');
+    
+    if (error) {
+      console.error('Error fetching subcategories:', error);
+      return;
+    }
+
+    setSubcategories(data || []);
+  };
+
+  const getSelectedCategoryId = () => {
+    const category = categories.find(c => c.name === formData.category);
+    return category?.id || '';
   };
 
   const fetchProducts = async () => {
@@ -189,6 +211,7 @@ const fetchOrders = async () => {
         description: formData.description,
         price: parseFloat(formData.price),
         category: formData.category,
+        subcategory_id: formData.subcategoryId || null,
         image_url: formData.imageUrls[0] || null,
         seller_id: user.id,
         is_active: true,
@@ -256,6 +279,7 @@ const fetchOrders = async () => {
         description: '',
         price: '',
         category: '',
+        subcategoryId: '',
         imageUrls: [],
         stock: '',
         productType: 'physical',
@@ -551,7 +575,7 @@ const fetchOrders = async () => {
                       <Label htmlFor="category">Kategorie</Label>
                       <Select 
                         value={formData.category} 
-                        onValueChange={(value) => setFormData({...formData, category: value})}
+                        onValueChange={(value) => setFormData({...formData, category: value, subcategoryId: ''})}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Kategorie wählen" />
@@ -567,6 +591,31 @@ const fetchOrders = async () => {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Subcategory */}
+                    {subcategories.filter(s => s.category_id === getSelectedCategoryId()).length > 0 && (
+                      <div>
+                        <Label htmlFor="subcategory">Unterkategorie (optional)</Label>
+                        <Select 
+                          value={formData.subcategoryId} 
+                          onValueChange={(value) => setFormData({...formData, subcategoryId: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Unterkategorie wählen" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Keine Unterkategorie</SelectItem>
+                            {subcategories
+                              .filter((sub) => sub.category_id === getSelectedCategoryId())
+                              .map((sub) => (
+                                <SelectItem key={sub.id} value={sub.id}>
+                                  {sub.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     <div>
                       <Label htmlFor="stock">Bestand</Label>
