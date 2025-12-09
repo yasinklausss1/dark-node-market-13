@@ -151,7 +151,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         description: formData.description,
         price: parseFloat(formData.price),
         category: formData.category,
-        subcategory_id: formData.subcategoryId || null,
+        subcategory_id: formData.subcategoryId && formData.subcategoryId !== 'none' ? formData.subcategoryId : null,
         image_url: formData.imageUrls[0] || null,
         stock: parseInt(formData.stock),
         product_type: formData.productType,
@@ -310,7 +310,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                   <SelectValue placeholder="Unterkategorie wählen" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Keine Unterkategorie</SelectItem>
+                  <SelectItem value="none">Keine Unterkategorie</SelectItem>
                   {subcategories
                     .filter((sub) => sub.category_id === getSelectedCategoryId())
                     .map((sub) => (
