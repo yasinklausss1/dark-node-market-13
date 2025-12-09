@@ -211,7 +211,7 @@ const fetchOrders = async () => {
         description: formData.description,
         price: parseFloat(formData.price),
         category: formData.category,
-        subcategory_id: formData.subcategoryId || null,
+        subcategory_id: formData.subcategoryId && formData.subcategoryId !== 'none' ? formData.subcategoryId : null,
         image_url: formData.imageUrls[0] || null,
         seller_id: user.id,
         is_active: true,
@@ -604,7 +604,7 @@ const fetchOrders = async () => {
                             <SelectValue placeholder="Unterkategorie wählen" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Keine Unterkategorie</SelectItem>
+                            <SelectItem value="none">Keine Unterkategorie</SelectItem>
                             {subcategories
                               .filter((sub) => sub.category_id === getSelectedCategoryId())
                               .map((sub) => (
