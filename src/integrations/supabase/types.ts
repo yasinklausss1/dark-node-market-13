@@ -734,6 +734,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          buyer_notes: string | null
           created_at: string
           fansign_image_url: string | null
           fansign_uploaded_at: string | null
@@ -756,6 +757,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          buyer_notes?: string | null
           created_at?: string
           fansign_image_url?: string | null
           fansign_uploaded_at?: string | null
@@ -778,6 +780,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          buyer_notes?: string | null
           created_at?: string
           fansign_image_url?: string | null
           fansign_uploaded_at?: string | null

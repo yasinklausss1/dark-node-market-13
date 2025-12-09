@@ -113,7 +113,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     setPaymentMethodOpen(true);
   };
 
-  const handleConfirmOrder = async (addressData: any) => {
+  const handleConfirmOrder = async (addressData: any, buyerNotes?: string) => {
     if (!user || !selectedPaymentMethod) return;
 
     setIsProcessingOrder(true);
@@ -132,7 +132,8 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
           method: selectedPaymentMethod,
           btcPrice,
           ltcPrice,
-          shippingAddress: addressData
+          shippingAddress: addressData,
+          buyerNotes: buyerNotes || undefined
         }
       });
 
