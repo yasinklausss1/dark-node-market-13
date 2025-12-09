@@ -13,6 +13,8 @@ interface ReviewModalProps {
   orderId: string;
   sellerId: string;
   sellerUsername: string;
+  productId: string;
+  productTitle: string;
   onReviewSubmitted: () => void;
 }
 
@@ -22,6 +24,8 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   orderId,
   sellerId,
   sellerUsername,
+  productId,
+  productTitle,
   onReviewSubmitted
 }) => {
   const { toast } = useToast();
@@ -60,6 +64,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           order_id: orderId,
           reviewer_id: (await supabase.auth.getUser()).data.user?.id,
           seller_id: sellerId,
+          product_id: productId,
           rating: rating,
           comment: comment.trim() || null
         });
@@ -91,7 +96,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Verkäufer bewerten: @{sellerUsername}</DialogTitle>
+          <DialogTitle>Bewertung für: {productTitle}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -57,6 +57,8 @@ const Orders: React.FC = () => {
   const [selectedOrderId, setSelectedOrderId] = useState('');
   const [selectedSellerId, setSelectedSellerId] = useState('');
   const [selectedSellerUsername, setSelectedSellerUsername] = useState('');
+  const [selectedProductId, setSelectedProductId] = useState('');
+  const [selectedProductTitle, setSelectedProductTitle] = useState('');
   const [sellerProfileOpen, setSellerProfileOpen] = useState(false);
 
   const fetchOrderItems = async (orderIds: string[]) => {
@@ -208,10 +210,12 @@ const Orders: React.FC = () => {
     };
   }, [user, orders]);
 
-  const handleReviewSeller = (orderId: string, sellerId: string, sellerUsername: string) => {
+  const handleReviewProduct = (orderId: string, sellerId: string, sellerUsername: string, productId: string, productTitle: string) => {
     setSelectedOrderId(orderId);
     setSelectedSellerId(sellerId);
     setSelectedSellerUsername(sellerUsername);
+    setSelectedProductId(productId);
+    setSelectedProductTitle(productTitle);
     setReviewModalOpen(true);
   };
 
@@ -519,6 +523,8 @@ const Orders: React.FC = () => {
           orderId={selectedOrderId}
           sellerId={selectedSellerId}
           sellerUsername={selectedSellerUsername}
+          productId={selectedProductId}
+          productTitle={selectedProductTitle}
           onReviewSubmitted={() => {
             const fetchData = async () => {
               setIsLoading(true);

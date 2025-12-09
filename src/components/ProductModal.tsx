@@ -107,10 +107,11 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
     if (!product) return;
     
     try {
+      // Fetch reviews specific to this product
       const { data, error } = await supabase
         .from('reviews')
         .select('id, rating, comment, created_at, reviewer_id')
-        .eq('seller_id', product.seller_id)
+        .eq('product_id', product.id)
         .not('comment', 'is', null)
         .order('created_at', { ascending: false })
         .limit(10);

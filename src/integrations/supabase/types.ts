@@ -1133,6 +1133,7 @@ export type Database = {
           created_at: string
           id: string
           order_id: string
+          product_id: string | null
           rating: number
           reviewer_id: string
           seller_id: string
@@ -1143,6 +1144,7 @@ export type Database = {
           created_at?: string
           id?: string
           order_id: string
+          product_id?: string | null
           rating: number
           reviewer_id: string
           seller_id: string
@@ -1153,6 +1155,7 @@ export type Database = {
           created_at?: string
           id?: string
           order_id?: string
+          product_id?: string | null
           rating?: number
           reviewer_id?: string
           seller_id?: string
@@ -1164,6 +1167,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
