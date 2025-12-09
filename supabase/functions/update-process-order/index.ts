@@ -18,7 +18,7 @@ serve(async (req) => {
     );
 
     const body = await req.json();
-    const { userId, items, method, btcPrice, ltcPrice, shippingAddress } = body as {
+    const { userId, items, method, btcPrice, ltcPrice, shippingAddress, buyerNotes } = body as {
       userId: string;
       items: CartItem[];
       method: 'btc' | 'ltc';
@@ -33,6 +33,7 @@ serve(async (req) => {
         city: string;
         country: string;
       } | null;
+      buyerNotes?: string;
     };
 
     if (!userId || !items?.length || !method) throw new Error('Invalid payload');
@@ -114,7 +115,7 @@ serve(async (req) => {
     if (method === 'btc' && Number(buyerBal.balance_btc) + 1e-12 < totalBTC) throw new Error('Insufficient BTC balance');
     if (method === 'ltc' && Number((buyerBal as any).balance_ltc || 0) + 1e-12 < totalLTC) throw new Error('Insufficient LTC balance');
 
-    // Create order with shipping address (if provided)
+    // Create order with shipping address (if provided) and buyer notes
     const orderData: any = { 
       user_id: userId, 
       total_amount_eur: totalEUR, 
@@ -129,6 +130,11 @@ serve(async (req) => {
       orderData.shipping_postal_code = shippingAddress.postalCode;
       orderData.shipping_city = shippingAddress.city;
       orderData.shipping_country = shippingAddress.country;
+    }
+    
+    // Add buyer notes for digital products
+    if (buyerNotes) {
+      orderData.buyer_notes = buyerNotes;
     }
 
     const { data: order, error: orderErr } = await supabase

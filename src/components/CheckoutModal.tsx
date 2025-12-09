@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
@@ -26,7 +27,7 @@ interface CheckoutModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   totalAmount: number;
-  onConfirmOrder: (address: CheckoutFormData | null) => void;
+  onConfirmOrder: (address: CheckoutFormData | null, buyerNotes?: string) => void;
   loading?: boolean;
   requiresShipping?: boolean;
 }
@@ -86,6 +87,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   loading = false,
   requiresShipping = true
 }) => {
+  const [buyerNotes, setBuyerNotes] = useState('');
+  
   const form = useForm<CheckoutFormData>({
     resolver: requiresShipping ? zodResolver(checkoutSchema) : undefined,
     defaultValues: {
@@ -103,9 +106,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     onConfirmOrder(requiresShipping ? data : null);
   };
 
-  // For digital products, confirm directly without form
+  // For digital products, confirm with buyer notes
   const handleDigitalConfirm = () => {
-    onConfirmOrder(null);
+    onConfirmOrder(null, buyerNotes.trim() || undefined);
+    setBuyerNotes('');
   };
 
   return (
@@ -280,11 +284,30 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </p>
               </div>
               
+              {/* Buyer notes for digital products */}
+              <div className="space-y-2">
+                <Label htmlFor="buyer-notes">Hinweise an den Verkäufer (optional)</Label>
+                <Textarea
+                  id="buyer-notes"
+                  placeholder="z.B. gewünschter Benutzername, E-Mail-Adresse, spezielle Wünsche..."
+                  value={buyerNotes}
+                  onChange={(e) => setBuyerNotes(e.target.value)}
+                  rows={3}
+                  className="resize-none"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Diese Nachricht wird dem Verkäufer bei der Bestellung angezeigt.
+                </p>
+              </div>
+              
               <div className="flex space-x-2 pt-4">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => onOpenChange(false)}
+                  onClick={() => {
+                    onOpenChange(false);
+                    setBuyerNotes('');
+                  }}
                   className="flex-1 flex items-center gap-2"
                   disabled={loading}
                 >
