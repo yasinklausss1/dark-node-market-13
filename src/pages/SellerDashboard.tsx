@@ -44,6 +44,7 @@ interface OrderItem {
   product_type?: string;
   digital_content?: string | null;
   digital_content_delivered_at?: string | null;
+  digital_content_images?: string[] | null;
 }
 
 interface Order {
@@ -64,6 +65,7 @@ interface Order {
   buyer_username: string;
   items: OrderItem[] | null;
   buyer_notes: string | null;
+  buyer_notes_images: string[] | null;
 }
 
 const SellerDashboard = () => {
@@ -117,6 +119,7 @@ const SellerDashboard = () => {
     orderItemId: string;
     productTitle: string;
     currentContent: string | null;
+    currentImages: string[];
   } | null>(null);
   
   // Get chat data
@@ -1034,7 +1037,8 @@ const fetchOrders = async () => {
                                               setSelectedOrderItem({
                                                 orderItemId: item.order_item_id,
                                                 productTitle: item.product_title || 'Produkt',
-                                                currentContent: item.digital_content || null
+                                                currentContent: item.digital_content || null,
+                                                currentImages: item.digital_content_images || []
                                               });
                                               setDigitalContentModalOpen(true);
                                             }}
@@ -1058,7 +1062,8 @@ const fetchOrders = async () => {
                                           setSelectedOrderItem({
                                             orderItemId: item.order_item_id,
                                             productTitle: item.product_title || 'Produkt',
-                                            currentContent: null
+                                            currentContent: null,
+                                            currentImages: []
                                           });
                                           setDigitalContentModalOpen(true);
                                         }}
@@ -1074,14 +1079,29 @@ const fetchOrders = async () => {
                           </div>
                           
                           {/* Buyer Notes for digital products */}
-                          {order.buyer_notes && (
+                          {(order.buyer_notes || (order.buyer_notes_images && order.buyer_notes_images.length > 0)) && (
                             <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
                               <h4 className="font-medium text-sm text-blue-800 dark:text-blue-200 mb-1">
                                 💬 Hinweise vom Käufer:
                               </h4>
-                              <p className="text-sm text-blue-700 dark:text-blue-300 whitespace-pre-wrap">
-                                {order.buyer_notes}
-                              </p>
+                              {order.buyer_notes && (
+                                <p className="text-sm text-blue-700 dark:text-blue-300 whitespace-pre-wrap">
+                                  {order.buyer_notes}
+                                </p>
+                              )}
+                              {order.buyer_notes_images && order.buyer_notes_images.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {order.buyer_notes_images.map((url, idx) => (
+                                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
+                                      <img
+                                        src={url}
+                                        alt={`Käufer-Bild ${idx + 1}`}
+                                        className="w-20 h-20 object-cover rounded-lg border hover:opacity-80 transition-opacity"
+                                      />
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )}
 
@@ -1172,6 +1192,7 @@ const fetchOrders = async () => {
             orderItemId={selectedOrderItem.orderItemId}
             productTitle={selectedOrderItem.productTitle}
             currentContent={selectedOrderItem.currentContent}
+            currentImages={selectedOrderItem.currentImages}
             onContentSaved={fetchOrders}
           />
         )}

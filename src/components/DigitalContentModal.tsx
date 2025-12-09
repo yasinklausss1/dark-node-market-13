@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { OrderImageUpload } from '@/components/ui/order-image-upload';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -19,6 +20,7 @@ interface DigitalContentModalProps {
   orderItemId: string;
   productTitle: string;
   currentContent: string | null;
+  currentImages?: string[] | null;
   onContentSaved: () => void;
 }
 
@@ -28,22 +30,25 @@ const DigitalContentModal: React.FC<DigitalContentModalProps> = ({
   orderItemId,
   productTitle,
   currentContent,
+  currentImages,
   onContentSaved
 }) => {
   const { toast } = useToast();
   const [content, setContent] = useState(currentContent || '');
+  const [images, setImages] = useState<string[]>(currentImages || []);
   const [isSaving, setIsSaving] = useState(false);
 
   // Update content when currentContent or orderItemId changes
   useEffect(() => {
     setContent(currentContent || '');
-  }, [currentContent, orderItemId, open]);
+    setImages(currentImages || []);
+  }, [currentContent, currentImages, orderItemId, open]);
 
   const handleSave = async () => {
-    if (!content.trim()) {
+    if (!content.trim() && images.length === 0) {
       toast({
         title: "Inhalt erforderlich",
-        description: "Bitte gib den digitalen Inhalt ein.",
+        description: "Bitte gib den digitalen Inhalt ein oder füge Bilder hinzu.",
         variant: "destructive"
       });
       return;
@@ -53,11 +58,13 @@ const DigitalContentModal: React.FC<DigitalContentModalProps> = ({
     
     console.log('Saving digital content for order item:', orderItemId);
     console.log('Content:', content);
+    console.log('Images:', images);
     
     const { data, error } = await supabase
       .from('order_items')
       .update({ 
-        digital_content: content,
+        digital_content: content || null,
+        digital_content_images: images,
         digital_content_delivered_at: new Date().toISOString()
       })
       .eq('id', orderItemId)
@@ -86,7 +93,7 @@ const DigitalContentModal: React.FC<DigitalContentModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Digitalen Inhalt liefern</DialogTitle>
           <DialogDescription>
@@ -105,6 +112,19 @@ const DigitalContentModal: React.FC<DigitalContentModalProps> = ({
               rows={6}
               className="mt-2 font-mono text-sm"
             />
+          </div>
+          
+          <div>
+            <Label>Bilder anhängen (optional)</Label>
+            <OrderImageUpload
+              images={images}
+              onChange={setImages}
+              maxImages={10}
+              className="mt-2"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              z.B. Screenshots, Zugangsdaten-Bilder oder andere relevante Bilder
+            </p>
           </div>
         </div>
 

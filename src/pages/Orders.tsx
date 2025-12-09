@@ -44,6 +44,7 @@ interface OrderItem {
   product_type?: string;
   digital_content?: string | null;
   digital_content_delivered_at?: string | null;
+  digital_content_images?: string[] | null;
 }
 
 const Orders: React.FC = () => {
@@ -97,6 +98,7 @@ const Orders: React.FC = () => {
         product_type: it.products?.product_type || undefined,
         digital_content: it.digital_content || null,
         digital_content_delivered_at: it.digital_content_delivered_at || null,
+        digital_content_images: it.digital_content_images || null,
       });
     });
     
@@ -391,14 +393,29 @@ const Orders: React.FC = () => {
                                       </h4>
                                     </div>
                                     <div className="space-y-3">
-                                      {digitalItems.filter(it => it.digital_content).map((item) => (
+                                      {digitalItems.filter(it => it.digital_content || (it.digital_content_images && it.digital_content_images.length > 0)).map((item) => (
                                         <div key={item.id} className="bg-white dark:bg-background p-3 rounded border">
                                           <p className="text-xs font-medium text-muted-foreground mb-1">
                                             {item.product_title}:
                                           </p>
-                                          <pre className="text-sm whitespace-pre-wrap break-all bg-muted p-2 rounded font-mono">
-                                            {item.digital_content}
-                                          </pre>
+                                          {item.digital_content && (
+                                            <pre className="text-sm whitespace-pre-wrap break-all bg-muted p-2 rounded font-mono">
+                                              {item.digital_content}
+                                            </pre>
+                                          )}
+                                          {item.digital_content_images && item.digital_content_images.length > 0 && (
+                                            <div className="mt-2 flex flex-wrap gap-2">
+                                              {item.digital_content_images.map((url, idx) => (
+                                                <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
+                                                  <img
+                                                    src={url}
+                                                    alt={`Bild ${idx + 1}`}
+                                                    className="w-20 h-20 object-cover rounded-lg border hover:opacity-80 transition-opacity"
+                                                  />
+                                                </a>
+                                              ))}
+                                            </div>
+                                          )}
                                         </div>
                                       ))}
                                     </div>
