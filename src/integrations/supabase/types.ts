@@ -892,6 +892,7 @@ export type Database = {
           requires_verification: boolean
           seller_id: string
           stock: number
+          subcategory_id: string | null
           title: string
           updated_at: string
           visibility_level: string
@@ -910,6 +911,7 @@ export type Database = {
           requires_verification?: boolean
           seller_id: string
           stock?: number
+          subcategory_id?: string | null
           title: string
           updated_at?: string
           visibility_level?: string
@@ -928,6 +930,7 @@ export type Database = {
           requires_verification?: boolean
           seller_id?: string
           stock?: number
+          subcategory_id?: string | null
           title?: string
           updated_at?: string
           visibility_level?: string
@@ -939,6 +942,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "products_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "subcategories"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1220,6 +1230,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      subcategories: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          name: string
+          product_type: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          name: string
+          product_type?: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          product_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcategories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {

@@ -17,6 +17,7 @@ interface Product {
   description: string;
   price: number;
   category: string;
+  subcategory_id?: string | null;
   image_url: string | null;
   is_active: boolean;
   created_at: string;
@@ -41,11 +42,13 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     price: '',
     category: '',
+    subcategoryId: '' as string,
     imageUrls: [] as string[],
     stock: '',
     productType: 'physical' as 'physical' | 'digital',
@@ -74,6 +77,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
           description: product.description || '',
           price: product.price.toString(),
           category: product.category,
+          subcategoryId: product.subcategory_id || '',
           imageUrls: imageUrls,
           stock: product.stock.toString(),
           productType: (product.product_type as 'physical' | 'digital') || 'physical',
@@ -87,6 +91,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
 
   useEffect(() => {
     fetchCategories();
+    fetchSubcategories();
   }, []);
 
   const fetchCategories = async () => {
@@ -101,6 +106,25 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     }
 
     setCategories(data || []);
+  };
+
+  const fetchSubcategories = async () => {
+    const { data, error } = await supabase
+      .from('subcategories')
+      .select('*')
+      .order('name');
+    
+    if (error) {
+      console.error('Error fetching subcategories:', error);
+      return;
+    }
+
+    setSubcategories(data || []);
+  };
+
+  const getSelectedCategoryId = () => {
+    const category = categories.find(c => c.name === formData.category);
+    return category?.id || '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -127,6 +151,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         description: formData.description,
         price: parseFloat(formData.price),
         category: formData.category,
+        subcategory_id: formData.subcategoryId || null,
         image_url: formData.imageUrls[0] || null,
         stock: parseInt(formData.stock),
         product_type: formData.productType,
@@ -256,7 +281,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
             <Label htmlFor="edit-category">Kategorie</Label>
             <Select 
               value={formData.category} 
-              onValueChange={(value) => setFormData({...formData, category: value})}
+              onValueChange={(value) => setFormData({...formData, category: value, subcategoryId: ''})}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Kategorie wählen" />
@@ -272,6 +297,31 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Subcategory */}
+          {subcategories.filter(s => s.category_id === getSelectedCategoryId()).length > 0 && (
+            <div>
+              <Label htmlFor="edit-subcategory">Unterkategorie (optional)</Label>
+              <Select 
+                value={formData.subcategoryId} 
+                onValueChange={(value) => setFormData({...formData, subcategoryId: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Unterkategorie wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Keine Unterkategorie</SelectItem>
+                  {subcategories
+                    .filter((sub) => sub.category_id === getSelectedCategoryId())
+                    .map((sub) => (
+                      <SelectItem key={sub.id} value={sub.id}>
+                        {sub.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div>
             <Label htmlFor="edit-imageUrls">Produktbilder</Label>
