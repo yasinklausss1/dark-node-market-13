@@ -256,8 +256,19 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
         </div>
 
         <div className="space-y-1 sm:space-y-2">
-          <div className="text-xl sm:text-2xl font-bold text-primary">
-            €{product.price.toFixed(2)}
+          <div className="flex items-center justify-between">
+            <div className="text-xl sm:text-2xl font-bold text-primary">
+              €{product.price.toFixed(2)}
+            </div>
+            <div className={`text-sm font-medium px-2 py-1 rounded ${
+              product.stock > 10 
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                : product.stock > 0 
+                  ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+            }`}>
+              {product.stock > 0 ? `${product.stock} verfügbar` : 'Ausverkauft'}
+            </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-1 sm:gap-4">
             {btcPrice && btcAmount && (
