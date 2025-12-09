@@ -1671,6 +1671,7 @@ export type Database = {
       get_seller_orders: {
         Args: { seller_uuid: string }
         Returns: {
+          buyer_notes: string
           buyer_username: string
           created_at: string
           id: string

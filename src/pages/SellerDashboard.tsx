@@ -63,6 +63,7 @@ interface Order {
   tracking_url: string | null;
   buyer_username: string;
   items: OrderItem[] | null;
+  buyer_notes: string | null;
 }
 
 const SellerDashboard = () => {
@@ -1071,6 +1072,18 @@ const fetchOrders = async () => {
                               </div>
                             ))}
                           </div>
+                          
+                          {/* Buyer Notes for digital products */}
+                          {order.buyer_notes && (
+                            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                              <h4 className="font-medium text-sm text-blue-800 dark:text-blue-200 mb-1">
+                                💬 Hinweise vom Käufer:
+                              </h4>
+                              <p className="text-sm text-blue-700 dark:text-blue-300 whitespace-pre-wrap">
+                                {order.buyer_notes}
+                              </p>
+                            </div>
+                          )}
 
                           {/* Update Status Button */}
                           <Button
