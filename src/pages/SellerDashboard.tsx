@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Edit, Package, User, Truck, CheckCircle } from 'lucide-react';
+import { Upload, Edit, Package, User, Truck, CheckCircle, Plus } from 'lucide-react';
 import { MultiFileUpload } from '@/components/ui/multi-file-upload';
 import EditProductModal from '@/components/EditProductModal';
 import OrderStatusModal from '@/components/OrderStatusModal';
@@ -95,6 +95,12 @@ const SellerDashboard = () => {
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  
+  // New category/subcategory creation state
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [showNewSubcategoryInput, setShowNewSubcategoryInput] = useState(false);
+  const [newSubcategoryName, setNewSubcategoryName] = useState('');
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string>('');
   const [selectedOrderStatus, setSelectedOrderStatus] = useState<string>('');
@@ -155,6 +161,90 @@ const SellerDashboard = () => {
   const getSelectedCategoryId = () => {
     const category = categories.find(c => c.name === formData.category);
     return category?.id || '';
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast({
+        title: "Fehler",
+        description: "Bitte gib einen Kategorienamen ein.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('categories')
+      .insert([{ name: newCategoryName.trim(), product_type: formData.productType }])
+      .select()
+      .single();
+
+    if (error) {
+      toast({
+        title: "Fehler",
+        description: "Kategorie konnte nicht erstellt werden.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setCategories([...categories, data]);
+    setFormData({ ...formData, category: data.name });
+    setNewCategoryName('');
+    setShowNewCategoryInput(false);
+    toast({
+      title: "Erfolg",
+      description: "Kategorie wurde erstellt."
+    });
+  };
+
+  const handleAddSubcategory = async () => {
+    const categoryId = getSelectedCategoryId();
+    if (!categoryId) {
+      toast({
+        title: "Fehler",
+        description: "Bitte wähle zuerst eine Kategorie.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!newSubcategoryName.trim()) {
+      toast({
+        title: "Fehler",
+        description: "Bitte gib einen Unterkategorienamen ein.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('subcategories')
+      .insert([{ 
+        name: newSubcategoryName.trim(), 
+        category_id: categoryId,
+        product_type: formData.productType 
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      toast({
+        title: "Fehler",
+        description: "Unterkategorie konnte nicht erstellt werden.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSubcategories([...subcategories, data]);
+    setFormData({ ...formData, subcategoryId: data.id });
+    setNewSubcategoryName('');
+    setShowNewSubcategoryInput(false);
+    toast({
+      title: "Erfolg",
+      description: "Unterkategorie wurde erstellt."
+    });
   };
 
   const fetchProducts = async () => {
@@ -573,47 +663,119 @@ const fetchOrders = async () => {
 
                     <div>
                       <Label htmlFor="category">Kategorie</Label>
-                      <Select 
-                        value={formData.category} 
-                        onValueChange={(value) => setFormData({...formData, category: value, subcategoryId: ''})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Kategorie wählen" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories
-                            .filter((category) => category.product_type === formData.productType)
-                            .map((category) => (
-                              <SelectItem key={category.id} value={category.name}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                      {!showNewCategoryInput ? (
+                        <div className="flex gap-2">
+                          <Select 
+                            value={formData.category} 
+                            onValueChange={(value) => setFormData({...formData, category: value, subcategoryId: ''})}
+                          >
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Kategorie wählen" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categories
+                                .filter((category) => category.product_type === formData.productType)
+                                .map((category) => (
+                                  <SelectItem key={category.id} value={category.name}>
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="icon"
+                            onClick={() => setShowNewCategoryInput(true)}
+                            title="Neue Kategorie erstellen"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Neue Kategorie eingeben..."
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCategory())}
+                          />
+                          <Button type="button" onClick={handleAddCategory} size="sm">
+                            Hinzufügen
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setShowNewCategoryInput(false);
+                              setNewCategoryName('');
+                            }}
+                          >
+                            Abbrechen
+                          </Button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Subcategory */}
-                    {subcategories.filter(s => s.category_id === getSelectedCategoryId()).length > 0 && (
+                    {formData.category && (
                       <div>
                         <Label htmlFor="subcategory">Unterkategorie (optional)</Label>
-                        <Select 
-                          value={formData.subcategoryId} 
-                          onValueChange={(value) => setFormData({...formData, subcategoryId: value})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Unterkategorie wählen" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Keine Unterkategorie</SelectItem>
-                            {subcategories
-                              .filter((sub) => sub.category_id === getSelectedCategoryId())
-                              .map((sub) => (
-                                <SelectItem key={sub.id} value={sub.id}>
-                                  {sub.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
+                        {!showNewSubcategoryInput ? (
+                          <div className="flex gap-2">
+                            <Select 
+                              value={formData.subcategoryId} 
+                              onValueChange={(value) => setFormData({...formData, subcategoryId: value})}
+                            >
+                              <SelectTrigger className="flex-1">
+                                <SelectValue placeholder="Unterkategorie wählen" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Keine Unterkategorie</SelectItem>
+                                {subcategories
+                                  .filter((sub) => sub.category_id === getSelectedCategoryId())
+                                  .map((sub) => (
+                                    <SelectItem key={sub.id} value={sub.id}>
+                                      {sub.name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => setShowNewSubcategoryInput(true)}
+                              title="Neue Unterkategorie erstellen"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Neue Unterkategorie eingeben..."
+                              value={newSubcategoryName}
+                              onChange={(e) => setNewSubcategoryName(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSubcategory())}
+                            />
+                            <Button type="button" onClick={handleAddSubcategory} size="sm">
+                              Hinzufügen
+                            </Button>
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setShowNewSubcategoryInput(false);
+                                setNewSubcategoryName('');
+                              }}
+                            >
+                              Abbrechen
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
 
