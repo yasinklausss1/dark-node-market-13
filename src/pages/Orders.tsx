@@ -302,13 +302,13 @@ const Orders: React.FC = () => {
             <CardTitle className="text-lg sm:text-xl">Bestellverlauf ({orders.length})</CardTitle>
             <CardDescription className="text-sm">Zeige deine vergangenen Einkäufe und deren Status</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6">
             {isLoading ? (
               <p className="text-muted-foreground">Bestellungen werden geladen...</p>
             ) : orders.length === 0 ? (
               <p className="text-muted-foreground">Du hast noch keine Bestellungen aufgegeben.</p>
             ) : (
-              <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+              <div className="space-y-4">
                 {orders.map((order) => (
                   <div key={order.id} className="border rounded-lg p-3 sm:p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
