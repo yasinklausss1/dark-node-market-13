@@ -18,7 +18,7 @@ serve(async (req) => {
     );
 
     const body = await req.json();
-    const { userId, items, method, btcPrice, ltcPrice, shippingAddress, buyerNotes } = body as {
+    const { userId, items, method, btcPrice, ltcPrice, shippingAddress, buyerNotes, buyerNotesImages } = body as {
       userId: string;
       items: CartItem[];
       method: 'btc' | 'ltc';
@@ -34,6 +34,7 @@ serve(async (req) => {
         country: string;
       } | null;
       buyerNotes?: string;
+      buyerNotesImages?: string[];
     };
 
     if (!userId || !items?.length || !method) throw new Error('Invalid payload');
@@ -132,9 +133,12 @@ serve(async (req) => {
       orderData.shipping_country = shippingAddress.country;
     }
     
-    // Add buyer notes for digital products
+    // Add buyer notes and images for digital products
     if (buyerNotes) {
       orderData.buyer_notes = buyerNotes;
+    }
+    if (buyerNotesImages && buyerNotesImages.length > 0) {
+      orderData.buyer_notes_images = buyerNotesImages;
     }
 
     const { data: order, error: orderErr } = await supabase

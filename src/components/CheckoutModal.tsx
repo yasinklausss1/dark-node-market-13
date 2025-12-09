@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { OrderImageUpload } from '@/components/ui/order-image-upload';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -27,7 +28,7 @@ interface CheckoutModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   totalAmount: number;
-  onConfirmOrder: (address: CheckoutFormData | null, buyerNotes?: string) => void;
+  onConfirmOrder: (address: CheckoutFormData | null, buyerNotes?: string, buyerNotesImages?: string[]) => void;
   loading?: boolean;
   requiresShipping?: boolean;
 }
@@ -88,6 +89,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   requiresShipping = true
 }) => {
   const [buyerNotes, setBuyerNotes] = useState('');
+  const [buyerNotesImages, setBuyerNotesImages] = useState<string[]>([]);
   
   const form = useForm<CheckoutFormData>({
     resolver: requiresShipping ? zodResolver(checkoutSchema) : undefined,
@@ -106,10 +108,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     onConfirmOrder(requiresShipping ? data : null);
   };
 
-  // For digital products, confirm with buyer notes
+  // For digital products, confirm with buyer notes and images
   const handleDigitalConfirm = () => {
-    onConfirmOrder(null, buyerNotes.trim() || undefined);
+    onConfirmOrder(null, buyerNotes.trim() || undefined, buyerNotesImages.length > 0 ? buyerNotesImages : undefined);
     setBuyerNotes('');
+    setBuyerNotesImages([]);
   };
 
   return (
@@ -300,6 +303,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </p>
               </div>
               
+              {/* Image upload for buyer */}
+              <div className="space-y-2">
+                <Label>Bilder anhängen (optional)</Label>
+                <OrderImageUpload
+                  images={buyerNotesImages}
+                  onChange={setBuyerNotesImages}
+                  maxImages={5}
+                />
+                <p className="text-xs text-muted-foreground">
+                  z.B. Screenshots, Referenzbilder oder andere relevante Bilder
+                </p>
+              </div>
+              
               <div className="flex space-x-2 pt-4">
                 <Button
                   type="button"
@@ -307,6 +323,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   onClick={() => {
                     onOpenChange(false);
                     setBuyerNotes('');
+                    setBuyerNotesImages([]);
                   }}
                   className="flex-1 flex items-center gap-2"
                   disabled={loading}

@@ -1678,6 +1678,7 @@ export type Database = {
         Args: { seller_uuid: string }
         Returns: {
           buyer_notes: string
+          buyer_notes_images: string[]
           buyer_username: string
           created_at: string
           id: string
