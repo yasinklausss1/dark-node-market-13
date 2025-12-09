@@ -689,6 +689,7 @@ export type Database = {
           created_at: string
           digital_content: string | null
           digital_content_delivered_at: string | null
+          digital_content_images: string[] | null
           id: string
           order_id: string
           price_eur: number
@@ -699,6 +700,7 @@ export type Database = {
           created_at?: string
           digital_content?: string | null
           digital_content_delivered_at?: string | null
+          digital_content_images?: string[] | null
           id?: string
           order_id: string
           price_eur: number
@@ -709,6 +711,7 @@ export type Database = {
           created_at?: string
           digital_content?: string | null
           digital_content_delivered_at?: string | null
+          digital_content_images?: string[] | null
           id?: string
           order_id?: string
           price_eur?: number
@@ -735,6 +738,7 @@ export type Database = {
       orders: {
         Row: {
           buyer_notes: string | null
+          buyer_notes_images: string[] | null
           created_at: string
           fansign_image_url: string | null
           fansign_uploaded_at: string | null
@@ -758,6 +762,7 @@ export type Database = {
         }
         Insert: {
           buyer_notes?: string | null
+          buyer_notes_images?: string[] | null
           created_at?: string
           fansign_image_url?: string | null
           fansign_uploaded_at?: string | null
@@ -781,6 +786,7 @@ export type Database = {
         }
         Update: {
           buyer_notes?: string | null
+          buyer_notes_images?: string[] | null
           created_at?: string
           fansign_image_url?: string | null
           fansign_uploaded_at?: string | null
