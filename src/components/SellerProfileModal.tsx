@@ -27,6 +27,8 @@ interface Review {
   comment: string | null;
   created_at: string;
   reviewer_id: string;
+  reviewer_username?: string;
+  product_title?: string;
 }
 
 interface SellerRating {
@@ -125,18 +127,42 @@ const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
         setSellerRating(ratingData || { total_reviews: 0, average_rating: 0 });
       }
 
-      // Fetch recent reviews
+      // Fetch ALL reviews for this seller (with product and reviewer info)
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
-        .select('id, rating, comment, created_at, reviewer_id')
+        .select('id, rating, comment, created_at, reviewer_id, product_id')
         .eq('seller_id', sellerId)
-        .order('created_at', { ascending: false })
-        .limit(5);
+        .not('comment', 'is', null)
+        .order('created_at', { ascending: false });
 
       if (reviewsError) {
         console.error('Error fetching reviews:', reviewsError);
+      } else if (reviewsData && reviewsData.length > 0) {
+        // Fetch reviewer usernames
+        const reviewerIds = [...new Set(reviewsData.map(r => r.reviewer_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, username')
+          .in('user_id', reviewerIds);
+        const profileMap = new Map(profiles?.map(p => [p.user_id, p.username]) || []);
+
+        // Fetch product titles
+        const productIds = [...new Set(reviewsData.filter(r => r.product_id).map(r => r.product_id))];
+        const { data: productsInfo } = await supabase
+          .from('products')
+          .select('id, title')
+          .in('id', productIds);
+        const productMap = new Map(productsInfo?.map(p => [p.id, p.title]) || []);
+
+        const enrichedReviews = reviewsData.map(r => ({
+          ...r,
+          reviewer_username: profileMap.get(r.reviewer_id) || 'Unbekannt',
+          product_title: r.product_id ? productMap.get(r.product_id) : undefined
+        }));
+        
+        setReviews(enrichedReviews);
       } else {
-        setReviews(reviewsData || []);
+        setReviews([]);
       }
 
       // Fetch seller's active products
@@ -422,21 +448,20 @@ const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
                 </CardContent>
               </Card>
 
-              {/* Reviews */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <MessageCircle className="h-4 w-4" />
-                    Bewertungen
+                    Alle Bewertungen ({reviews.length})
                   </CardTitle>
-                  <CardDescription>Die neuesten Käuferbewertungen</CardDescription>
+                  <CardDescription>Käuferbewertungen für diesen Verkäufer</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {reviews.length > 0 ? (
-                    <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                       {reviews.map((review) => (
                         <div key={review.id} className="p-3 bg-muted/50 rounded-lg space-y-2">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between flex-wrap gap-2">
                             <div className="flex items-center gap-2">
                               {renderStars(review.rating)}
                               <Badge variant="outline" className="text-xs">
@@ -448,8 +473,17 @@ const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
                               {new Date(review.created_at).toLocaleDateString('de-DE')}
                             </div>
                           </div>
+                          {review.product_title && (
+                            <p className="text-xs font-medium text-primary">
+                              Produkt: {review.product_title}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <User className="h-3 w-3" />
+                            @{review.reviewer_username}
+                          </div>
                           {review.comment && (
-                            <p className="text-sm text-muted-foreground italic">
+                            <p className="text-sm text-foreground/80 italic border-l-2 border-primary/30 pl-2">
                               "{review.comment}"
                             </p>
                           )}
