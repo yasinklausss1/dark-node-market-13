@@ -731,7 +731,7 @@ const Marketplace = () => {
                 <SelectTrigger className="flex-1 min-w-[140px] h-11">
                   <SelectValue placeholder="Kategorie" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[320px] overflow-y-auto">
                   <SelectItem value="all">
                     Alle ({categoryCounts.all || 0})
                   </SelectItem>
