@@ -45,6 +45,9 @@ interface OrderItem {
   digital_content?: string | null;
   digital_content_delivered_at?: string | null;
   digital_content_images?: string[] | null;
+  seller_id?: string;
+  seller_username?: string;
+  has_review?: boolean;
 }
 
 const Orders: React.FC = () => {
@@ -61,7 +64,7 @@ const Orders: React.FC = () => {
   const [selectedProductTitle, setSelectedProductTitle] = useState('');
   const [sellerProfileOpen, setSellerProfileOpen] = useState(false);
 
-  const fetchOrderItems = async (orderIds: string[]) => {
+  const fetchOrderItems = async (orderIds: string[], userId: string) => {
     if (orderIds.length === 0) {
       setItemsByOrder({});
       return;
@@ -75,7 +78,9 @@ const Orders: React.FC = () => {
         *,
         products (
           title,
-          product_type
+          product_type,
+          seller_id,
+          profiles:seller_id (username)
         )
       `)
       .in('order_id', orderIds);
@@ -84,6 +89,19 @@ const Orders: React.FC = () => {
       console.error('Error fetching order items:', itemsError);
       throw itemsError;
     }
+    
+    // Fetch existing reviews for these order items
+    const productIds = itemsData?.map(it => it.product_id) || [];
+    const { data: existingReviews } = await supabase
+      .from('reviews')
+      .select('product_id, order_id')
+      .in('order_id', orderIds)
+      .in('product_id', productIds)
+      .eq('reviewer_id', userId);
+    
+    const reviewedProducts = new Set(
+      existingReviews?.map(r => `${r.order_id}-${r.product_id}`) || []
+    );
     
     console.log('Fetched order items:', itemsData);
     
@@ -101,6 +119,9 @@ const Orders: React.FC = () => {
         digital_content: it.digital_content || null,
         digital_content_delivered_at: it.digital_content_delivered_at || null,
         digital_content_images: it.digital_content_images || null,
+        seller_id: it.products?.seller_id || undefined,
+        seller_username: it.products?.profiles?.username || 'Unbekannt',
+        has_review: reviewedProducts.has(`${it.order_id}-${it.product_id}`)
       });
     });
     
@@ -163,7 +184,7 @@ const Orders: React.FC = () => {
         setOrders(ordersWithSellers as any);
         
         const orderIds = ordersList.map((o: any) => o.id);
-        await fetchOrderItems(orderIds);
+        await fetchOrderItems(orderIds, user.id);
       } catch (e) {
         console.error('Fehler beim Laden der Bestellungen:', e);
       } finally {
@@ -196,7 +217,7 @@ const Orders: React.FC = () => {
           // Check if this update is for one of the user's orders
           if (orderIds.includes(updatedItem.order_id)) {
             console.log('Update is for user order, refreshing items...');
-            await fetchOrderItems(orderIds);
+            await fetchOrderItems(orderIds, user.id);
           }
         }
       )
@@ -449,55 +470,59 @@ const Orders: React.FC = () => {
                             );
                           })()}
 
-                        {order.sellers.length > 0 && (
-                          <div className="mt-3">
-                            <h4 className="font-medium text-sm mb-2">Verkäufer</h4>
-                            <div className="space-y-2">
-                              {order.sellers.map((seller) => {
-                                // Check if review should be enabled
-                                const orderItems = itemsByOrder[order.id] || [];
-                                const hasPhysicalProducts = orderItems.some(it => it.product_type !== 'digital');
-                                const hasDigitalProducts = orderItems.some(it => it.product_type === 'digital');
-                                
-                                // For physical products: check if order is delivered
-                                const physicalDelivered = hasPhysicalProducts && order.order_status === 'delivered';
-                                
-                                // For digital products: check if all digital content has been delivered
-                                const digitalItems = orderItems.filter(it => it.product_type === 'digital');
-                                const allDigitalDelivered = hasDigitalProducts && digitalItems.length > 0 && 
-                                  digitalItems.every(it => it.digital_content_delivered_at);
-                                
-                                // Can review if: physical delivered OR all digital delivered (for pure digital orders)
-                                // For mixed orders: physical must be delivered OR all digital must be delivered
-                                const canReview = (hasPhysicalProducts && physicalDelivered) || 
-                                  (!hasPhysicalProducts && allDigitalDelivered);
-                                
-                                return (
-                                  <div key={seller.seller_id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-muted rounded">
-                                    <button
-                                      onClick={() => handleViewSellerProfile(seller.seller_id, seller.seller_username)}
-                                      className="text-sm font-medium text-primary hover:underline text-left truncate"
-                                    >
-                                      @{seller.seller_username}
-                                    </button>
-                                    {canReview && (
-                                      <Button
-                                        variant={seller.has_review ? "outline" : "default"}
-                                        size="sm"
-                                        onClick={() => handleReviewSeller(order.id, seller.seller_id, seller.seller_username)}
-                                        disabled={seller.has_review}
-                                        className="flex items-center gap-1 w-full sm:w-auto justify-center"
+                        {/* Product Reviews Section */}
+                        {(() => {
+                          const orderItems = itemsByOrder[order.id] || [];
+                          const hasPhysicalProducts = orderItems.some(it => it.product_type !== 'digital');
+                          const physicalDelivered = hasPhysicalProducts && order.order_status === 'delivered';
+                          
+                          // Filter items that can be reviewed
+                          const reviewableItems = orderItems.filter(item => {
+                            if (item.product_type === 'digital') {
+                              return !!item.digital_content_delivered_at;
+                            }
+                            return physicalDelivered;
+                          });
+                          
+                          if (reviewableItems.length === 0) return null;
+                          
+                          return (
+                            <div className="mt-3">
+                              <h4 className="font-medium text-sm mb-2">Produkte bewerten</h4>
+                              <div className="space-y-2">
+                                {reviewableItems.map((item) => (
+                                  <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-muted rounded">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium truncate">{item.product_title}</p>
+                                      <button
+                                        onClick={() => item.seller_id && handleViewSellerProfile(item.seller_id, item.seller_username || 'Unbekannt')}
+                                        className="text-xs text-muted-foreground hover:text-primary hover:underline"
                                       >
-                                        <Star className="h-3 w-3" />
-                                        {seller.has_review ? 'Bewertet' : 'Bewerten'}
-                                      </Button>
-                                    )}
+                                        @{item.seller_username}
+                                      </button>
+                                    </div>
+                                    <Button
+                                      variant={item.has_review ? "outline" : "default"}
+                                      size="sm"
+                                      onClick={() => handleReviewProduct(
+                                        order.id, 
+                                        item.seller_id || '', 
+                                        item.seller_username || 'Unbekannt',
+                                        item.product_id,
+                                        item.product_title || 'Produkt'
+                                      )}
+                                      disabled={item.has_review}
+                                      className="flex items-center gap-1 w-full sm:w-auto justify-center"
+                                    >
+                                      <Star className="h-3 w-3" />
+                                      {item.has_review ? 'Bewertet' : 'Bewerten'}
+                                    </Button>
                                   </div>
-                                );
-                              })}
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                       </div>
 
                       {/* Only show shipping address if order has physical products */}
