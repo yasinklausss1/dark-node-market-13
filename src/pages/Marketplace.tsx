@@ -448,13 +448,20 @@ const Marketplace = () => {
       );
     }
 
+    // Filter by category or subcategory
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(product => product.category === selectedCategory);
-    }
-
-    // Filter by subcategory
-    if (selectedSubcategory !== 'all') {
-      filtered = filtered.filter(product => product.subcategory_id === selectedSubcategory);
+      if (selectedCategory.startsWith('sub:')) {
+        // Subcategory selected
+        const subId = selectedCategory.replace('sub:', '');
+        filtered = filtered.filter(product => product.subcategory_id === subId);
+      } else if (selectedCategory.startsWith('cat:')) {
+        // Main category selected
+        const catName = selectedCategory.replace('cat:', '');
+        filtered = filtered.filter(product => product.category === catName);
+      } else {
+        // Legacy support for direct category name
+        filtered = filtered.filter(product => product.category === selectedCategory);
+      }
     }
 
     switch (sortBy) {
@@ -717,7 +724,10 @@ const Marketplace = () => {
               />
             </div>
             <div className="flex flex-wrap gap-3">
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Select value={selectedCategory} onValueChange={(value) => {
+                setSelectedCategory(value);
+                setSelectedSubcategory('all');
+              }}>
                 <SelectTrigger className="flex-1 min-w-[140px] h-11">
                   <SelectValue placeholder="Kategorie" />
                 </SelectTrigger>
@@ -727,30 +737,23 @@ const Marketplace = () => {
                   </SelectItem>
                   {categories
                     .filter((category) => category.product_type === productTypeTab)
-                    .map((category) => (
-                      <SelectItem key={category.id} value={category.name}>
-                        {category.name} ({categoryCounts[category.name] || 0})
-                      </SelectItem>
-                    ))}
+                    .map((category) => {
+                      const categorySubs = subcategories.filter(s => s.category_id === category.id);
+                      return (
+                        <React.Fragment key={category.id}>
+                          <SelectItem value={`cat:${category.name}`} className="font-medium">
+                            {category.name} ({categoryCounts[category.name] || 0})
+                          </SelectItem>
+                          {categorySubs.map((sub) => (
+                            <SelectItem key={sub.id} value={`sub:${sub.id}`} className="pl-6 text-muted-foreground">
+                              ↳ {sub.name}
+                            </SelectItem>
+                          ))}
+                        </React.Fragment>
+                      );
+                    })}
                 </SelectContent>
               </Select>
-
-              {/* Subcategory Filter - only show if category is selected and has subcategories */}
-              {getSubcategoriesForSelectedCategory().length > 0 && (
-                <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
-                  <SelectTrigger className="flex-1 min-w-[140px] h-11">
-                    <SelectValue placeholder="Unterkategorie" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle Unterkategorien</SelectItem>
-                    {getSubcategoriesForSelectedCategory().map((sub) => (
-                      <SelectItem key={sub.id} value={sub.id}>
-                        {sub.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
                 <SelectTrigger className="flex-1 h-11">
                   <SelectValue placeholder="Sortieren" />
