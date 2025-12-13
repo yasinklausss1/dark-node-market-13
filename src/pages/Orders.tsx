@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Package, Truck, CheckCircle, ExternalLink, ArrowLeft, Download, FileText } from 'lucide-react';
+import { Star, Package, Truck, CheckCircle, ExternalLink, ArrowLeft, Download, FileText, FileIcon } from 'lucide-react';
 import ReviewModal from '@/components/ReviewModal';
 import SellerProfileModal from '@/components/SellerProfileModal';
 
@@ -45,6 +45,7 @@ interface OrderItem {
   digital_content?: string | null;
   digital_content_delivered_at?: string | null;
   digital_content_images?: string[] | null;
+  digital_content_files?: string[] | null;
   seller_id?: string;
   seller_username?: string;
   has_review?: boolean;
@@ -119,6 +120,7 @@ const Orders: React.FC = () => {
         digital_content: it.digital_content || null,
         digital_content_delivered_at: it.digital_content_delivered_at || null,
         digital_content_images: it.digital_content_images || null,
+        digital_content_files: (it as any).digital_content_files || null,
         seller_id: it.products?.seller_id || undefined,
         seller_username: it.products?.profiles?.username || 'Unbekannt',
         has_review: reviewedProducts.has(`${it.order_id}-${it.product_id}`)
@@ -418,7 +420,7 @@ const Orders: React.FC = () => {
                                       </h4>
                                     </div>
                                     <div className="space-y-3">
-                                      {digitalItems.filter(it => it.digital_content || (it.digital_content_images && it.digital_content_images.length > 0)).map((item) => (
+                                      {digitalItems.filter(it => it.digital_content || (it.digital_content_images && it.digital_content_images.length > 0) || (it.digital_content_files && it.digital_content_files.length > 0)).map((item) => (
                                         <div key={item.id} className="bg-white dark:bg-background p-3 rounded border">
                                           <p className="text-xs font-medium text-muted-foreground mb-1">
                                             {item.product_title}:
@@ -439,6 +441,40 @@ const Orders: React.FC = () => {
                                                   />
                                                 </a>
                                               ))}
+                                            </div>
+                                          )}
+                                          {item.digital_content_files && item.digital_content_files.length > 0 && (
+                                            <div className="mt-2 space-y-1">
+                                              <p className="text-xs font-medium text-muted-foreground">Dateien:</p>
+                                              {item.digital_content_files.map((url, idx) => {
+                                                const fileName = (() => {
+                                                  try {
+                                                    const urlObj = new URL(url);
+                                                    const pathParts = urlObj.pathname.split('/');
+                                                    const fullName = pathParts[pathParts.length - 1];
+                                                    const underscoreIndex = fullName.indexOf('_');
+                                                    if (underscoreIndex > 30) {
+                                                      return decodeURIComponent(fullName.substring(underscoreIndex + 1));
+                                                    }
+                                                    return decodeURIComponent(fullName);
+                                                  } catch {
+                                                    return `Datei ${idx + 1}`;
+                                                  }
+                                                })();
+                                                return (
+                                                  <a
+                                                    key={idx}
+                                                    href={url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2 p-2 bg-muted rounded hover:bg-muted/80 transition-colors"
+                                                  >
+                                                    <FileIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                    <span className="text-sm truncate flex-1">{fileName}</span>
+                                                    <Download className="h-4 w-4 text-primary flex-shrink-0" />
+                                                  </a>
+                                                );
+                                              })}
                                             </div>
                                           )}
                                         </div>
