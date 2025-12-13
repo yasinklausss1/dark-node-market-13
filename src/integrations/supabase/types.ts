@@ -689,6 +689,7 @@ export type Database = {
           created_at: string
           digital_content: string | null
           digital_content_delivered_at: string | null
+          digital_content_files: string[] | null
           digital_content_images: string[] | null
           id: string
           order_id: string
@@ -700,6 +701,7 @@ export type Database = {
           created_at?: string
           digital_content?: string | null
           digital_content_delivered_at?: string | null
+          digital_content_files?: string[] | null
           digital_content_images?: string[] | null
           id?: string
           order_id: string
@@ -711,6 +713,7 @@ export type Database = {
           created_at?: string
           digital_content?: string | null
           digital_content_delivered_at?: string | null
+          digital_content_files?: string[] | null
           digital_content_images?: string[] | null
           id?: string
           order_id?: string

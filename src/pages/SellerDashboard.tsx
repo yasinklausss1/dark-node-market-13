@@ -45,6 +45,7 @@ interface OrderItem {
   digital_content?: string | null;
   digital_content_delivered_at?: string | null;
   digital_content_images?: string[] | null;
+  digital_content_files?: string[] | null;
 }
 
 interface Order {
@@ -120,6 +121,7 @@ const SellerDashboard = () => {
     productTitle: string;
     currentContent: string | null;
     currentImages: string[];
+    currentFiles: string[];
   } | null>(null);
   
   // Get chat data
@@ -1038,7 +1040,8 @@ const fetchOrders = async () => {
                                                 orderItemId: item.order_item_id,
                                                 productTitle: item.product_title || 'Produkt',
                                                 currentContent: item.digital_content || null,
-                                                currentImages: item.digital_content_images || []
+                                                currentImages: item.digital_content_images || [],
+                                                currentFiles: item.digital_content_files || []
                                               });
                                               setDigitalContentModalOpen(true);
                                             }}
@@ -1063,7 +1066,8 @@ const fetchOrders = async () => {
                                             orderItemId: item.order_item_id,
                                             productTitle: item.product_title || 'Produkt',
                                             currentContent: null,
-                                            currentImages: []
+                                            currentImages: [],
+                                            currentFiles: []
                                           });
                                           setDigitalContentModalOpen(true);
                                         }}
@@ -1193,6 +1197,7 @@ const fetchOrders = async () => {
             productTitle={selectedOrderItem.productTitle}
             currentContent={selectedOrderItem.currentContent}
             currentImages={selectedOrderItem.currentImages}
+            currentFiles={selectedOrderItem.currentFiles}
             onContentSaved={fetchOrders}
           />
         )}

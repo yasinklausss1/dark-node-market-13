@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { OrderImageUpload } from '@/components/ui/order-image-upload';
+import { OrderFileUpload } from '@/components/ui/order-file-upload';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -21,6 +22,7 @@ interface DigitalContentModalProps {
   productTitle: string;
   currentContent: string | null;
   currentImages?: string[] | null;
+  currentFiles?: string[] | null;
   onContentSaved: () => void;
 }
 
@@ -31,24 +33,27 @@ const DigitalContentModal: React.FC<DigitalContentModalProps> = ({
   productTitle,
   currentContent,
   currentImages,
+  currentFiles,
   onContentSaved
 }) => {
   const { toast } = useToast();
   const [content, setContent] = useState(currentContent || '');
   const [images, setImages] = useState<string[]>(currentImages || []);
+  const [files, setFiles] = useState<string[]>(currentFiles || []);
   const [isSaving, setIsSaving] = useState(false);
 
   // Update content when currentContent or orderItemId changes
   useEffect(() => {
     setContent(currentContent || '');
     setImages(currentImages || []);
-  }, [currentContent, currentImages, orderItemId, open]);
+    setFiles(currentFiles || []);
+  }, [currentContent, currentImages, currentFiles, orderItemId, open]);
 
   const handleSave = async () => {
-    if (!content.trim() && images.length === 0) {
+    if (!content.trim() && images.length === 0 && files.length === 0) {
       toast({
         title: "Inhalt erforderlich",
-        description: "Bitte gib den digitalen Inhalt ein oder füge Bilder hinzu.",
+        description: "Bitte gib den digitalen Inhalt ein, füge Bilder oder Dateien hinzu.",
         variant: "destructive"
       });
       return;
@@ -59,12 +64,14 @@ const DigitalContentModal: React.FC<DigitalContentModalProps> = ({
     console.log('Saving digital content for order item:', orderItemId);
     console.log('Content:', content);
     console.log('Images:', images);
+    console.log('Files:', files);
     
     const { data, error } = await supabase
       .from('order_items')
       .update({ 
         digital_content: content || null,
         digital_content_images: images,
+        digital_content_files: files,
         digital_content_delivered_at: new Date().toISOString()
       })
       .eq('id', orderItemId)
@@ -103,7 +110,7 @@ const DigitalContentModal: React.FC<DigitalContentModalProps> = ({
         
         <div className="space-y-4">
           <div>
-            <Label htmlFor="digitalContent">Inhalt (Codes, Links, Account-Daten, etc.)</Label>
+            <Label htmlFor="digitalContent">Text/Codes (Codes, Links, Account-Daten, etc.)</Label>
             <Textarea
               id="digitalContent"
               value={content}
@@ -123,7 +130,20 @@ const DigitalContentModal: React.FC<DigitalContentModalProps> = ({
               className="mt-2"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              z.B. Screenshots, Zugangsdaten-Bilder oder andere relevante Bilder
+              z.B. Screenshots, Zugangsdaten-Bilder
+            </p>
+          </div>
+
+          <div>
+            <Label>Dateien anhängen (optional)</Label>
+            <OrderFileUpload
+              files={files}
+              onChange={setFiles}
+              maxFiles={10}
+              className="mt-2"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              z.B. PDFs, ZIPs, Software, Dokumente (max. 50MB pro Datei)
             </p>
           </div>
         </div>
