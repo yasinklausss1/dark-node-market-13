@@ -680,7 +680,7 @@ const Marketplace = () => {
           <p className="text-sm text-muted-foreground">
             Für Vorschläge, Verbesserungen oder Bugs bitte in der{" "}
             <a 
-              href="https://t.me/+mkuKrzzDCAVhNzVk" 
+              href="https://t.me/+DPc8EfYXdOAzZTk0" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-primary hover:underline font-medium"
@@ -688,11 +688,7 @@ const Marketplace = () => {
               Gruppe
             </a>
             {" "}melden oder privat schreiben:{" "}
-            <a href="https://t.me/elmatzo" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">@elmatzo</a>
-            {" / "}
-            <a href="https://t.me/xmlsfuak" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">@xmlsfuak</a>
-            {" / "}
-            <a href="https://t.me/veiyoo" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">@veiyoo</a>
+            <a href="https://t.me/OracleMarketSupport" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">@OracleMarketSupport</a>
           </p>
         </div>
 
