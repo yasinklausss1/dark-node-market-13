@@ -75,17 +75,17 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))'
         },
-        gold: {
-          50: '#fefce8',
-          100: '#fef9c3',
-          200: '#fef08a',
-          300: '#fde047',
-          400: '#facc15',
-          500: '#c9a227',
-          600: '#b8860b',
-          700: '#a16207',
-          800: '#854d0e',
-          900: '#713f12',
+        mauve: {
+          50: '#f8f5f7',
+          100: '#f0eaee',
+          200: '#e0d4dc',
+          300: '#c9b5c3',
+          400: '#a98fa0',
+          500: '#87697F',
+          600: '#75596d',
+          700: '#614a5a',
+          800: '#523f4c',
+          900: '#473842',
         }
       },
       borderRadius: {
@@ -102,7 +102,7 @@ export default {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' }
         },
-        'pulse-gold': {
+        'pulse-accent': {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.7' }
         },
@@ -114,18 +114,18 @@ export default {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'pulse-gold': 'pulse-gold 2s ease-in-out infinite',
+        'pulse-accent': 'pulse-accent 2s ease-in-out infinite',
         'float': 'float 3s ease-in-out infinite'
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-gold': 'linear-gradient(135deg, hsl(43 74% 49%), hsl(35 85% 55%))',
+        'gradient-primary': 'linear-gradient(135deg, hsl(316 13% 47%), hsl(316 15% 55%))',
         'noise': "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
       },
       boxShadow: {
-        'gold': '0 4px 14px 0 hsl(43 74% 49% / 0.25)',
-        'gold-lg': '0 10px 40px 0 hsl(43 74% 49% / 0.35)',
-        'inner-gold': 'inset 0 2px 4px 0 hsl(43 74% 49% / 0.1)',
+        'accent': '0 4px 14px 0 hsl(316 13% 47% / 0.25)',
+        'accent-lg': '0 10px 40px 0 hsl(316 13% 47% / 0.35)',
+        'inner-accent': 'inset 0 2px 4px 0 hsl(316 13% 47% / 0.1)',
       }
     }
   },
