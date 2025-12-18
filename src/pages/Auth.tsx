@@ -140,7 +140,7 @@ const Auth = () => {
                     Tritt unserer Community bei:
                   </p>
                   <a 
-                    href="https://t.me/+DPc8EfYXdOAzZTk0" 
+                    href="https://t.me/+yXmX6a5jYN4wMmU0" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-primary font-medium hover:text-primary/80 transition-colors"
