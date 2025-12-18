@@ -86,7 +86,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading }) => {
         
         <Button 
           type="submit" 
-          className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-gold hover:shadow-gold-lg transition-all duration-300 group" 
+          className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-accent hover:shadow-accent-lg transition-all duration-300 group" 
           disabled={isLoading}
         >
           {isLoading ? (

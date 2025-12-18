@@ -40,7 +40,7 @@ export const OracleLogo: React.FC<OracleLogoProps> = ({
         {/* Outer eye shape */}
         <path
           d="M32 12C18 12 8 32 8 32C8 32 18 52 32 52C46 52 56 32 56 32C56 32 46 12 32 12Z"
-          stroke="url(#goldGradient)"
+          stroke="url(#mauveGradient)"
           strokeWidth="2"
           fill="none"
           className="transition-all duration-300"
@@ -51,7 +51,7 @@ export const OracleLogo: React.FC<OracleLogoProps> = ({
           cx="32"
           cy="32"
           r="12"
-          stroke="url(#goldGradient)"
+          stroke="url(#mauveGradient)"
           strokeWidth="2"
           fill="none"
         />
@@ -61,13 +61,13 @@ export const OracleLogo: React.FC<OracleLogoProps> = ({
           cx="32"
           cy="32"
           r="5"
-          fill="url(#goldGradient)"
+          fill="url(#mauveGradient)"
         />
         
         {/* Top decorative arc */}
         <path
           d="M20 16C24 12 28 10 32 10C36 10 40 12 44 16"
-          stroke="url(#goldGradient)"
+          stroke="url(#mauveGradient)"
           strokeWidth="1.5"
           strokeLinecap="round"
           fill="none"
@@ -77,7 +77,7 @@ export const OracleLogo: React.FC<OracleLogoProps> = ({
         {/* Bottom decorative arc */}
         <path
           d="M20 48C24 52 28 54 32 54C36 54 40 52 44 48"
-          stroke="url(#goldGradient)"
+          stroke="url(#mauveGradient)"
           strokeWidth="1.5"
           strokeLinecap="round"
           fill="none"
@@ -86,18 +86,18 @@ export const OracleLogo: React.FC<OracleLogoProps> = ({
         
         {/* Rays emanating from center */}
         <g opacity="0.4">
-          <line x1="32" y1="2" x2="32" y2="8" stroke="url(#goldGradient)" strokeWidth="1" strokeLinecap="round" />
-          <line x1="32" y1="56" x2="32" y2="62" stroke="url(#goldGradient)" strokeWidth="1" strokeLinecap="round" />
-          <line x1="2" y1="32" x2="6" y2="32" stroke="url(#goldGradient)" strokeWidth="1" strokeLinecap="round" />
-          <line x1="58" y1="32" x2="62" y2="32" stroke="url(#goldGradient)" strokeWidth="1" strokeLinecap="round" />
+          <line x1="32" y1="2" x2="32" y2="8" stroke="url(#mauveGradient)" strokeWidth="1" strokeLinecap="round" />
+          <line x1="32" y1="56" x2="32" y2="62" stroke="url(#mauveGradient)" strokeWidth="1" strokeLinecap="round" />
+          <line x1="2" y1="32" x2="6" y2="32" stroke="url(#mauveGradient)" strokeWidth="1" strokeLinecap="round" />
+          <line x1="58" y1="32" x2="62" y2="32" stroke="url(#mauveGradient)" strokeWidth="1" strokeLinecap="round" />
         </g>
 
         {/* Gradient definitions */}
         <defs>
-          <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#c9a227" />
-            <stop offset="50%" stopColor="#d4af37" />
-            <stop offset="100%" stopColor="#b8860b" />
+          <linearGradient id="mauveGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#87697F" />
+            <stop offset="50%" stopColor="#9A7A8F" />
+            <stop offset="100%" stopColor="#756070" />
           </linearGradient>
         </defs>
       </svg>

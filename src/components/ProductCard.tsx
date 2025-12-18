@@ -122,7 +122,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Action Button */}
         <Button 
           onClick={handleAddToCart}
-          className="w-full h-10 font-medium transition-all duration-300 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow-gold"
+          className="w-full h-10 font-medium transition-all duration-300 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow-accent"
           size="sm"
           disabled={product.stock === 0 || isOwner}
         >
