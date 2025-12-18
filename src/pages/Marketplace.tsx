@@ -680,7 +680,7 @@ const Marketplace = () => {
           <p className="text-sm text-muted-foreground">
             Für Vorschläge, Verbesserungen oder Bugs bitte in der{" "}
             <a 
-              href="https://t.me/+DPc8EfYXdOAzZTk0" 
+              href="https://t.me/+yXmX6a5jYN4wMmU0" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-primary hover:underline font-medium"

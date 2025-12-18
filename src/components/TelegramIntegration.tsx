@@ -77,7 +77,7 @@ export function TelegramIntegration({
   };
   const joinTelegramGroup = () => {
     // This would be your marketplace's official Telegram group
-    const groupUrl = 'https://t.me/your_marketplace_group';
+    const groupUrl = 'https://t.me/+yXmX6a5jYN4wMmU0';
     window.open(groupUrl, '_blank');
   };
   const quickShareTemplates = [{
