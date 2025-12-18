@@ -4,6 +4,8 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import SignInForm from '@/components/auth/SignInForm';
+import { OracleLogo } from '@/components/OracleLogo';
+import { MessageCircle, Users, Shield } from 'lucide-react';
 
 const Auth = () => {
   const { user, signIn, loading } = useAuth();
@@ -45,73 +47,129 @@ const Auth = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-2 border-primary border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center space-x-2">
-            <h1 className="text-3xl font-bold font-cinzel">Oracle Market</h1>
+    <div className="min-h-screen flex bg-background">
+      {/* Left side - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-card">
+        {/* Subtle pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.02] bg-noise" />
+        
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
+        
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-center items-center w-full p-12">
+          <div className="max-w-md space-y-8 animate-fade-in">
+            <OracleLogo size="xl" animate className="justify-center" />
+            
+            <div className="space-y-4 text-center">
+              <p className="text-lg text-muted-foreground font-body leading-relaxed">
+                Der vertrauenswürdigste digitale Marktplatz. 
+                Sicher, anonym und zuverlässig.
+              </p>
+            </div>
+
+            {/* Features */}
+            <div className="grid gap-4 pt-8">
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-background/50 border border-border/50">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <Shield className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Maximale Sicherheit</p>
+                  <p className="text-sm text-muted-foreground">Verschlüsselte Transaktionen</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-background/50 border border-border/50">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Verifizierte Verkäufer</p>
+                  <p className="text-sm text-muted-foreground">Geprüfte Partner</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="bg-muted/50 border border-border rounded-lg p-4 text-center space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Um einen Account zu erhalten, schreibe auf Telegram:
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <a 
-              href="https://t.me/elmatzo" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary font-semibold hover:underline text-lg"
-            >
-              elmatzo
-            </a>
-            <a 
-              href="https://t.me/xmlsfuak" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary font-semibold hover:underline text-lg"
-            >
-              xmlsfuak
-            </a>
-            <a 
-              href="https://t.me/veiyoo" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary font-semibold hover:underline text-lg"
-            >
-              veiyoo
-            </a>
+        {/* Decorative elements */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+      </div>
+
+      {/* Right side - Login Form */}
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+        <div className="w-full max-w-md space-y-8">
+          {/* Mobile logo */}
+          <div className="lg:hidden flex justify-center animate-fade-in">
+            <OracleLogo size="lg" animate />
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Dies dient der Sicherheit, um unbefugten Zugriff zu verhindern.
+
+          {/* Info cards */}
+          <div className="space-y-4 animate-fade-in delay-100">
+            <div className="p-5 rounded-xl border border-border bg-card/50 backdrop-blur-sm">
+              <div className="flex items-start gap-3">
+                <MessageCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Um einen Account zu erhalten, schreibe auf Telegram:
+                  </p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    {['elmatzo', 'xmlsfuak', 'veiyoo'].map((name) => (
+                      <a 
+                        key={name}
+                        href={`https://t.me/${name}`}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary font-medium hover:text-primary/80 transition-colors"
+                      >
+                        @{name}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-xl border border-border bg-card/50 backdrop-blur-sm">
+              <div className="flex items-start gap-3">
+                <Users className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Tritt unserer Community bei:
+                  </p>
+                  <a 
+                    href="https://t.me/+mkuKrzzDCAVhNzVk" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary font-medium hover:text-primary/80 transition-colors"
+                  >
+                    Oracle Market Chat →
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Sign in form */}
+          <div className="animate-fade-in delay-200">
+            <SignInForm
+              onSubmit={handleSignIn}
+              isLoading={isLoading}
+            />
+          </div>
+
+          {/* Footer */}
+          <p className="text-center text-xs text-muted-foreground animate-fade-in delay-300">
+            Durch die Anmeldung akzeptierst du unsere Nutzungsbedingungen.
           </p>
         </div>
-
-        <div className="bg-muted/50 border border-border rounded-lg p-4 text-center space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Tritt gerne unserer Telegram-Gruppe bei:
-          </p>
-          <a 
-            href="https://t.me/+mkuKrzzDCAVhNzVk" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-primary font-semibold hover:underline text-lg"
-          >
-            Oracle Market Chat
-          </a>
-        </div>
-
-        <SignInForm
-          onSubmit={handleSignIn}
-          isLoading={isLoading}
-        />
       </div>
     </div>
   );
