@@ -120,19 +120,14 @@ const Auth = () => {
                   <p className="text-sm text-muted-foreground">
                     Um einen Account zu erhalten, schreibe auf Telegram:
                   </p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1">
-                    {['elmatzo', 'xmlsfuak', 'veiyoo'].map((name) => (
-                      <a 
-                        key={name}
-                        href={`https://t.me/${name}`}
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-primary font-medium hover:text-primary/80 transition-colors"
-                      >
-                        @{name}
-                      </a>
-                    ))}
-                  </div>
+                  <a 
+                    href="https://t.me/OracleMarketSupport"
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary font-medium hover:text-primary/80 transition-colors"
+                  >
+                    @OracleMarketSupport
+                  </a>
                 </div>
               </div>
             </div>
