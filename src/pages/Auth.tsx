@@ -107,8 +107,8 @@ const Auth = () => {
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-md space-y-8">
           {/* Mobile logo */}
-          <div className="lg:hidden flex justify-center animate-fade-in">
-            <OracleLogo size="lg" animate />
+          <div className="lg:hidden flex justify-center animate-fade-in mb-6">
+            <OracleLogo size="xl" animate />
           </div>
 
           {/* Info cards */}
