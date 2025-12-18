@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 interface SignInFormProps {
   onSubmit: (username: string, password: string) => Promise<void>;
@@ -27,67 +26,83 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSubmit, isLoading }) => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Anmelden</CardTitle>
-        <CardDescription>
-          Melde dich mit deinen Zugangsdaten an
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="signin-username">Benutzername</Label>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-display font-semibold tracking-tight text-foreground">
+          Anmelden
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Gib deine Zugangsdaten ein, um fortzufahren
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="signin-username" className="text-sm font-medium text-foreground">
+            Benutzername
+          </Label>
+          <Input
+            id="signin-username"
+            name="username"
+            type="text"
+            placeholder="Dein Benutzername"
+            value={formData.username}
+            onChange={handleInputChange}
+            required
+            className="h-12 bg-card border-border focus:border-primary focus:ring-primary/20 transition-all"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="signin-password" className="text-sm font-medium text-foreground">
+            Passwort
+          </Label>
+          <div className="relative">
             <Input
-              id="signin-username"
-              name="username"
-              type="text"
-              placeholder="Dein Benutzername"
-              value={formData.username}
+              id="signin-password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Dein Passwort"
+              value={formData.password}
               onChange={handleInputChange}
               required
+              className="h-12 pr-12 bg-card border-border focus:border-primary focus:ring-primary/20 transition-all"
             />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-transparent"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </Button>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="signin-password">Passwort</Label>
-            <div className="relative">
-              <Input
-                id="signin-password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Dein Passwort"
-                value={formData.password}
-                onChange={handleInputChange}
-                required
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-          
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isLoading}
-            variant="auth"
-          >
-            {isLoading ? "Anmeldung läuft..." : "Anmelden"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+        
+        <Button 
+          type="submit" 
+          className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-gold hover:shadow-gold-lg transition-all duration-300 group" 
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <span className="flex items-center gap-2">
+              <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              Anmeldung läuft...
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              Anmelden
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </span>
+          )}
+        </Button>
+      </form>
+    </div>
   );
 };
 

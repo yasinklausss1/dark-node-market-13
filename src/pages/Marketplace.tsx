@@ -10,11 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, LogOut, Bitcoin, Wallet, Settings, Users, Star, Share2, Menu, ShoppingBag, MessageCircle, Package, Download, Flag, LayoutGrid, LayoutList } from 'lucide-react';
+import { Search, LogOut, Wallet, Settings, Users, Menu, ShoppingBag, MessageCircle, Package, Download, Flag, LayoutGrid, LayoutList } from 'lucide-react';
 import ProductModal from '@/components/ProductModal';
 import ShoppingCart from '@/components/ShoppingCart';
 import SellerProfileModal from '@/components/SellerProfileModal';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useCart } from '@/hooks/useCart';
 import NewsPanel from '@/components/NewsPanel';
 import { useUserPresence } from '@/hooks/useUserPresence';
@@ -22,6 +22,7 @@ import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { ModernHeroSection } from '@/components/ModernHeroSection';
 import { ProductCard } from '@/components/ProductCard';
 import { ChatModal } from '@/components/ChatModal';
+import { OracleLogo } from '@/components/OracleLogo';
 
 import { ConversationsModal } from '@/components/ConversationsModal';
 import { useChat } from '@/hooks/useChat';
@@ -555,10 +556,10 @@ const Marketplace = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+      <header className="border-b border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg md:text-2xl font-bold font-cinzel">Oracle Market</h1>
+            <OracleLogo size="sm" className="cursor-pointer" />
             
             <div className="flex items-center gap-3">
               <Button 
