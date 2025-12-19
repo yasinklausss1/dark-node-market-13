@@ -205,7 +205,7 @@ const AdminOrdersOverview = () => {
                 </div>
                 {expandedOrders.has(order.id) && (
                   <div className="border-t bg-muted/20 p-3 space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Bestellte Produkte:</p>
+                    <p className="text-xs font-medium text-muted-foreground">Bestelldetails:</p>
                     {order.items.length > 0 ? (
                       order.items.map(item => (
                         <div key={item.id} className="flex justify-between items-center text-sm bg-background rounded p-2">
@@ -218,7 +218,15 @@ const AdminOrdersOverview = () => {
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-muted-foreground">Keine Produktdetails verfügbar</p>
+                      <div className="space-y-2">
+                        <p className="text-sm text-amber-600 dark:text-amber-400">
+                          ⚠️ Keine detaillierten Produktdaten vorhanden (ältere Bestellung)
+                        </p>
+                        <div className="text-sm bg-background rounded p-2">
+                          <span className="text-muted-foreground">Gesamtbetrag: </span>
+                          <span className="font-bold text-primary">€{Number(order.total_amount_eur).toFixed(2)}</span>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
