@@ -13,6 +13,9 @@ import EditProductModal from '@/components/EditProductModal';
 import NewsEditor from '@/components/NewsEditor';
 import SellerReportsPanel from '@/components/SellerReportsPanel';
 import { useUserPresence } from '@/hooks/useUserPresence';
+import AdminOrdersOverview from '@/components/admin/AdminOrdersOverview';
+import AdminDepositsOverview from '@/components/admin/AdminDepositsOverview';
+import AdminWithdrawalsOverview from '@/components/admin/AdminWithdrawalsOverview';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -564,9 +567,14 @@ const AdminPanel = () => {
           </CardContent>
         </Card>
 
-<SellerReportsPanel />
+        {/* Orders, Deposits, Withdrawals Overview */}
+        <AdminOrdersOverview />
+        <AdminDepositsOverview />
+        <AdminWithdrawalsOverview />
 
-<NewsEditor />
+        <SellerReportsPanel />
+
+        <NewsEditor />
 
 <Card>
           <CardHeader>
