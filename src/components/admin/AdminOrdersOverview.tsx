@@ -58,10 +58,14 @@ const AdminOrdersOverview = () => {
 
       // Fetch order items with product info
       const orderIds = ordersData?.map(o => o.id) || [];
-      const { data: orderItems } = await supabase
+      console.log('Fetching order items for orders:', orderIds.length);
+      
+      const { data: orderItems, error: itemsError } = await supabase
         .from('order_items')
         .select('id, order_id, quantity, price_eur, product_id')
         .in('order_id', orderIds);
+
+      console.log('Order items fetched:', orderItems?.length, 'Error:', itemsError);
 
       // Fetch products for order items
       const productIds = [...new Set(orderItems?.map(oi => oi.product_id) || [])];
@@ -199,19 +203,23 @@ const AdminOrdersOverview = () => {
                     </span>
                   </div>
                 </div>
-                {expandedOrders.has(order.id) && order.items.length > 0 && (
+                {expandedOrders.has(order.id) && (
                   <div className="border-t bg-muted/20 p-3 space-y-2">
                     <p className="text-xs font-medium text-muted-foreground">Bestellte Produkte:</p>
-                    {order.items.map(item => (
-                      <div key={item.id} className="flex justify-between items-center text-sm bg-background rounded p-2">
-                        <div>
-                          <span className="font-medium">{item.product.title}</span>
-                          <span className="text-muted-foreground"> × {item.quantity}</span>
-                          <span className="text-xs text-muted-foreground ml-2">(Verkäufer: {item.product.seller_username})</span>
+                    {order.items.length > 0 ? (
+                      order.items.map(item => (
+                        <div key={item.id} className="flex justify-between items-center text-sm bg-background rounded p-2">
+                          <div>
+                            <span className="font-medium">{item.product.title}</span>
+                            <span className="text-muted-foreground"> × {item.quantity}</span>
+                            <span className="text-xs text-muted-foreground ml-2">(Verkäufer: {item.product.seller_username})</span>
+                          </div>
+                          <span className="font-medium">€{Number(item.price_eur).toFixed(2)}</span>
                         </div>
-                        <span className="font-medium">€{Number(item.price_eur).toFixed(2)}</span>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Keine Produktdetails verfügbar</p>
+                    )}
                   </div>
                 )}
               </div>
