@@ -40,14 +40,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Check if user still exists in database and force logout if deleted
+  const verifyUserExists = async (userId: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (error || !data) {
+        console.log('User no longer exists in database, forcing logout');
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error verifying user exists:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
+        // Verify user still exists before setting session
+        const userExists = await verifyUserExists(session.user.id);
+        if (!userExists) {
+          // User was deleted, clear session
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+        
+        setSession(session);
+        setUser(session.user);
         fetchProfile(session.user.id);
       } else {
+        setSession(null);
+        setUser(null);
         setLoading(false);
       }
     });
@@ -59,7 +93,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          setTimeout(() => {
+          setTimeout(async () => {
+            // Also verify on auth state change
+            const userExists = await verifyUserExists(session.user.id);
+            if (!userExists) {
+              await supabase.auth.signOut();
+              setSession(null);
+              setUser(null);
+              setProfile(null);
+              return;
+            }
             fetchProfile(session.user.id);
           }, 0);
         } else {
