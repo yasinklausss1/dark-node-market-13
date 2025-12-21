@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,6 +6,8 @@ import { useToast } from '@/hooks/use-toast';
 import SignInForm from '@/components/auth/SignInForm';
 import { OracleLogo } from '@/components/OracleLogo';
 import { MessageCircle, Users, Shield } from 'lucide-react';
+import SplashScreen from '@/components/SplashScreen';
+
 const Auth = () => {
   const {
     user,
@@ -17,9 +19,29 @@ const Auth = () => {
   } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const seen = sessionStorage.getItem('splashSeen');
+    if (seen) {
+      setShowSplash(false);
+    }
+  }, []);
+
+  const handleSplashComplete = () => {
+    sessionStorage.setItem('splashSeen', 'true');
+    setShowSplash(false);
+  };
+
   if (user && !loading) {
     return <Navigate to="/marketplace" replace />;
   }
+
+  // Show splash screen for unauthenticated users who haven't seen it
+  if (!loading && !user && showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} duration={2800} />;
+  }
+
   const handleSignIn = async (username: string, password: string) => {
     setIsLoading(true);
     const result = await signIn(username, password);
@@ -38,6 +60,7 @@ const Auth = () => {
     }
     setIsLoading(false);
   };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-16 w-16 border-2 border-primary border-t-transparent"></div>
