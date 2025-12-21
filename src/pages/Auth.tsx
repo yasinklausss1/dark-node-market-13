@@ -6,29 +6,25 @@ import { useToast } from '@/hooks/use-toast';
 import SignInForm from '@/components/auth/SignInForm';
 import { OracleLogo } from '@/components/OracleLogo';
 import { MessageCircle, Users, Shield } from 'lucide-react';
-
 const Auth = () => {
-  const { user, signIn, loading } = useAuth();
-  const { toast } = useToast();
+  const {
+    user,
+    signIn,
+    loading
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-
   if (user && !loading) {
     return <Navigate to="/marketplace" replace />;
   }
-
   const handleSignIn = async (username: string, password: string) => {
     setIsLoading(true);
-
     const result = await signIn(username, password);
-    
     if (result.error) {
-      const description = (result as any).blocked 
-        ? result.error.message 
-        : (result as any).remainingAttempts !== undefined
-          ? `${result.error.message}`
-          : result.error.message;
-      
+      const description = (result as any).blocked ? result.error.message : (result as any).remainingAttempts !== undefined ? `${result.error.message}` : result.error.message;
       toast({
         title: (result as any).blocked ? "IP blockiert" : "Anmeldung fehlgeschlagen",
         description,
@@ -40,20 +36,14 @@ const Auth = () => {
         description: "Willkommen zurück!"
       });
     }
-    
     setIsLoading(false);
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+    return <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-16 w-16 border-2 border-primary border-t-transparent"></div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen flex bg-background">
+  return <div className="min-h-screen flex bg-background">
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-card">
         {/* Subtle pattern overlay */}
@@ -120,12 +110,7 @@ const Auth = () => {
                   <p className="text-sm text-muted-foreground">
                     Um einen Account zu erhalten, schreibe auf Telegram:
                   </p>
-                  <a 
-                    href="https://t.me/OracleMarketSupport"
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary font-medium hover:text-primary/80 transition-colors"
-                  >
+                  <a href="https://t.me/OracleMarketSupport" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:text-primary/80 transition-colors">
                     @OracleMarketSupport
                   </a>
                 </div>
@@ -139,12 +124,7 @@ const Auth = () => {
                   <p className="text-sm text-muted-foreground">
                     Tritt unserer Community bei:
                   </p>
-                  <a 
-                    href="https://t.me/+yXmX6a5jYN4wMmU0" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary font-medium hover:text-primary/80 transition-colors"
-                  >
+                  <a href="https://t.me/+yXmX6a5jYN4wMmU0" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:text-primary/80 transition-colors">
                     Oracle Market Chat →
                   </a>
                 </div>
@@ -154,20 +134,13 @@ const Auth = () => {
 
           {/* Sign in form */}
           <div className="animate-fade-in delay-200">
-            <SignInForm
-              onSubmit={handleSignIn}
-              isLoading={isLoading}
-            />
+            <SignInForm onSubmit={handleSignIn} isLoading={isLoading} />
           </div>
 
           {/* Footer */}
-          <p className="text-center text-xs text-muted-foreground animate-fade-in delay-300">
-            Durch die Anmeldung akzeptierst du unsere Nutzungsbedingungen.
-          </p>
+          
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Auth;
