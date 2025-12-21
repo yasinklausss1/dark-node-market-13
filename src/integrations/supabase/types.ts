@@ -821,6 +821,54 @@ export type Database = {
           },
         ]
       }
+      page_visits: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          device_type: string | null
+          id: string
+          ip_address: string
+          is_suspicious: boolean | null
+          os: string | null
+          page: string
+          referrer: string | null
+          session_id: string | null
+          user_agent: string | null
+          visited_at: string
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address: string
+          is_suspicious?: boolean | null
+          os?: string | null
+          page?: string
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          visited_at?: string
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string
+          is_suspicious?: boolean | null
+          os?: string | null
+          page?: string
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          visited_at?: string
+        }
+        Relationships: []
+      }
       product_addons: {
         Row: {
           addon_type: string

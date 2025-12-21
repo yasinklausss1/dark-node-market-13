@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Plus, Users, Edit, Eye, Wifi, Bitcoin, RefreshCw, UserPlus } from 'lucide-react';
+import { Trash2, Plus, Users, Edit, Eye, Wifi, Bitcoin, RefreshCw, UserPlus, Globe } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EditProductModal from '@/components/EditProductModal';
 import NewsEditor from '@/components/NewsEditor';
@@ -16,6 +16,7 @@ import { useUserPresence } from '@/hooks/useUserPresence';
 import AdminOrdersOverview from '@/components/admin/AdminOrdersOverview';
 import AdminDepositsOverview from '@/components/admin/AdminDepositsOverview';
 import AdminWithdrawalsOverview from '@/components/admin/AdminWithdrawalsOverview';
+import AdminIPLogger from '@/components/admin/AdminIPLogger';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -571,6 +572,22 @@ const AdminPanel = () => {
         <AdminOrdersOverview />
         <AdminDepositsOverview />
         <AdminWithdrawalsOverview />
+
+        {/* IP Logger */}
+        <Card>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+              <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+              <span>IP Logger</span>
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              Alle Besuche der Login-Seite protokollieren und analysieren
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <AdminIPLogger />
+          </CardContent>
+        </Card>
 
         <SellerReportsPanel />
 

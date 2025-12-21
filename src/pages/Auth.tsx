@@ -7,6 +7,7 @@ import SignInForm from '@/components/auth/SignInForm';
 import { OracleLogo } from '@/components/OracleLogo';
 import { MessageCircle, Users, Shield } from 'lucide-react';
 import SplashScreen from '@/components/SplashScreen';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const {
@@ -20,6 +21,30 @@ const Auth = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+
+  // Track visitor on page load
+  useEffect(() => {
+    const trackVisitor = async () => {
+      try {
+        await supabase.functions.invoke('track-visitor', {
+          body: {
+            page: '/auth',
+            referrer: document.referrer || null,
+            sessionId: sessionStorage.getItem('session_id') || crypto.randomUUID()
+          }
+        });
+        
+        // Store session ID for this browser session
+        if (!sessionStorage.getItem('session_id')) {
+          sessionStorage.setItem('session_id', crypto.randomUUID());
+        }
+      } catch (error) {
+        console.log('Tracking error (non-critical):', error);
+      }
+    };
+
+    trackVisitor();
+  }, []);
 
   const handleSplashComplete = () => {
     setShowSplash(false);
