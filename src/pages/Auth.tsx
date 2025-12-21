@@ -21,15 +21,7 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
-  useEffect(() => {
-    const seen = sessionStorage.getItem('splashSeen');
-    if (seen) {
-      setShowSplash(false);
-    }
-  }, []);
-
   const handleSplashComplete = () => {
-    sessionStorage.setItem('splashSeen', 'true');
     setShowSplash(false);
   };
 
