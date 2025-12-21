@@ -82,7 +82,7 @@ const Auth = () => {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Verifizierte Verkäufer</p>
-                  <p className="text-sm text-muted-foreground">Geprüfte Partner</p>
+                  <p className="text-sm text-muted-foreground">Nur safelist da!</p>
                 </div>
               </div>
             </div>
