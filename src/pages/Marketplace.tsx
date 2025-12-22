@@ -28,6 +28,7 @@ import { ConversationsModal } from '@/components/ConversationsModal';
 import { useChat } from '@/hooks/useChat';
 import { usePagination } from '@/hooks/usePagination';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 
 import { Product } from '@/types/Product';
 
@@ -79,6 +80,8 @@ const Marketplace = () => {
   // Track user presence
   useUserPresence();
   
+  // Track visitor with user association
+  useVisitorTracking('/marketplace');
   
   // Mobile detection and pagination
   const isMobile = useIsMobile();
