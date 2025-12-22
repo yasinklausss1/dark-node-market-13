@@ -4,15 +4,24 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export const useVisitorTracking = (page: string = '/unknown') => {
   const { user } = useAuth();
-  const hasTracked = useRef(false);
+  const lastTrackedUserId = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    // Only track once per page load
-    if (hasTracked.current) return;
+    // Track when:
+    // 1. First time on page (lastTrackedUserId is undefined)
+    // 2. User logs in (user.id changes from null to a value)
+    // 3. User logs out (user.id changes from a value to null)
+    
+    const currentUserId = user?.id || null;
+    
+    // Skip if we already tracked this exact state
+    if (lastTrackedUserId.current === currentUserId) {
+      return;
+    }
     
     const trackVisitor = async () => {
       try {
-        hasTracked.current = true;
+        lastTrackedUserId.current = currentUserId;
         
         // Get or create session ID
         let sessionId = sessionStorage.getItem('session_id');
@@ -21,12 +30,14 @@ export const useVisitorTracking = (page: string = '/unknown') => {
           sessionStorage.setItem('session_id', sessionId);
         }
 
+        console.log(`Tracking visit: page=${page}, userId=${currentUserId}`);
+
         await supabase.functions.invoke('track-visitor', {
           body: {
             page,
             referrer: document.referrer || null,
             sessionId,
-            userId: user?.id || null
+            userId: currentUserId
           }
         });
       } catch (error) {

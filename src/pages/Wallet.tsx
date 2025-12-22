@@ -1,5 +1,6 @@
 import { useNavigate, Navigate } from "react-router-dom";
 import { useState, useCallback } from "react";
+import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useAuth } from "@/contexts/AuthContext";
 import { WalletBalance } from "@/components/WalletBalance";
 import { DepositRequest } from "@/components/DepositRequest";
@@ -17,6 +18,9 @@ export default function Wallet() {
   const [withdrawalModalOpen, setWithdrawalModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Track visitor with user association
+  useVisitorTracking('/wallet');
 
   const handleBalanceChange = useCallback(() => {
     setRefreshKey(prev => prev + 1);

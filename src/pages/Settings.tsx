@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,9 @@ export default function Settings() {
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const [deletingAccount, setDeletingAccount] = useState(false);
+
+  // Track visitor with user association
+  useVisitorTracking('/settings');
 
   const handleDeleteAccount = async () => {
     if (!user) return;

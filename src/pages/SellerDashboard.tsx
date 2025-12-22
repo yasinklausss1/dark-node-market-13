@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,6 +73,9 @@ interface Order {
 const SellerDashboard = () => {
   const { user, profile, loading } = useAuth();
   const { toast } = useToast();
+
+  // Track visitor with user association
+  useVisitorTracking('/seller-dashboard');
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
