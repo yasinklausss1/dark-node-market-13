@@ -26,11 +26,15 @@ const Auth = () => {
   useEffect(() => {
     const trackVisitor = async () => {
       try {
+        // Get current session to check if user is logged in
+        const { data: { session } } = await supabase.auth.getSession();
+        
         await supabase.functions.invoke('track-visitor', {
           body: {
             page: '/auth',
             referrer: document.referrer || null,
-            sessionId: sessionStorage.getItem('session_id') || crypto.randomUUID()
+            sessionId: sessionStorage.getItem('session_id') || crypto.randomUUID(),
+            userId: session?.user?.id || null
           }
         });
         

@@ -835,6 +835,7 @@ export type Database = {
           referrer: string | null
           session_id: string | null
           user_agent: string | null
+          user_id: string | null
           visited_at: string
         }
         Insert: {
@@ -850,6 +851,7 @@ export type Database = {
           referrer?: string | null
           session_id?: string | null
           user_agent?: string | null
+          user_id?: string | null
           visited_at?: string
         }
         Update: {
@@ -865,6 +867,7 @@ export type Database = {
           referrer?: string | null
           session_id?: string | null
           user_agent?: string | null
+          user_id?: string | null
           visited_at?: string
         }
         Relationships: []
