@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +65,9 @@ const Orders: React.FC = () => {
   const [selectedProductId, setSelectedProductId] = useState('');
   const [selectedProductTitle, setSelectedProductTitle] = useState('');
   const [sellerProfileOpen, setSellerProfileOpen] = useState(false);
+
+  // Track visitor with user association
+  useVisitorTracking('/orders');
 
   const fetchOrderItems = async (orderIds: string[], userId: string) => {
     if (orderIds.length === 0) {

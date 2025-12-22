@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,9 @@ const AdminPanel = () => {
   const { user, profile, loading } = useAuth();
   const { onlineUsers, onlineCount } = useUserPresence();
   const { toast } = useToast();
+
+  // Track visitor with user association
+  useVisitorTracking('/admin');
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
