@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,7 +7,7 @@ import SignInForm from '@/components/auth/SignInForm';
 import { OracleLogo } from '@/components/OracleLogo';
 import { MessageCircle, Users, Shield } from 'lucide-react';
 import SplashScreen from '@/components/SplashScreen';
-import { supabase } from '@/integrations/supabase/client';
+import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 
 const Auth = () => {
   const {
@@ -23,32 +23,7 @@ const Auth = () => {
   const [showSplash, setShowSplash] = useState(true);
 
   // Track visitor on page load
-  useEffect(() => {
-    const trackVisitor = async () => {
-      try {
-        // Get current session to check if user is logged in
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        await supabase.functions.invoke('track-visitor', {
-          body: {
-            page: '/auth',
-            referrer: document.referrer || null,
-            sessionId: sessionStorage.getItem('session_id') || crypto.randomUUID(),
-            userId: session?.user?.id || null
-          }
-        });
-        
-        // Store session ID for this browser session
-        if (!sessionStorage.getItem('session_id')) {
-          sessionStorage.setItem('session_id', crypto.randomUUID());
-        }
-      } catch (error) {
-        console.log('Tracking error (non-critical):', error);
-      }
-    };
-
-    trackVisitor();
-  }, []);
+  useVisitorTracking('/auth');
 
   const handleSplashComplete = () => {
     setShowSplash(false);
