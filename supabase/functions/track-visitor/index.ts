@@ -90,7 +90,7 @@ serve(async (req) => {
 
     // Parse request body
     const body = await req.json().catch(() => ({}));
-    const { page = '/auth', referrer = null, sessionId = null } = body;
+    const { page = '/auth', referrer = null, sessionId = null, userId = null } = body;
 
     // Parse user agent
     const userAgent = req.headers.get('user-agent');
@@ -119,6 +119,7 @@ serve(async (req) => {
         referrer: referrer,
         session_id: sessionId,
         is_suspicious: isSuspicious,
+        user_id: userId,
       });
 
     if (insertError) {

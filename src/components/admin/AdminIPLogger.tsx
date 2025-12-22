@@ -50,6 +50,8 @@ interface PageVisit {
   session_id: string | null;
   is_suspicious: boolean;
   visited_at: string;
+  user_id: string | null;
+  username?: string | null;
 }
 
 interface Stats {
@@ -71,7 +73,8 @@ const AdminIPLogger = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   const fetchVisits = async () => {
-    const { data, error } = await supabase
+    // First get visits
+    const { data: visitsData, error } = await supabase
       .from('page_visits')
       .select('*')
       .order('visited_at', { ascending: false })
@@ -87,7 +90,32 @@ const AdminIPLogger = () => {
       return;
     }
 
-    setVisits((data || []) as PageVisit[]);
+    // Get unique user_ids that are not null
+    const userIds = [...new Set((visitsData || []).map(v => v.user_id).filter(Boolean))];
+    
+    // Fetch usernames for those user_ids
+    let usernameMap: Record<string, string> = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, username')
+        .in('user_id', userIds);
+      
+      if (profiles) {
+        usernameMap = profiles.reduce((acc, p) => {
+          acc[p.user_id] = p.username;
+          return acc;
+        }, {} as Record<string, string>);
+      }
+    }
+
+    // Merge username into visits
+    const visitsWithUsername = (visitsData || []).map(v => ({
+      ...v,
+      username: v.user_id ? usernameMap[v.user_id] || null : null
+    }));
+
+    setVisits(visitsWithUsername as PageVisit[]);
     setIsLoading(false);
   };
 
@@ -408,6 +436,7 @@ const AdminIPLogger = () => {
                 <TableRow>
                   <TableHead className="w-10"></TableHead>
                   <TableHead>IP Adresse</TableHead>
+                  <TableHead>Nutzer</TableHead>
                   <TableHead className="hidden md:table-cell">Browser / OS</TableHead>
                   <TableHead className="hidden sm:table-cell">Gerät</TableHead>
                   <TableHead>Zeit</TableHead>
@@ -417,13 +446,13 @@ const AdminIPLogger = () => {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                     </TableCell>
                   </TableRow>
                 ) : filteredVisits.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Keine Besuche gefunden
                     </TableCell>
                   </TableRow>
@@ -451,6 +480,15 @@ const AdminIPLogger = () => {
                             </Badge>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {visit.username ? (
+                          <Badge variant="outline" className="text-xs font-medium">
+                            {visit.username}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <div className="text-xs sm:text-sm">
