@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./hooks/useCart";
 import PrivacyWarning from "./components/PrivacyWarning";
+import { ChristmasDecorations } from "./components/ChristmasDecorations";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Marketplace from "./pages/Marketplace";
@@ -30,6 +31,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <PrivacyWarning />
+            <ChristmasDecorations />
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
