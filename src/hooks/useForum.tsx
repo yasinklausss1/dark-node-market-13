@@ -189,11 +189,27 @@ export function useForum() {
       return null;
     }
 
-    // Increment view count
-    await supabase
-      .from('forum_posts')
-      .update({ view_count: (data.view_count || 0) + 1 })
-      .eq('id', postId);
+    // Track unique view per user - only increment if user hasn't viewed before
+    if (user) {
+      const { data: existingView } = await supabase
+        .from('forum_post_views')
+        .select('id')
+        .eq('post_id', postId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!existingView) {
+        // Insert new view and update count
+        await supabase
+          .from('forum_post_views')
+          .insert({ post_id: postId, user_id: user.id });
+        
+        await supabase
+          .from('forum_posts')
+          .update({ view_count: (data.view_count || 0) + 1 })
+          .eq('id', postId);
+      }
+    }
 
     let postWithVote = data as unknown as ForumPost;
     if (user) {
