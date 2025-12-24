@@ -18,6 +18,8 @@ import Wallet from "./pages/Wallet";
 import Settings from "./pages/Settings";
 import Orders from "./pages/Orders";
 import MyReports from "./pages/MyReports";
+import Forum from "./pages/Forum";
+import ForumPostPage from "./pages/ForumPost";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +45,8 @@ const App = () => (
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/reports" element={<MyReports />} />
+                <Route path="/forum" element={<Forum />} />
+                <Route path="/forum/post/:postId" element={<ForumPostPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
