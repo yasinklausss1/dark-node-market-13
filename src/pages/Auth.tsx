@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import SignInForm from '@/components/auth/SignInForm';
 import { OracleLogo } from '@/components/OracleLogo';
+import { BlinkingOracleEye } from '@/components/BlinkingOracleEye';
 import { MessageCircle, Users, Shield } from 'lucide-react';
 import SplashScreen from '@/components/SplashScreen';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
@@ -115,9 +116,14 @@ const Auth = () => {
       {/* Right side - Login Form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-md space-y-8">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex justify-center animate-fade-in mb-6">
-            <OracleLogo size="xl" animate />
+          {/* Blinking Oracle Eye */}
+          <div className="flex justify-center animate-fade-in mb-4">
+            <BlinkingOracleEye size={100} />
+          </div>
+          
+          {/* Mobile logo text */}
+          <div className="lg:hidden flex justify-center animate-fade-in -mt-2">
+            <OracleLogo size="lg" showText={true} className="justify-center" />
           </div>
 
           {/* Info cards */}
