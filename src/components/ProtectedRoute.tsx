@@ -19,8 +19,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    // Speichere die ursprüngliche URL für Redirect nach Login
-    return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
+    // Speichere die ursprüngliche URL inkl. Query-Parameter für Redirect nach Login
+    const fullPath = location.pathname + location.search;
+    return <Navigate to="/auth" state={{ from: fullPath }} replace />;
   }
 
   return <>{children}</>;
