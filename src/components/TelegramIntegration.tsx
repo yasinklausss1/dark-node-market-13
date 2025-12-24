@@ -28,8 +28,7 @@ export function TelegramIntegration({
   const [customMessage, setCustomMessage] = useState("");
   const [botUsername, setBotUsername] = useState("");
   const generateProductUrl = () => {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/marketplace${productId ? `?product=${productId}` : ''}`;
+    return `https://oracle-market.store/marketplace${productId ? `?product=${productId}` : ''}`;
   };
   const shareToTelegram = (customText?: string) => {
     const productUrl = generateProductUrl();
@@ -71,7 +70,7 @@ export function TelegramIntegration({
   const notifyOrderUpdate = () => {
     if (!orderId) return;
     const text = `📦 Order Update: Your order #${orderId.slice(0, 8)} has been updated. Check the marketplace for details.`;
-    const marketplaceUrl = `${window.location.origin}/orders`;
+    const marketplaceUrl = `https://oracle-market.store/orders`;
     const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(marketplaceUrl)}&text=${encodeURIComponent(text)}`;
     window.open(telegramUrl, '_blank');
   };

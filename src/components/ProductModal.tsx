@@ -191,7 +191,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, open, onOpenChange
   };
 
   const handleShare = () => {
-    const productUrl = `${window.location.origin}/marketplace?product=${product.id}`;
+    const productUrl = `https://oracle-market.store/marketplace?product=${product.id}`;
     const text = `🛍️ Schau dir dieses Produkt an: ${product.title} - €${product.price.toFixed(2)}`;
     const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(productUrl)}&text=${encodeURIComponent(text)}`;
     window.open(telegramUrl, '_blank');
