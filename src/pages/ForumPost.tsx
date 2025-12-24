@@ -42,6 +42,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import SellerProfileModal from '@/components/SellerProfileModal';
 
 const ForumPost: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -67,6 +68,7 @@ const ForumPost: React.FC = () => {
   const [awards, setAwards] = useState<ForumAward[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAwardModal, setShowAwardModal] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   const isAuthor = user?.id === post?.author_id;
   const isAdmin = profile?.role === 'admin';
@@ -286,20 +288,23 @@ const ForumPost: React.FC = () => {
                     {post.category?.name}
                   </Badge>
                   <span>•</span>
-                  <Link to="#" className="flex items-center gap-1 hover:underline">
+                  <button 
+                    className="flex items-center gap-1 hover:underline"
+                    onClick={() => setProfileModalOpen(true)}
+                  >
                     <Avatar className="h-5 w-5">
                       <AvatarImage src={post.author?.profile_picture_url || ''} />
                       <AvatarFallback className="text-[10px]">
                         {post.author?.username?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="font-medium text-foreground">
+                    <span className="font-medium text-foreground hover:text-primary transition-colors">
                       {post.author?.username}
                     </span>
                     {post.author?.is_verified && (
                       <BadgeCheck className="h-3 w-3 text-primary" />
                     )}
-                  </Link>
+                  </button>
                   {post.author?.role === 'seller' && (
                     <Badge variant="outline" className="text-[10px] px-1 py-0">Seller</Badge>
                   )}
@@ -493,6 +498,15 @@ const ForumPost: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Profile Modal */}
+      {post.author && (
+        <SellerProfileModal
+          open={profileModalOpen}
+          onOpenChange={setProfileModalOpen}
+          sellerId={post.author_id}
+          sellerUsername={post.author.username}
+        />
+      )}
     </div>
   );
 };
