@@ -88,8 +88,8 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       category_id: categoryId,
       title: title.trim(),
       content: content.trim(),
-      flair: flair || undefined,
-      linked_product_id: linkedProductId || undefined
+      flair: flair && flair !== 'none' ? flair : undefined,
+      linked_product_id: linkedProductId && linkedProductId !== 'none' ? linkedProductId : undefined
     });
 
     if (result) {
@@ -157,7 +157,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                 <SelectValue placeholder="Kein Flair" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Kein Flair</SelectItem>
+                <SelectItem value="none">Kein Flair</SelectItem>
                 {FLAIRS.map(f => (
                   <SelectItem key={f} value={f}>{f}</SelectItem>
                 ))}
@@ -197,7 +197,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                       <SelectValue placeholder="Kein Produkt" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Kein Produkt</SelectItem>
+                      <SelectItem value="none">Kein Produkt</SelectItem>
                       {userProducts.map(product => (
                         <SelectItem key={product.id} value={product.id}>
                           {product.title} - {product.price}€
