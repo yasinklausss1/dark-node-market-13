@@ -24,6 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import SellerProfileModal from '@/components/SellerProfileModal';
 
 interface CommentProps {
   comment: ForumComment;
@@ -46,6 +47,7 @@ const CommentItem: React.FC<CommentProps> = ({
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyContent, setReplyContent] = useState('');
   const [collapsed, setCollapsed] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   const score = comment.upvotes - comment.downvotes;
   const timeAgo = formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: de });
@@ -75,24 +77,29 @@ const CommentItem: React.FC<CommentProps> = ({
           >
             {collapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
           </button>
-          <Avatar className="h-5 w-5">
-            <AvatarImage src={comment.author?.profile_picture_url || ''} />
-            <AvatarFallback className="text-[10px]">
-              {comment.author?.username?.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <span className="font-medium text-foreground">
-            {comment.author?.username || '[Gelöscht]'}
-          </span>
-          {comment.author?.is_verified && (
-            <BadgeCheck className="h-3 w-3 text-primary" />
-          )}
-          {comment.author?.role === 'seller' && (
-            <Badge variant="outline" className="text-[10px] px-1 py-0">Seller</Badge>
-          )}
-          {comment.author?.role === 'admin' && (
-            <Badge className="text-[10px] px-1 py-0 bg-red-500">Admin</Badge>
-          )}
+          <button 
+            className="flex items-center gap-1 hover:underline"
+            onClick={() => comment.author && setProfileModalOpen(true)}
+          >
+            <Avatar className="h-5 w-5">
+              <AvatarImage src={comment.author?.profile_picture_url || ''} />
+              <AvatarFallback className="text-[10px]">
+                {comment.author?.username?.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <span className="font-medium text-foreground hover:text-primary transition-colors">
+              {comment.author?.username || '[Gelöscht]'}
+            </span>
+            {comment.author?.is_verified && (
+              <BadgeCheck className="h-3 w-3 text-primary" />
+            )}
+            {comment.author?.role === 'seller' && (
+              <Badge variant="outline" className="text-[10px] px-1 py-0">Seller</Badge>
+            )}
+            {comment.author?.role === 'admin' && (
+              <Badge className="text-[10px] px-1 py-0 bg-red-500">Admin</Badge>
+            )}
+          </button>
           <span>•</span>
           <span>{timeAgo}</span>
           <span>•</span>
@@ -214,6 +221,16 @@ const CommentItem: React.FC<CommentProps> = ({
           </>
         )}
       </div>
+
+      {/* Profile Modal */}
+      {comment.author && (
+        <SellerProfileModal
+          open={profileModalOpen}
+          onOpenChange={setProfileModalOpen}
+          sellerId={comment.author_id}
+          sellerUsername={comment.author.username}
+        />
+      )}
     </div>
   );
 };
