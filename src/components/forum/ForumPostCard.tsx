@@ -203,7 +203,7 @@ export const ForumPostCard: React.FC<ForumPostCardProps> = ({
               <button 
                 onClick={(e) => {
                   e.preventDefault();
-                  const url = `${window.location.origin}/forum/post/${post.id}`;
+                  const url = `https://oracle-market.store/forum/post/${post.id}`;
                   navigator.clipboard.writeText(url);
                   const toast = document.createElement('div');
                   toast.textContent = 'Link kopiert!';
