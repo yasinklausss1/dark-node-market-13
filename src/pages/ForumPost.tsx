@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useForum, ForumPost as ForumPostType, ForumComment, ForumAward } from '@/hooks/useForum';
 import { ForumCommentSection } from '@/components/forum/ForumCommentSection';
@@ -412,7 +412,19 @@ const ForumPost: React.FC = () => {
                   <span>Award geben</span>
                 </button>
               )}
-              <button className="flex items-center gap-1 hover:text-foreground transition-colors">
+              <button 
+                onClick={() => {
+                  const url = window.location.href;
+                  navigator.clipboard.writeText(url);
+                  // Show toast or visual feedback
+                  const toast = document.createElement('div');
+                  toast.textContent = 'Link kopiert!';
+                  toast.className = 'fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-lg z-50 animate-in fade-in slide-in-from-bottom-2';
+                  document.body.appendChild(toast);
+                  setTimeout(() => toast.remove(), 2000);
+                }}
+                className="flex items-center gap-1 hover:text-foreground transition-colors"
+              >
                 <Share2 className="h-4 w-4" />
                 <span>Teilen</span>
               </button>

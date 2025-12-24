@@ -200,7 +200,19 @@ export const ForumPostCard: React.FC<ForumPostCardProps> = ({
                 <Bookmark className={cn("h-4 w-4", post.is_saved && "fill-current")} />
                 <span>{post.is_saved ? 'Gespeichert' : 'Speichern'}</span>
               </button>
-              <button className="flex items-center gap-1 hover:text-foreground transition-colors">
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  const url = `${window.location.origin}/forum/post/${post.id}`;
+                  navigator.clipboard.writeText(url);
+                  const toast = document.createElement('div');
+                  toast.textContent = 'Link kopiert!';
+                  toast.className = 'fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-lg z-50 animate-in fade-in slide-in-from-bottom-2';
+                  document.body.appendChild(toast);
+                  setTimeout(() => toast.remove(), 2000);
+                }}
+                className="flex items-center gap-1 hover:text-foreground transition-colors"
+              >
                 <Share2 className="h-4 w-4" />
                 <span>Teilen</span>
               </button>
