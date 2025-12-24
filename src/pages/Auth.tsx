@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -20,18 +20,22 @@ const Auth = () => {
     toast
   } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
   // Track visitor on page load
   useVisitorTracking('/auth');
 
+  // Get the original URL the user was trying to access
+  const from = (location.state as { from?: string })?.from || '/marketplace';
+
   const handleSplashComplete = () => {
     setShowSplash(false);
   };
 
   if (user && !loading) {
-    return <Navigate to="/marketplace" replace />;
+    return <Navigate to={from} replace />;
   }
 
   // Show splash screen for unauthenticated users who haven't seen it
@@ -54,6 +58,7 @@ const Auth = () => {
         title: "Erfolgreich angemeldet",
         description: "Willkommen zurück!"
       });
+      navigate(from, { replace: true });
     }
     setIsLoading(false);
   };
