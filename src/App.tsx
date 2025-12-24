@@ -9,6 +9,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./hooks/useCart";
 import PrivacyWarning from "./components/PrivacyWarning";
 import { ChristmasDecorations } from "./components/ChristmasDecorations";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Marketplace from "./pages/Marketplace";
@@ -38,15 +39,51 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/marketplace" element={<Marketplace />} />
-                <Route path="/admin" element={<AdminPanel />} />
-                <Route path="/seller" element={<SellerDashboard />} />
-                <Route path="/wallet" element={<Wallet />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/reports" element={<MyReports />} />
-                <Route path="/forum" element={<Forum />} />
-                <Route path="/forum/post/:postId" element={<ForumPostPage />} />
+                <Route path="/marketplace" element={
+                  <ProtectedRoute>
+                    <Marketplace />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin" element={
+                  <ProtectedRoute>
+                    <AdminPanel />
+                  </ProtectedRoute>
+                } />
+                <Route path="/seller" element={
+                  <ProtectedRoute>
+                    <SellerDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/wallet" element={
+                  <ProtectedRoute>
+                    <Wallet />
+                  </ProtectedRoute>
+                } />
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } />
+                <Route path="/orders" element={
+                  <ProtectedRoute>
+                    <Orders />
+                  </ProtectedRoute>
+                } />
+                <Route path="/reports" element={
+                  <ProtectedRoute>
+                    <MyReports />
+                  </ProtectedRoute>
+                } />
+                <Route path="/forum" element={
+                  <ProtectedRoute>
+                    <Forum />
+                  </ProtectedRoute>
+                } />
+                <Route path="/forum/post/:postId" element={
+                  <ProtectedRoute>
+                    <ForumPostPage />
+                  </ProtectedRoute>
+                } />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
