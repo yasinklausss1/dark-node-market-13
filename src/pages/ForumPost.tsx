@@ -414,7 +414,7 @@ const ForumPost: React.FC = () => {
               )}
               <button 
                 onClick={() => {
-                  const url = window.location.href;
+                  const url = `https://oracle-market.store/forum/post/${postId}`;
                   navigator.clipboard.writeText(url);
                   // Show toast or visual feedback
                   const toast = document.createElement('div');
