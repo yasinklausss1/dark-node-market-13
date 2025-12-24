@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ForumPost } from '@/hooks/useForum';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,6 +20,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import SellerProfileModal from '@/components/SellerProfileModal';
 
 interface ForumPostCardProps {
   post: ForumPost;
@@ -34,6 +35,7 @@ export const ForumPostCard: React.FC<ForumPostCardProps> = ({
   onSave,
   compact = false
 }) => {
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const score = post.upvotes - post.downvotes;
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: de });
 
@@ -90,14 +92,17 @@ export const ForumPostCard: React.FC<ForumPostCardProps> = ({
                 </Badge>
               )}
               <span>•</span>
-              <div className="flex items-center gap-1">
+              <button 
+                className="flex items-center gap-1 hover:underline"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setProfileModalOpen(true); }}
+              >
                 <Avatar className="h-4 w-4">
                   <AvatarImage src={post.author?.profile_picture_url || ''} />
                   <AvatarFallback className="text-[8px]">
                     {post.author?.username?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="font-medium text-foreground">
+                <span className="font-medium text-foreground hover:text-primary transition-colors">
                   {post.author?.username}
                 </span>
                 {post.author?.is_verified && (
@@ -109,7 +114,7 @@ export const ForumPostCard: React.FC<ForumPostCardProps> = ({
                 {post.author?.role === 'admin' && (
                   <Badge className="text-[10px] px-1 py-0 bg-red-500">Admin</Badge>
                 )}
-              </div>
+              </button>
               <span>•</span>
               <span>{timeAgo}</span>
               {post.is_pinned && (
@@ -199,6 +204,16 @@ export const ForumPostCard: React.FC<ForumPostCardProps> = ({
           </div>
         </div>
       </CardContent>
+
+      {/* Profile Modal */}
+      {post.author && (
+        <SellerProfileModal
+          open={profileModalOpen}
+          onOpenChange={setProfileModalOpen}
+          sellerId={post.author_id}
+          sellerUsername={post.author.username}
+        />
+      )}
     </Card>
   );
 };
