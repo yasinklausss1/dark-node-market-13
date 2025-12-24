@@ -734,6 +734,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "forum_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "forum_comments_parent_id_fkey"
             columns: ["parent_id"]
             isOneToOne: false
@@ -873,6 +880,13 @@ export type Database = {
           view_count?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "forum_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "forum_posts_category_id_fkey"
             columns: ["category_id"]
