@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface BlinkingOracleEyeProps {
@@ -11,7 +11,10 @@ export const BlinkingOracleEye: React.FC<BlinkingOracleEyeProps> = ({
   className,
 }) => {
   const [isBlinking, setIsBlinking] = useState(false);
+  const [pupilOffset, setPupilOffset] = useState({ x: 0, y: 0 });
+  const eyeRef = useRef<HTMLDivElement>(null);
 
+  // Blink effect
   useEffect(() => {
     const blinkInterval = setInterval(() => {
       setIsBlinking(true);
@@ -21,8 +24,40 @@ export const BlinkingOracleEye: React.FC<BlinkingOracleEyeProps> = ({
     return () => clearInterval(blinkInterval);
   }, []);
 
+  // Mouse tracking for pupil movement
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!eyeRef.current || isBlinking) return;
+
+      const eyeRect = eyeRef.current.getBoundingClientRect();
+      const eyeCenterX = eyeRect.left + eyeRect.width / 2;
+      const eyeCenterY = eyeRect.top + eyeRect.height / 2;
+
+      const deltaX = e.clientX - eyeCenterX;
+      const deltaY = e.clientY - eyeCenterY;
+
+      // Calculate distance and normalize
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      const maxOffset = 4; // Maximum pupil movement in SVG units
+
+      // Smooth easing - pupil moves more when mouse is closer
+      const normalizedDistance = Math.min(distance / 300, 1);
+      const offset = maxOffset * normalizedDistance;
+
+      // Calculate angle and apply offset
+      const angle = Math.atan2(deltaY, deltaX);
+      const offsetX = Math.cos(angle) * offset;
+      const offsetY = Math.sin(angle) * offset;
+
+      setPupilOffset({ x: offsetX, y: offsetY });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [isBlinking]);
+
   return (
-    <div className={cn('relative', className)}>
+    <div ref={eyeRef} className={cn('relative', className)}>
       <svg
         width={size}
         height={size}
@@ -43,25 +78,25 @@ export const BlinkingOracleEye: React.FC<BlinkingOracleEyeProps> = ({
           className="transition-all duration-150 ease-in-out"
         />
 
-        {/* Inner circle - iris (scales down during blink) */}
+        {/* Inner circle - iris (scales down during blink, follows mouse) */}
         <circle
-          cx="32"
-          cy="32"
+          cx={32 + (isBlinking ? 0 : pupilOffset.x)}
+          cy={32 + (isBlinking ? 0 : pupilOffset.y)}
           r={isBlinking ? 2 : 12}
           stroke="currentColor"
           strokeWidth="2"
           fill="none"
-          className="transition-all duration-150 ease-in-out"
+          className="transition-all duration-150 ease-out"
         />
 
-        {/* Center dot - pupil (scales down during blink) */}
+        {/* Center dot - pupil (scales down during blink, follows mouse) */}
         <circle 
-          cx="32" 
-          cy="32" 
+          cx={32 + (isBlinking ? 0 : pupilOffset.x * 1.2)} 
+          cy={32 + (isBlinking ? 0 : pupilOffset.y * 1.2)} 
           r={isBlinking ? 1 : 5} 
           fill="currentColor" 
           opacity={isBlinking ? 0 : 0.95}
-          className="transition-all duration-150 ease-in-out"
+          className="transition-all duration-100 ease-out"
         />
 
         {/* Top decorative arc */}
