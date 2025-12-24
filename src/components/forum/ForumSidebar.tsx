@@ -122,7 +122,7 @@ export const ForumSidebar: React.FC<ForumSidebarProps> = ({
         </CardHeader>
         <CardContent className="text-xs text-muted-foreground space-y-2">
           <p>1. Sei respektvoll gegenüber anderen Nutzern</p>
-          <p>2. Kein Spam oder irrelevante Werbung</p>
+          <p>2. Kein Spam</p>
           <p>3. Keine illegalen Inhalte teilen</p>
           <p>4. Nutze aussagekräftige Titel</p>
           <p>5. Konstruktive Diskussionen führen</p>
