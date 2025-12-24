@@ -334,16 +334,23 @@ const ForumPost: React.FC = () => {
                   {post.title}
                 </h1>
 
-                {/* Awards */}
+                {/* Awards - grouped by type */}
                 {post.awards && post.awards.length > 0 && (
-                  <div className="flex gap-1 mt-2 flex-wrap">
-                    {post.awards.map((award, i) => (
+                  <div className="flex gap-1.5 mt-2 flex-wrap">
+                    {Object.entries(
+                      post.awards.reduce((acc, award) => {
+                        acc[award.icon] = acc[award.icon] || { ...award, count: 0 };
+                        acc[award.icon].count++;
+                        return acc;
+                      }, {} as Record<string, { icon: string; name: string; count: number }>)
+                    ).map(([icon, { name, count }]) => (
                       <span 
-                        key={i} 
-                        className="text-lg bg-muted rounded px-1" 
-                        title={award.name}
+                        key={icon} 
+                        className="text-lg bg-muted rounded px-2 py-0.5 flex items-center gap-1" 
+                        title={`${count}x ${name}`}
                       >
-                        {award.icon}
+                        {count > 1 && <span className="text-sm font-medium">{count}</span>}
+                        {icon}
                       </span>
                     ))}
                   </div>

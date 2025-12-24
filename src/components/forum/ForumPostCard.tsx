@@ -143,17 +143,25 @@ export const ForumPostCard: React.FC<ForumPostCardProps> = ({
               </h3>
             </Link>
 
-            {/* Awards */}
+            {/* Awards - grouped by type */}
             {post.awards && post.awards.length > 0 && (
-              <div className="flex gap-1 mt-1">
-                {post.awards.slice(0, 5).map((award, i) => (
-                  <span key={i} className="text-sm" title={award.name}>
-                    {award.icon}
+              <div className="flex gap-1 mt-1 flex-wrap">
+                {Object.entries(
+                  post.awards.reduce((acc, award) => {
+                    acc[award.icon] = acc[award.icon] || { ...award, count: 0 };
+                    acc[award.icon].count++;
+                    return acc;
+                  }, {} as Record<string, { icon: string; name: string; count: number }>)
+                ).map(([icon, { name, count }]) => (
+                  <span 
+                    key={icon} 
+                    className="text-sm bg-muted/50 rounded px-1.5 py-0.5 flex items-center gap-1" 
+                    title={name}
+                  >
+                    {count > 1 && <span className="text-xs font-medium">{count}</span>}
+                    {icon}
                   </span>
                 ))}
-                {post.awards.length > 5 && (
-                  <span className="text-xs text-muted-foreground">+{post.awards.length - 5}</span>
-                )}
               </div>
             )}
 
