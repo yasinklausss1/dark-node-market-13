@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, LogOut, Wallet, Settings, Users, Menu, ShoppingBag, MessageCircle, Package, Download, Flag, LayoutGrid, LayoutList } from 'lucide-react';
+import { Search, LogOut, Wallet, Settings, Users, Menu, ShoppingBag, MessageCircle, Package, Download, Flag, LayoutGrid, LayoutList, MessagesSquare } from 'lucide-react';
 import ProductModal from '@/components/ProductModal';
 import ShoppingCart from '@/components/ShoppingCart';
 import SellerProfileModal from '@/components/SellerProfileModal';
@@ -23,6 +23,7 @@ import { ModernHeroSection } from '@/components/ModernHeroSection';
 import { ProductCard } from '@/components/ProductCard';
 import { ChatModal } from '@/components/ChatModal';
 import { OracleLogo } from '@/components/OracleLogo';
+import { ForumInline } from '@/components/forum/ForumInline';
 
 import { ConversationsModal } from '@/components/ConversationsModal';
 import { useChat } from '@/hooks/useChat';
@@ -57,7 +58,7 @@ const Marketplace = () => {
   const [selectedSellerUsername, setSelectedSellerUsername] = useState('');
   const [sellerRatings, setSellerRatings] = useState<Record<string, { average: number; total: number }>>({});
   const [sortBy, setSortBy] = useState<'newest' | 'price-asc' | 'price-desc'>('newest');
-  const [productTypeTab, setProductTypeTab] = useState<'physical' | 'digital'>('physical');
+  const [productTypeTab, setProductTypeTab] = useState<'physical' | 'digital' | 'forum'>('physical');
   const [mobileGridCols, setMobileGridCols] = useState<1 | 2>(2);
   const { cartItems, addToCart, updateQuantity, removeItem, clearCart, getCartItemCount } = useCart();
   
@@ -697,8 +698,8 @@ const Marketplace = () => {
 
         {/* Product Type Tabs */}
         <div className="mb-8">
-          <Tabs value={productTypeTab} onValueChange={(v) => setProductTypeTab(v as 'physical' | 'digital')} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-md h-12">
+          <Tabs value={productTypeTab} onValueChange={(v) => setProductTypeTab(v as 'physical' | 'digital' | 'forum')} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 max-w-lg h-12">
               <TabsTrigger value="physical" className="flex items-center gap-2 text-sm">
                 <Package className="h-4 w-4" />
                 <span>Produkte</span>
@@ -707,135 +708,146 @@ const Marketplace = () => {
                 <Download className="h-4 w-4" />
                 <span>Digital</span>
               </TabsTrigger>
+              <TabsTrigger value="forum" className="flex items-center gap-2 text-sm">
+                <MessagesSquare className="h-4 w-4" />
+                <span>Forum</span>
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
-        {/* Search and Filter */}
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-col gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Produkte suchen..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12"
-              />
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Select value={selectedCategory} onValueChange={(value) => {
-                setSelectedCategory(value);
-                setSelectedSubcategory('all');
-              }}>
-                <SelectTrigger className="flex-1 min-w-[140px] h-11">
-                  <SelectValue placeholder="Kategorie" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[320px] overflow-y-auto">
-                  <SelectItem value="all">
-                    Alle ({categoryCounts.all || 0})
-                  </SelectItem>
-                  {categories
-                    .filter((category) => category.product_type === productTypeTab)
-                    .map((category) => {
-                      const categorySubs = subcategories.filter(s => s.category_id === category.id);
-                      return (
-                        <React.Fragment key={category.id}>
-                          <SelectItem value={`cat:${category.name}`} className="font-medium">
-                            {category.name} ({categoryCounts[category.name] || 0})
-                          </SelectItem>
-                          {categorySubs.map((sub) => (
-                            <SelectItem key={sub.id} value={`sub:${sub.id}`} className="pl-6 text-muted-foreground">
-                              ↳ {sub.name}
-                            </SelectItem>
-                          ))}
-                        </React.Fragment>
-                      );
-                    })}
-                </SelectContent>
-              </Select>
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger className="flex-1 h-11">
-                  <SelectValue placeholder="Sortieren" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Neueste</SelectItem>
-                  <SelectItem value="price-asc">Preis ↑</SelectItem>
-                  <SelectItem value="price-desc">Preis ↓</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              {/* Mobile Grid Toggle */}
-              <div className="flex md:hidden border border-border rounded-md overflow-hidden">
-                <Button
-                  variant={mobileGridCols === 1 ? "default" : "ghost"}
-                  size="icon"
-                  className="h-11 w-11 rounded-none"
-                  onClick={() => setMobileGridCols(1)}
-                >
-                  <LayoutList className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={mobileGridCols === 2 ? "default" : "ghost"}
-                  size="icon"
-                  className="h-11 w-11 rounded-none border-l border-border"
-                  onClick={() => setMobileGridCols(2)}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
+        {/* Forum View */}
+        {productTypeTab === 'forum' ? (
+          <ForumInline />
+        ) : (
+          <>
+            {/* Search and Filter */}
+            <div className="mb-8 space-y-4">
+              <div className="flex flex-col gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Produkte suchen..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 h-12"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Select value={selectedCategory} onValueChange={(value) => {
+                    setSelectedCategory(value);
+                    setSelectedSubcategory('all');
+                  }}>
+                    <SelectTrigger className="flex-1 min-w-[140px] h-11">
+                      <SelectValue placeholder="Kategorie" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[320px] overflow-y-auto">
+                      <SelectItem value="all">
+                        Alle ({categoryCounts.all || 0})
+                      </SelectItem>
+                      {categories
+                        .filter((category) => category.product_type === productTypeTab)
+                        .map((category) => {
+                          const categorySubs = subcategories.filter(s => s.category_id === category.id);
+                          return (
+                            <React.Fragment key={category.id}>
+                              <SelectItem value={`cat:${category.name}`} className="font-medium">
+                                {category.name} ({categoryCounts[category.name] || 0})
+                              </SelectItem>
+                              {categorySubs.map((sub) => (
+                                <SelectItem key={sub.id} value={`sub:${sub.id}`} className="pl-6 text-muted-foreground">
+                                  ↳ {sub.name}
+                                </SelectItem>
+                              ))}
+                            </React.Fragment>
+                          );
+                        })}
+                    </SelectContent>
+                  </Select>
+                  <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                    <SelectTrigger className="flex-1 h-11">
+                      <SelectValue placeholder="Sortieren" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Neueste</SelectItem>
+                      <SelectItem value="price-asc">Preis ↑</SelectItem>
+                      <SelectItem value="price-desc">Preis ↓</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Mobile Grid Toggle */}
+                  <div className="flex md:hidden border border-border rounded-md overflow-hidden">
+                    <Button
+                      variant={mobileGridCols === 1 ? "default" : "ghost"}
+                      size="icon"
+                      className="h-11 w-11 rounded-none"
+                      onClick={() => setMobileGridCols(1)}
+                    >
+                      <LayoutList className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={mobileGridCols === 2 ? "default" : "ghost"}
+                      size="icon"
+                      className="h-11 w-11 rounded-none border-l border-border"
+                      onClick={() => setMobileGridCols(2)}
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Products Grid with Modern Cards */}
-        <div id="products-grid" className={`grid ${mobileGridCols === 1 ? 'grid-cols-1' : 'grid-cols-2'} md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6`}>
-          {currentItems.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              sellerRating={sellerRatings[product.seller_id]}
-              onProductClick={openProductModal}
-              onAddToCart={handleAddToCart}
-              onViewSeller={handleViewSellerProfile}
-              onStartChat={(p) => {
-                setSelectedChatProduct(p);
-                setChatModalOpen(true);
-              }}
-              isOwner={user?.id === product.seller_id}
-            />
-          ))}
-        </div>
+            {/* Products Grid with Modern Cards */}
+            <div id="products-grid" className={`grid ${mobileGridCols === 1 ? 'grid-cols-1' : 'grid-cols-2'} md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6`}>
+              {currentItems.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  sellerRating={sellerRatings[product.seller_id]}
+                  onProductClick={openProductModal}
+                  onAddToCart={handleAddToCart}
+                  onViewSeller={handleViewSellerProfile}
+                  onStartChat={(p) => {
+                    setSelectedChatProduct(p);
+                    setChatModalOpen(true);
+                  }}
+                  isOwner={user?.id === product.seller_id}
+                />
+              ))}
+            </div>
 
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Keine Produkte gefunden.</p>
-          </div>
-        )}
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Keine Produkte gefunden.</p>
+              </div>
+            )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-8">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={prevPage}
-              disabled={!hasPrevPage}
-            >
-              Zurück
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              Seite {currentPage} von {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={nextPage}
-              disabled={!hasNextPage}
-            >
-              Weiter
-            </Button>
-          </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={prevPage}
+                  disabled={!hasPrevPage}
+                >
+                  Zurück
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Seite {currentPage} von {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={nextPage}
+                  disabled={!hasNextPage}
+                >
+                  Weiter
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </main>
 
