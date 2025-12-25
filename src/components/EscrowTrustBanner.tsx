@@ -55,7 +55,7 @@ export const EscrowTrustBanner: React.FC = () => {
               </div>
 
               <p className="text-sm text-muted-foreground mt-1">
-                Du kannst auswählen ob du mit Escrow bezahlen möchtest, wenn ja dann wird dein Geld in einem sicheren Escrow-System gehalten, bis du die Ware erhalten hast. Wenn etwas schiefgeht, bekommst du dein Geld zurück!
+                Du kannst auswählen ob du mit Escrow bezahlen möchtest, wenn ja dann wird dein Geld in einem sicheren Escrow-System gehalten, bis du die Ware erhalten hast. <strong className="text-green-500">Wenn etwas schiefgeht, bekommst du dein Geld zurück!</strong>
               </p>
 
               {/* Collapsible details */}
