@@ -100,16 +100,32 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
+    // Create admin client for database operations
+    const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    // Get authorization header - can come from multiple sources
+    const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
+    console.log("Auth header received:", authHeader ? "Present" : "Missing");
+    
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    console.log("Token extracted:", token ? `${token.substring(0, 20)}...` : "Empty");
+
+    if (!token) {
+      console.log("No token found in request");
+      return new Response(
+        JSON.stringify({ success: false, error: "Nicht eingeloggt." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
+      );
+    }
+
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
+    console.log("User lookup result:", userData?.user?.id || "No user", userError?.message || "No error");
 
     if (userError || !userData?.user) {
+      console.log("Auth failed:", userError?.message);
       return new Response(
         JSON.stringify({ success: false, error: "Nicht eingeloggt." }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
@@ -117,7 +133,7 @@ serve(async (req) => {
     }
 
     // Only moderators/admins
-    const { data: isModOrAdmin, error: roleError } = await supabase.rpc(
+    const { data: isModOrAdmin, error: roleError } = await supabaseAdmin.rpc(
       "is_moderator_or_admin",
       { user_uuid: userData.user.id },
     );
@@ -145,7 +161,7 @@ serve(async (req) => {
         ? Math.min(100, Math.max(0, Number.isFinite(partialPercentRaw) ? partialPercentRaw : 50))
         : undefined;
 
-    const { data: dispute, error: disputeError } = await supabase
+    const { data: dispute, error: disputeError } = await supabaseAdmin
       .from("disputes")
       .select("*")
       .eq("id", disputeId)
@@ -159,7 +175,7 @@ serve(async (req) => {
 
     // If dismissed, only update dispute record.
     if (resolutionType === "dismissed") {
-      const { error: updateDisputeError } = await supabase
+      const { error: updateDisputeError } = await supabaseAdmin
         .from("disputes")
         .update({
           status,
@@ -178,7 +194,7 @@ serve(async (req) => {
     }
 
     // Fetch held escrow holdings for this order
-    const { data: holdings, error: holdingsError } = await supabase
+    const { data: holdings, error: holdingsError } = await supabaseAdmin
       .from("escrow_holdings")
       .select("*")
       .eq("order_id", dispute.order_id)
@@ -198,9 +214,9 @@ serve(async (req) => {
 
       if (resolutionType === "buyer_favor") {
         // Refund buyer full amount, no fees collected
-        await incrementWallet(supabase, buyerId, currency, Number(holding.amount_crypto));
+        await incrementWallet(supabaseAdmin, buyerId, currency, Number(holding.amount_crypto));
 
-        await supabase
+        await supabaseAdmin
           .from("escrow_holdings")
           .update({
             status: "refunded",
@@ -209,7 +225,7 @@ serve(async (req) => {
           })
           .eq("id", holding.id);
 
-        await supabase.from("transactions").insert({
+        await supabaseAdmin.from("transactions").insert({
           user_id: buyerId,
           type: "refund",
           amount_eur: holding.amount_eur,
@@ -223,10 +239,10 @@ serve(async (req) => {
 
       if (resolutionType === "seller_favor") {
         // Match release-escrow behavior (seller gets net, admin fee collected)
-        await incrementWallet(supabase, sellerId, currency, Number(holding.seller_amount_crypto));
+        await incrementWallet(supabaseAdmin, sellerId, currency, Number(holding.seller_amount_crypto));
 
         // Admin fee address + transaction
-        const { data: feeAddress } = await supabase
+        const { data: feeAddress } = await supabaseAdmin
           .from("admin_fee_addresses")
           .select("*")
           .eq("admin_user_id", ADMIN_USER_ID)
@@ -234,13 +250,13 @@ serve(async (req) => {
           .maybeSingle();
 
         if (feeAddress) {
-          await supabase
+          await supabaseAdmin
             .from("admin_fee_addresses")
             .update({ balance: Number(feeAddress.balance) + Number(holding.fee_amount_crypto) })
             .eq("id", feeAddress.id);
         }
 
-        await supabase.from("admin_fee_transactions").insert({
+        await supabaseAdmin.from("admin_fee_transactions").insert({
           escrow_holding_id: holding.id,
           order_id: dispute.order_id,
           amount_eur: holding.fee_amount_eur,
@@ -250,7 +266,7 @@ serve(async (req) => {
           status: "completed",
         });
 
-        await supabase
+        await supabaseAdmin
           .from("escrow_holdings")
           .update({
             status: "released",
@@ -259,7 +275,7 @@ serve(async (req) => {
           })
           .eq("id", holding.id);
 
-        await supabase.from("transactions").insert({
+        await supabaseAdmin.from("transactions").insert({
           user_id: sellerId,
           type: "sale",
           amount_eur: holding.seller_amount_eur,
@@ -290,8 +306,8 @@ serve(async (req) => {
         const sellerNetCrypto = sellerGrossCrypto - feeCrypto;
 
         if (buyerRefundCrypto > 0) {
-          await incrementWallet(supabase, buyerId, currency, buyerRefundCrypto);
-          await supabase.from("transactions").insert({
+          await incrementWallet(supabaseAdmin, buyerId, currency, buyerRefundCrypto);
+          await supabaseAdmin.from("transactions").insert({
             user_id: buyerId,
             type: "refund",
             amount_eur: (amountEur * buyerPercent) / 100,
@@ -304,8 +320,8 @@ serve(async (req) => {
         }
 
         if (sellerNetCrypto > 0) {
-          await incrementWallet(supabase, sellerId, currency, sellerNetCrypto);
-          await supabase.from("transactions").insert({
+          await incrementWallet(supabaseAdmin, sellerId, currency, sellerNetCrypto);
+          await supabaseAdmin.from("transactions").insert({
             user_id: sellerId,
             type: "sale",
             amount_eur: (amountEur * sellerPercent) / 100 - feeEur,
@@ -318,7 +334,7 @@ serve(async (req) => {
         }
 
         if (feeCrypto > 0) {
-          const { data: feeAddress } = await supabase
+          const { data: feeAddress } = await supabaseAdmin
             .from("admin_fee_addresses")
             .select("*")
             .eq("admin_user_id", ADMIN_USER_ID)
@@ -326,13 +342,13 @@ serve(async (req) => {
             .maybeSingle();
 
           if (feeAddress) {
-            await supabase
+            await supabaseAdmin
               .from("admin_fee_addresses")
               .update({ balance: Number(feeAddress.balance) + feeCrypto })
               .eq("id", feeAddress.id);
           }
 
-          await supabase.from("admin_fee_transactions").insert({
+          await supabaseAdmin.from("admin_fee_transactions").insert({
             escrow_holding_id: holding.id,
             order_id: dispute.order_id,
             amount_eur: feeEur,
@@ -343,7 +359,7 @@ serve(async (req) => {
           });
         }
 
-        await supabase
+        await supabaseAdmin
           .from("escrow_holdings")
           .update({
             status: "partial_refund",
@@ -362,13 +378,13 @@ serve(async (req) => {
           ? "released"
           : "partial_refund";
 
-    await supabase
+    await supabaseAdmin
       .from("orders")
       .update({ escrow_status: nextEscrowStatus })
       .eq("id", dispute.order_id);
 
     // Update dispute record (single source of truth)
-    const { error: updateDisputeError } = await supabase
+    const { error: updateDisputeError } = await supabaseAdmin
       .from("disputes")
       .update({
         status,
