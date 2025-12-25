@@ -113,7 +113,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     setPaymentMethodOpen(true);
   };
 
-  const handleConfirmOrder = async (addressData: any, buyerNotes?: string, buyerNotesImages?: string[]) => {
+  const handleConfirmOrder = async (addressData: any, buyerNotes?: string, buyerNotesImages?: string[], useEscrow?: boolean) => {
     if (!user || !selectedPaymentMethod) return;
 
     setIsProcessingOrder(true);
@@ -134,17 +134,22 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
           ltcPrice,
           shippingAddress: addressData,
           buyerNotes: buyerNotes || undefined,
-          buyerNotesImages: buyerNotesImages || undefined
+          buyerNotesImages: buyerNotesImages || undefined,
+          useEscrow: useEscrow !== false // Default to true if not specified
         }
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      // Success
+      // Success message based on escrow choice
+      const escrowMessage = useEscrow !== false 
+        ? "Deine Bestellung wurde mit Escrow-Schutz aufgegeben."
+        : "Deine Bestellung wurde aufgegeben und die Verkäufer wurden gutgeschrieben.";
+
       toast({
         title: "Bestellung erfolgreich",
-        description: "Deine Bestellung wurde erfolgreich aufgegeben und die Verkäufer wurden gutgeschrieben",
+        description: escrowMessage,
       });
 
       onClearCart();
