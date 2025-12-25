@@ -288,7 +288,7 @@ export function DisputeResolutionPanel() {
         throw new Error('Nicht eingeloggt. Bitte neu anmelden.');
       }
 
-      const { data, error } = await supabase.functions.invoke('resolve-dispute', {
+      const { data, error, response } = await supabase.functions.invoke('resolve-dispute', {
         body: {
           disputeId: selectedDispute.id,
           resolutionType,
@@ -300,7 +300,27 @@ export function DisputeResolutionPanel() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        let serverError: string | undefined;
+
+        try {
+          if (response instanceof Response) {
+            const raw = await response.clone().text();
+            // try json first
+            try {
+              const parsed = JSON.parse(raw);
+              serverError = parsed?.error || parsed?.message || raw;
+            } catch {
+              serverError = raw;
+            }
+          }
+        } catch {
+          // ignore
+        }
+
+        throw new Error(serverError || (error instanceof Error ? error.message : 'Dispute konnte nicht verarbeitet werden.'));
+      }
+
       if (!data?.success) {
         throw new Error(data?.error || 'Dispute konnte nicht verarbeitet werden.');
       }
