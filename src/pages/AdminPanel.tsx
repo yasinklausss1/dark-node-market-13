@@ -2,22 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Plus, Users, Edit, Eye, Wifi, Bitcoin, RefreshCw, UserPlus, Globe } from 'lucide-react';
+import { Trash2, Plus, Users, Edit, Eye, Wifi, Bitcoin, RefreshCw, UserPlus, Globe, Shield } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EditProductModal from '@/components/EditProductModal';
 import NewsEditor from '@/components/NewsEditor';
 import SellerReportsPanel from '@/components/SellerReportsPanel';
+import { DisputeResolutionPanel } from '@/components/DisputeResolutionPanel';
 import { useUserPresence } from '@/hooks/useUserPresence';
 import AdminOrdersOverview from '@/components/admin/AdminOrdersOverview';
 import AdminDepositsOverview from '@/components/admin/AdminDepositsOverview';
 import AdminWithdrawalsOverview from '@/components/admin/AdminWithdrawalsOverview';
 import AdminIPLogger from '@/components/admin/AdminIPLogger';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +43,7 @@ interface UserAddress {
 
 const AdminPanel = () => {
   const { user, profile, loading } = useAuth();
+  const { isAdmin, isModerator, isModeratorOrAdmin, loading: roleLoading } = useUserRole();
   const { onlineUsers, onlineCount } = useUserPresence();
   const { toast } = useToast();
 
@@ -63,27 +67,33 @@ const AdminPanel = () => {
   const [creatingUser, setCreatingUser] = useState(false);
 
   useEffect(() => {
-    fetchCategories();
-    fetchSubcategories();
-    fetchUserCount();
-    fetchAllProducts();
-    fetchUserAddresses();
-    
-    // Set up real-time listener for user count
-    const channel = supabase
-      .channel('user-count-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'profiles' }, 
-        () => {
-          fetchUserCount();
-        }
-      )
-      .subscribe();
+    if (isModeratorOrAdmin) {
+      fetchCategories();
+      fetchSubcategories();
+      fetchUserCount();
       
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+      // Only admins can see products and addresses
+      if (isAdmin) {
+        fetchAllProducts();
+        fetchUserAddresses();
+      }
+      
+      // Set up real-time listener for user count
+      const channel = supabase
+        .channel('user-count-changes')
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'profiles' }, 
+          () => {
+            fetchUserCount();
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [isModeratorOrAdmin, isAdmin]);
 
   const fetchUserAddresses = async () => {
     const { data, error } = await supabase
@@ -318,7 +328,9 @@ const AdminPanel = () => {
         });
         setNewUserForm({ username: '', password: '', confirmPassword: '' });
         fetchUserCount();
-        fetchUserAddresses();
+        if (isAdmin) {
+          fetchUserAddresses();
+        }
       }
     } catch (error: any) {
       console.error('Error creating user:', error);
@@ -374,7 +386,7 @@ const AdminPanel = () => {
     }
   };
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -382,7 +394,8 @@ const AdminPanel = () => {
     );
   }
 
-  if (!user || profile?.role !== 'admin') {
+  // Allow both admins and moderators to access
+  if (!user || !isModeratorOrAdmin) {
     return <Navigate to="/marketplace" replace />;
   }
 
@@ -391,7 +404,15 @@ const AdminPanel = () => {
       <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl sm:text-3xl font-bold font-cinzel">Admin Panel</h1>
+            <h1 className="text-xl sm:text-3xl font-bold font-cinzel">
+              {isAdmin ? 'Admin Panel' : 'Moderator Panel'}
+            </h1>
+            {isModerator && !isAdmin && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                Moderator
+              </Badge>
+            )}
           </div>
           <Button 
             variant="outline" 
@@ -402,7 +423,7 @@ const AdminPanel = () => {
           </Button>
         </div>
 
-        {/* User Statistics */}
+        {/* User Statistics - Available to both */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <Card>
             <CardHeader className="p-4 sm:p-6">
@@ -452,152 +473,168 @@ const AdminPanel = () => {
           </Card>
         </div>
 
-        {/* Create New User */}
-        <Card>
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
-              <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span>Neuen Nutzer erstellen</span>
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              Registriere einen neuen Benutzer manuell
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="new-username" className="text-sm">Benutzername</Label>
-                <Input
-                  id="new-username"
-                  value={newUserForm.username}
-                  onChange={(e) => setNewUserForm(prev => ({ ...prev, username: e.target.value }))}
-                  placeholder="Benutzername"
-                />
-              </div>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Alle neuen Nutzer werden automatisch als Verkäufer erstellt.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="new-password" className="text-sm">Passwort (min. 7 Zeichen)</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  value={newUserForm.password}
-                  onChange={(e) => setNewUserForm(prev => ({ ...prev, password: e.target.value }))}
-                  placeholder="Passwort"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password" className="text-sm">Passwort bestätigen</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  value={newUserForm.confirmPassword}
-                  onChange={(e) => setNewUserForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                  placeholder="Passwort bestätigen"
-                />
-              </div>
-            </div>
-            <Button 
-              onClick={createNewUser}
-              disabled={creatingUser || !newUserForm.username.trim() || !newUserForm.password}
-              className="w-full sm:w-auto"
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              {creatingUser ? 'Wird erstellt...' : 'Nutzer erstellen'}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* User Crypto Addresses */}
-        <Card>
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
-              <Bitcoin className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
-              <span>Nutzer Krypto-Adressen</span>
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              Generierte BTC und LTC Adressen aller Nutzer
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0">
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {(() => {
-                // Group addresses by user
-                const groupedByUser = userAddresses.reduce((acc, addr) => {
-                  if (!acc[addr.user_id]) {
-                    acc[addr.user_id] = { username: addr.username, addresses: [] };
-                  }
-                  acc[addr.user_id].addresses.push(addr);
-                  return acc;
-                }, {} as Record<string, { username: string; addresses: UserAddress[] }>);
-
-                return Object.entries(groupedByUser).map(([userId, data]) => (
-                  <div key={userId} className="border rounded-lg p-3 sm:p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-sm sm:text-base truncate">{data.username}</h3>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => fetchUserAddresses()}
-                      >
-                        <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
-                      </Button>
-                    </div>
-                    {data.addresses.map((addr) => (
-                      <div key={`${userId}-${addr.currency}`} className="flex flex-col sm:flex-row sm:items-center justify-between text-xs sm:text-sm bg-muted p-2 rounded gap-1">
-                        <span className={`font-medium ${addr.currency === 'BTC' ? 'text-orange-500' : addr.currency === 'LTC' ? 'text-blue-500' : 'text-purple-500'}`}>
-                          {addr.currency}:
-                        </span>
-                        <code className="text-xs break-all">
-                          {addr.address === 'pending' ? (
-                            <span className="text-yellow-500">Ausstehend</span>
-                          ) : (
-                            addr.address
-                          )}
-                        </code>
-                      </div>
-                    ))}
-                  </div>
-                ));
-              })()}
-              {userAddresses.length === 0 && (
-                <p className="text-muted-foreground text-center py-8 text-sm">
-                  Keine Nutzeradressen gefunden.
+        {/* Admin Only: Create New User */}
+        {isAdmin && (
+          <Card>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+                <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span>Neuen Nutzer erstellen</span>
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Registriere einen neuen Benutzer manuell
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-username" className="text-sm">Benutzername</Label>
+                  <Input
+                    id="new-username"
+                    value={newUserForm.username}
+                    onChange={(e) => setNewUserForm(prev => ({ ...prev, username: e.target.value }))}
+                    placeholder="Benutzername"
+                  />
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Alle neuen Nutzer werden automatisch als Verkäufer erstellt.
                 </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password" className="text-sm">Passwort (min. 7 Zeichen)</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newUserForm.password}
+                    onChange={(e) => setNewUserForm(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Passwort"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password" className="text-sm">Passwort bestätigen</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={newUserForm.confirmPassword}
+                    onChange={(e) => setNewUserForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    placeholder="Passwort bestätigen"
+                  />
+                </div>
+              </div>
+              <Button 
+                onClick={createNewUser}
+                disabled={creatingUser || !newUserForm.username.trim() || !newUserForm.password}
+                className="w-full sm:w-auto"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                {creatingUser ? 'Wird erstellt...' : 'Nutzer erstellen'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Orders, Deposits, Withdrawals Overview */}
-        <AdminOrdersOverview />
-        <AdminDepositsOverview />
-        <AdminWithdrawalsOverview />
+        {/* Admin Only: User Crypto Addresses */}
+        {isAdmin && (
+          <Card>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+                <Bitcoin className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
+                <span>Nutzer Krypto-Adressen</span>
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Generierte BTC und LTC Adressen aller Nutzer
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {(() => {
+                  // Group addresses by user
+                  const groupedByUser = userAddresses.reduce((acc, addr) => {
+                    if (!acc[addr.user_id]) {
+                      acc[addr.user_id] = { username: addr.username, addresses: [] };
+                    }
+                    acc[addr.user_id].addresses.push(addr);
+                    return acc;
+                  }, {} as Record<string, { username: string; addresses: UserAddress[] }>);
 
-        {/* IP Logger */}
-        <Card>
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
-              <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
-              <span>IP Logger</span>
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              Alle Besuche der Login-Seite protokollieren und analysieren
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0">
-            <AdminIPLogger />
-          </CardContent>
-        </Card>
+                  return Object.entries(groupedByUser).map(([userId, data]) => (
+                    <div key={userId} className="border rounded-lg p-3 sm:p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-sm sm:text-base truncate">{data.username}</h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fetchUserAddresses()}
+                        >
+                          <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                      </div>
+                      {data.addresses.map((addr) => (
+                        <div key={`${userId}-${addr.currency}`} className="flex flex-col sm:flex-row sm:items-center justify-between text-xs sm:text-sm bg-muted p-2 rounded gap-1">
+                          <span className={`font-medium ${addr.currency === 'BTC' ? 'text-orange-500' : addr.currency === 'LTC' ? 'text-blue-500' : 'text-purple-500'}`}>
+                            {addr.currency}:
+                          </span>
+                          <code className="text-xs break-all">
+                            {addr.address === 'pending' ? (
+                              <span className="text-yellow-500">Ausstehend</span>
+                            ) : (
+                              addr.address
+                            )}
+                          </code>
+                        </div>
+                      ))}
+                    </div>
+                  ));
+                })()}
+                {userAddresses.length === 0 && (
+                  <p className="text-muted-foreground text-center py-8 text-sm">
+                    Keine Nutzeradressen gefunden.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
+        {/* Admin Only: Orders, Deposits, Withdrawals Overview */}
+        {isAdmin && (
+          <>
+            <AdminOrdersOverview />
+            <AdminDepositsOverview />
+            <AdminWithdrawalsOverview />
+          </>
+        )}
+
+        {/* Admin Only: IP Logger */}
+        {isAdmin && (
+          <Card>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+                <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                <span>IP Logger</span>
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Alle Besuche der Login-Seite protokollieren und analysieren
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <AdminIPLogger />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Seller Reports - Available to both Admin and Moderator */}
         <SellerReportsPanel />
 
+        {/* Disputes - Available to both Admin and Moderator */}
+        <DisputeResolutionPanel />
+
+        {/* News Editor - Available to both Admin and Moderator */}
         <NewsEditor />
 
-<Card>
+        {/* Category Management - Available to both Admin and Moderator */}
+        <Card>
           <CardHeader>
             <CardTitle>Kategorie Management</CardTitle>
             <CardDescription>
@@ -855,91 +892,95 @@ const AdminPanel = () => {
           </CardContent>
         </Card>
 
-        {/* All Products Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Produktverwaltung</CardTitle>
-            <CardDescription>
-              Verwalten Sie alle Produkte auf der Plattform
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {products.map((product) => (
-                <div key={product.id} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{product.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Kategorie: {product.category} | Verkäufer: {product.profiles?.username || 'Unbekannt'}
-                      </p>
-                      <p className="text-lg font-bold text-primary">€{product.price}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Status: {product.is_active ? 'Aktiv' : 'Inaktiv'}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEditingProduct(product);
-                          setEditModalOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Bearbeiten
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Löschen
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Produkt löschen?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Sind Sie sicher, dass Sie das Produkt "{product.title}" löschen möchten? 
-                              Diese Aktion kann nicht rückgängig gemacht werden.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => deleteProduct(product.id, product.title)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+        {/* Admin Only: All Products Management */}
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Produktverwaltung</CardTitle>
+              <CardDescription>
+                Verwalten Sie alle Produkte auf der Plattform
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {products.map((product) => (
+                  <div key={product.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{product.title}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Kategorie: {product.category} | Verkäufer: {product.profiles?.username || 'Unbekannt'}
+                        </p>
+                        <p className="text-lg font-bold text-primary">€{product.price}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Status: {product.is_active ? 'Aktiv' : 'Inaktiv'}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingProduct(product);
+                            setEditModalOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Bearbeiten
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
                             >
+                              <Trash2 className="h-4 w-4 mr-1" />
                               Löschen
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Produkt löschen?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Sind Sie sicher, dass Sie das Produkt "{product.title}" löschen möchten? 
+                                Diese Aktion kann nicht rückgängig gemacht werden.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteProduct(product.id, product.title)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Löschen
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-              {products.length === 0 && (
-                <p className="text-muted-foreground text-center py-8">
-                  Noch keine Produkte vorhanden.
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+                {products.length === 0 && (
+                  <p className="text-muted-foreground text-center py-8">
+                    Noch keine Produkte vorhanden.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {/* Edit Product Modal */}
-      <EditProductModal
-        product={editingProduct}
-        open={editModalOpen}
-        onOpenChange={setEditModalOpen}
-        onProductUpdated={fetchAllProducts}
-      />
+      {/* Edit Product Modal - Admin Only */}
+      {isAdmin && (
+        <EditProductModal
+          product={editingProduct}
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          onProductUpdated={fetchAllProducts}
+        />
+      )}
     </div>
   );
 };

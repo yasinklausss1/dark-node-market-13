@@ -2159,6 +2159,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_moderator_or_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_user_verified: { Args: { user_uuid: string }; Returns: boolean }
       make_user_admin: { Args: { user_email: string }; Returns: undefined }
       revoke_user_verification: {
