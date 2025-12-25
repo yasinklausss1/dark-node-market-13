@@ -213,76 +213,60 @@ serve(async (req) => {
       );
     }
 
-    // Fetch escrow holdings for this order (check all statuses first)
+    // Fetch escrow holdings for this order (we reconcile if the escrow status already changed)
     const { data: allHoldings, error: allHoldingsError } = await supabaseAdmin
       .from("escrow_holdings")
       .select("*")
       .eq("order_id", dispute.order_id);
 
     if (allHoldingsError) throw allHoldingsError;
-
-    // Check if escrow was already processed
-    if (allHoldings && allHoldings.length > 0) {
-      const alreadyProcessed = allHoldings.every(h => h.status !== "held");
-      if (alreadyProcessed) {
-        // Escrow already processed - just update dispute status
-        console.log("Escrow already processed, just updating dispute status");
-        const { error: updateDisputeError } = await supabaseAdmin
-          .from("disputes")
-          .update({
-            status,
-            resolution: resolutionText,
-            resolved_at: new Date().toISOString(),
-            admin_assigned: userData.user.id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", disputeId);
-
-        if (updateDisputeError) throw updateDisputeError;
-
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            status, 
-            resolution: resolutionText,
-            note: "Escrow war bereits verarbeitet - nur Dispute-Status aktualisiert."
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
+    if (!allHoldings || allHoldings.length === 0) {
+      throw new Error("Kein Escrow für diese Bestellung gefunden");
     }
 
-    // Filter to only 'held' escrows for processing
-    const holdings = allHoldings?.filter(h => h.status === "held") || [];
-    
+    const allowedStatuses =
+      resolutionType === "buyer_favor"
+        ? ["held", "refunded"]
+        : resolutionType === "seller_favor"
+          ? ["held", "released"]
+          : ["held", "partial_refund"];
+
+    const holdings = allHoldings.filter((h) => allowedStatuses.includes(String(h.status)));
+
     if (holdings.length === 0) {
-      throw new Error("Kein 'held' Escrow für diese Bestellung gefunden");
+      throw new Error(`Kein passendes Escrow gefunden (Status: ${allowedStatuses.join(", ")})`);
     }
 
-    const buyerId = dispute.plaintiff_id;
-    const sellerId = dispute.defendant_id;
-
-    // Process each holding
+    // Process each holding (buyer/seller always taken from escrow_holding)
     for (const holding of holdings) {
       const currency = String(holding.currency || "BTC");
+      const buyerId = String(holding.buyer_id || dispute.plaintiff_id);
+      const sellerId = String(holding.seller_id || dispute.defendant_id);
 
       if (resolutionType === "buyer_favor") {
-        // Refund buyer full amount, no fees collected
-        await incrementWallet(supabaseAdmin, buyerId, currency, Number(holding.amount_crypto));
-
-        {
-          const { error: escrowUpdateError } = await supabaseAdmin
-            .from("escrow_holdings")
-            .update({
-              status: "refunded",
-              released_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", holding.id);
-          if (escrowUpdateError) throw escrowUpdateError;
+        if (holding.status !== "held" && holding.status !== "refunded") {
+          throw new Error(
+            `Escrow-Status '${holding.status}' kann nicht zu Käufer-Erstattung verarbeitet werden`,
+          );
         }
 
-        {
+        // Prevent double-credit: if a dispute refund tx already exists, don't increment again.
+        const { data: existingRefundTx, error: existingRefundTxError } = await supabaseAdmin
+          .from("transactions")
+          .select("id")
+          .eq("user_id", buyerId)
+          .eq("related_order_id", dispute.order_id)
+          .eq("type", "deposit")
+          .ilike("description", "%Dispute%Rückerstattung%")
+          .limit(1)
+          .maybeSingle();
+
+        if (existingRefundTxError) throw existingRefundTxError;
+
+        if (!existingRefundTx) {
+          // Refund buyer full amount
+          await incrementWallet(supabaseAdmin, buyerId, currency, Number(holding.amount_crypto));
+
           const { error: txError } = await supabaseAdmin.from("transactions").insert({
             user_id: buyerId,
             type: "deposit",
@@ -294,6 +278,21 @@ serve(async (req) => {
             related_order_id: dispute.order_id,
           });
           if (txError) throw txError;
+        } else {
+          console.log("Refund transaction already exists - skipping wallet increment");
+        }
+
+        // Only change escrow status if it's still held
+        if (holding.status === "held") {
+          const { error: escrowUpdateError } = await supabaseAdmin
+            .from("escrow_holdings")
+            .update({
+              status: "refunded",
+              released_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", holding.id);
+          if (escrowUpdateError) throw escrowUpdateError;
         }
       }
 

@@ -129,8 +129,16 @@ export function TransactionHistory() {
                 }
               };
 
-              // Translate type
+               // Translate type
+               const isDisputeRefund =
+                 transaction.type === 'deposit' &&
+                 (transaction.description?.toLowerCase().includes('dispute-rückerstattung') ||
+                  transaction.description?.toLowerCase().includes('dispute-rueckerstattung') ||
+                  transaction.description?.toLowerCase().includes('teilweise dispute-rückerstattung') ||
+                  transaction.description?.toLowerCase().includes('teilweise dispute-rueckerstattung'));
+
                const getTypeLabel = (type: string) => {
+                 if (isDisputeRefund) return 'Erstattung';
                  switch (type) {
                    case 'deposit': return 'Einzahlung';
                    case 'purchase': return 'Kauf';
