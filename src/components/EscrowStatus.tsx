@@ -125,14 +125,16 @@ export const EscrowStatus: React.FC<EscrowStatusProps> = ({
   const canOpenDispute = () => {
     if (escrowStatus !== 'held') return false;
     
-    const now = new Date();
-    const orderDate = new Date(orderCreatedAt);
-    const diffTime = now.getTime() - orderDate.getTime();
-    const daysSinceOrder = diffTime / (1000 * 60 * 60 * 24);
+    // TEMP: Allow immediate dispute for testing
+    return true;
     
-    // Digital: 2 days, Physical: 6 days
-    const requiredDays = isDigitalProduct ? 2 : 6;
-    return daysSinceOrder >= requiredDays;
+    // Original logic:
+    // const now = new Date();
+    // const orderDate = new Date(orderCreatedAt);
+    // const diffTime = now.getTime() - orderDate.getTime();
+    // const daysSinceOrder = diffTime / (1000 * 60 * 60 * 24);
+    // const requiredDays = isDigitalProduct ? 2 : 6;
+    // return daysSinceOrder >= requiredDays;
   };
 
   const getDaysUntilDispute = () => {
