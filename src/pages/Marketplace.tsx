@@ -30,11 +30,13 @@ import { useChat } from '@/hooks/useChat';
 import { usePagination } from '@/hooks/usePagination';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
+import { useUserRole } from '@/hooks/useUserRole';
 
 import { Product } from '@/types/Product';
 
 const Marketplace = () => {
   const { user, profile, loading, signOut } = useAuth();
+  const { isModeratorOrAdmin } = useUserRole();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -636,10 +638,10 @@ const Marketplace = () => {
                     <MessageCircle className="h-4 w-4 mr-2" />
                     Nachrichten
                   </DropdownMenuItem>
-                  {profile?.role === 'admin' && (
+                  {isModeratorOrAdmin && (
                     <DropdownMenuItem onClick={() => navigate('/admin')}>
                       <Settings className="h-4 w-4 mr-2" />
-                      Admin Panel
+                      {profile?.role === 'admin' ? 'Admin Panel' : 'Moderator Panel'}
                     </DropdownMenuItem>
                   )}
                   {(profile?.role === 'seller' || profile?.role === 'admin') && (

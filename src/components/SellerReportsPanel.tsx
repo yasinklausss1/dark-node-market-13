@@ -8,6 +8,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { 
   AlertTriangle, 
   MessageCircle, 
@@ -49,6 +50,7 @@ interface ReportMessage {
 
 const SellerReportsPanel: React.FC = () => {
   const { user, profile } = useAuth();
+  const { isModeratorOrAdmin } = useUserRole();
   const { toast } = useToast();
   const [reports, setReports] = useState<Report[]>([]);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
@@ -60,10 +62,10 @@ const SellerReportsPanel: React.FC = () => {
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (profile?.role === 'admin') {
+    if (isModeratorOrAdmin) {
       fetchReports();
     }
-  }, [profile]);
+  }, [isModeratorOrAdmin]);
 
   const fetchReports = async () => {
     setIsLoading(true);
@@ -213,7 +215,7 @@ const SellerReportsPanel: React.FC = () => {
     }
   };
 
-  if (profile?.role !== 'admin') {
+  if (!isModeratorOrAdmin) {
     return null;
   }
 

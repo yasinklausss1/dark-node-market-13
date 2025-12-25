@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
 import { 
   AlertTriangle, 
   MessageSquare, 
@@ -49,6 +50,7 @@ interface DisputeMessage {
 
 export function DisputeResolutionPanel() {
   const { user, profile } = useAuth();
+  const { isModeratorOrAdmin } = useUserRole();
   const { toast } = useToast();
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [selectedDispute, setSelectedDispute] = useState<Dispute | null>(null);
@@ -58,10 +60,10 @@ export function DisputeResolutionPanel() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (profile?.role === 'admin') {
+    if (isModeratorOrAdmin) {
       fetchDisputes();
     }
-  }, [profile]);
+  }, [isModeratorOrAdmin]);
 
   useEffect(() => {
     if (selectedDispute) {
@@ -275,13 +277,13 @@ export function DisputeResolutionPanel() {
     }
   };
 
-  if (profile?.role !== 'admin') {
+  if (!isModeratorOrAdmin) {
     return (
       <Card>
         <CardContent className="p-6 text-center">
           <ShieldCheck className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-muted-foreground">
-            Access denied. Only administrators can manage disputes.
+            Access denied. Only administrators and moderators can manage disputes.
           </p>
         </CardContent>
       </Card>
