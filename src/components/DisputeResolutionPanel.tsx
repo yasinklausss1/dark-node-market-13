@@ -266,364 +266,47 @@ export function DisputeResolutionPanel() {
     }
   };
 
-  const resolveDispute = async (resolutionType: 'buyer_favor' | 'seller_favor' | 'partial' | 'dismissed') => {
+  const resolveDispute = async (
+    resolutionType: 'buyer_favor' | 'seller_favor' | 'partial' | 'dismissed'
+  ) => {
     if (!selectedDispute || !resolution.trim()) {
       toast({
         title: "Begründung erforderlich",
         description: "Bitte gib eine Begründung für die Entscheidung an.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
     try {
-      const status = resolutionType === 'dismissed' ? 'dismissed' : 'resolved';
-      const resolutionText = `[${getResolutionLabel(resolutionType)}] ${resolution.trim()}`;
-
-      // Handle escrow/wallet refund based on resolution type
-      if (resolutionType === 'buyer_favor') {
-        // Refund buyer - get escrow holding for this order
-        const { data: escrowData, error: escrowError } = await supabase
-          .from('escrow_holdings')
-          .select('*')
-          .eq('order_id', selectedDispute.order_id)
-          .single();
-
-        if (escrowData && !escrowError) {
-          // Refund the buyer by updating their wallet balance
-          const { data: walletData, error: walletFetchError } = await supabase
-            .from('wallet_balances')
-            .select('*')
-            .eq('user_id', selectedDispute.plaintiff_id)
-            .single();
-
-          if (walletData && !walletFetchError) {
-            // Add the escrow amount back to buyer's EUR balance
-            const newBalanceEur = Number(walletData.balance_eur) + Number(escrowData.amount_eur);
-            
-            const { error: walletUpdateError } = await supabase
-              .from('wallet_balances')
-              .update({ 
-                balance_eur: newBalanceEur,
-                updated_at: new Date().toISOString()
-              })
-              .eq('user_id', selectedDispute.plaintiff_id);
-
-            if (walletUpdateError) {
-              console.error('Wallet update error:', walletUpdateError);
-              throw new Error('Rückerstattung an Käufer-Wallet fehlgeschlagen');
-            }
-
-            // Update escrow status to refunded
-            await supabase
-              .from('escrow_holdings')
-              .update({ 
-                status: 'refunded',
-                released_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', escrowData.id);
-
-            // Create transaction record for the refund
-            await supabase
-              .from('transactions')
-              .insert({
-                user_id: selectedDispute.plaintiff_id,
-                type: 'refund',
-                amount_eur: escrowData.amount_eur,
-                amount_btc: 0,
-                status: 'completed',
-                description: `Dispute-Rückerstattung für Bestellung #${selectedDispute.order_id.slice(0, 8)}`,
-                related_order_id: selectedDispute.order_id
-              });
-
-            console.log(`Refunded ${escrowData.amount_eur} EUR to buyer ${selectedDispute.plaintiff_id}`);
-          }
-        } else {
-          // No escrow found - try to refund from order total directly
-          const { data: orderData } = await supabase
-            .from('orders')
-            .select('total_amount_eur')
-            .eq('id', selectedDispute.order_id)
-            .single();
-
-          if (orderData) {
-            const { data: walletData } = await supabase
-              .from('wallet_balances')
-              .select('*')
-              .eq('user_id', selectedDispute.plaintiff_id)
-              .single();
-
-            if (walletData) {
-              const newBalanceEur = Number(walletData.balance_eur) + Number(orderData.total_amount_eur);
-              
-              await supabase
-                .from('wallet_balances')
-                .update({ 
-                  balance_eur: newBalanceEur,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('user_id', selectedDispute.plaintiff_id);
-
-              // Create transaction record
-              await supabase
-                .from('transactions')
-                .insert({
-                  user_id: selectedDispute.plaintiff_id,
-                  type: 'refund',
-                  amount_eur: orderData.total_amount_eur,
-                  amount_btc: 0,
-                  status: 'completed',
-                  description: `Dispute-Rückerstattung für Bestellung #${selectedDispute.order_id.slice(0, 8)}`,
-                  related_order_id: selectedDispute.order_id
-                });
-
-              console.log(`Refunded ${orderData.total_amount_eur} EUR to buyer from order total`);
-            }
-          }
-        }
-      } else if (resolutionType === 'seller_favor') {
-        // Release escrow to seller
-        const { data: escrowData } = await supabase
-          .from('escrow_holdings')
-          .select('*')
-          .eq('order_id', selectedDispute.order_id)
-          .single();
-
-        if (escrowData) {
-          // Add seller amount to seller's wallet
-          const { data: walletData } = await supabase
-            .from('wallet_balances')
-            .select('*')
-            .eq('user_id', selectedDispute.defendant_id)
-            .single();
-
-          if (walletData) {
-            const newBalanceEur = Number(walletData.balance_eur) + Number(escrowData.seller_amount_eur);
-            
-            await supabase
-              .from('wallet_balances')
-              .update({ 
-                balance_eur: newBalanceEur,
-                updated_at: new Date().toISOString()
-              })
-              .eq('user_id', selectedDispute.defendant_id);
-
-            // Update escrow status
-            await supabase
-              .from('escrow_holdings')
-              .update({ 
-                status: 'released',
-                released_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', escrowData.id);
-
-            // Create transaction record
-            await supabase
-              .from('transactions')
-              .insert({
-                user_id: selectedDispute.defendant_id,
-                type: 'escrow_release',
-                amount_eur: escrowData.seller_amount_eur,
-                amount_btc: 0,
-                status: 'completed',
-                description: `Dispute-Freigabe für Bestellung #${selectedDispute.order_id.slice(0, 8)}`,
-                related_order_id: selectedDispute.order_id
-              });
-
-            console.log(`Released ${escrowData.seller_amount_eur} EUR to seller`);
-          }
-        }
-      } else if (resolutionType === 'partial') {
-        // Partial refund - split based on percentage
-        const { data: escrowData } = await supabase
-          .from('escrow_holdings')
-          .select('*')
-          .eq('order_id', selectedDispute.order_id)
-          .single();
-
-        if (escrowData) {
-          const totalAmount = Number(escrowData.amount_eur);
-          const buyerAmount = (totalAmount * partialRefundPercent) / 100;
-          const sellerAmount = totalAmount - buyerAmount;
-
-          // Refund buyer portion
-          const { data: buyerWallet } = await supabase
-            .from('wallet_balances')
-            .select('*')
-            .eq('user_id', selectedDispute.plaintiff_id)
-            .single();
-
-          if (buyerWallet && buyerAmount > 0) {
-            const newBuyerBalance = Number(buyerWallet.balance_eur) + buyerAmount;
-            
-            await supabase
-              .from('wallet_balances')
-              .update({ 
-                balance_eur: newBuyerBalance,
-                updated_at: new Date().toISOString()
-              })
-              .eq('user_id', selectedDispute.plaintiff_id);
-
-            // Create buyer refund transaction
-            await supabase
-              .from('transactions')
-              .insert({
-                user_id: selectedDispute.plaintiff_id,
-                type: 'refund',
-                amount_eur: buyerAmount,
-                amount_btc: 0,
-                status: 'completed',
-                description: `Teilweise Dispute-Rückerstattung (${partialRefundPercent}%) für Bestellung #${selectedDispute.order_id.slice(0, 8)}`,
-                related_order_id: selectedDispute.order_id
-              });
-
-            console.log(`Partial refund: ${buyerAmount} EUR to buyer`);
-          }
-
-          // Release seller portion
-          const { data: sellerWallet } = await supabase
-            .from('wallet_balances')
-            .select('*')
-            .eq('user_id', selectedDispute.defendant_id)
-            .single();
-
-          if (sellerWallet && sellerAmount > 0) {
-            const newSellerBalance = Number(sellerWallet.balance_eur) + sellerAmount;
-            
-            await supabase
-              .from('wallet_balances')
-              .update({ 
-                balance_eur: newSellerBalance,
-                updated_at: new Date().toISOString()
-              })
-              .eq('user_id', selectedDispute.defendant_id);
-
-            // Create seller release transaction
-            await supabase
-              .from('transactions')
-              .insert({
-                user_id: selectedDispute.defendant_id,
-                type: 'escrow_release',
-                amount_eur: sellerAmount,
-                amount_btc: 0,
-                status: 'completed',
-                description: `Teilweise Dispute-Freigabe (${100 - partialRefundPercent}%) für Bestellung #${selectedDispute.order_id.slice(0, 8)}`,
-                related_order_id: selectedDispute.order_id
-              });
-
-            console.log(`Partial release: ${sellerAmount} EUR to seller`);
-          }
-
-          // Update escrow status
-          await supabase
-            .from('escrow_holdings')
-            .update({ 
-              status: 'partial_refund',
-              released_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', escrowData.id);
-        } else {
-          // Fallback: use order total
-          const { data: orderData } = await supabase
-            .from('orders')
-            .select('total_amount_eur')
-            .eq('id', selectedDispute.order_id)
-            .single();
-
-          if (orderData) {
-            const totalAmount = Number(orderData.total_amount_eur);
-            const buyerAmount = (totalAmount * partialRefundPercent) / 100;
-            const sellerAmount = totalAmount - buyerAmount;
-
-            // Refund buyer portion
-            const { data: buyerWallet } = await supabase
-              .from('wallet_balances')
-              .select('*')
-              .eq('user_id', selectedDispute.plaintiff_id)
-              .single();
-
-            if (buyerWallet && buyerAmount > 0) {
-              await supabase
-                .from('wallet_balances')
-                .update({ 
-                  balance_eur: Number(buyerWallet.balance_eur) + buyerAmount,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('user_id', selectedDispute.plaintiff_id);
-
-              await supabase
-                .from('transactions')
-                .insert({
-                  user_id: selectedDispute.plaintiff_id,
-                  type: 'refund',
-                  amount_eur: buyerAmount,
-                  amount_btc: 0,
-                  status: 'completed',
-                  description: `Teilweise Dispute-Rückerstattung (${partialRefundPercent}%) für Bestellung #${selectedDispute.order_id.slice(0, 8)}`,
-                  related_order_id: selectedDispute.order_id
-                });
-            }
-
-            // Release seller portion
-            const { data: sellerWallet } = await supabase
-              .from('wallet_balances')
-              .select('*')
-              .eq('user_id', selectedDispute.defendant_id)
-              .single();
-
-            if (sellerWallet && sellerAmount > 0) {
-              await supabase
-                .from('wallet_balances')
-                .update({ 
-                  balance_eur: Number(sellerWallet.balance_eur) + sellerAmount,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('user_id', selectedDispute.defendant_id);
-
-              await supabase
-                .from('transactions')
-                .insert({
-                  user_id: selectedDispute.defendant_id,
-                  type: 'escrow_release',
-                  amount_eur: sellerAmount,
-                  amount_btc: 0,
-                  status: 'completed',
-                  description: `Teilweise Dispute-Freigabe (${100 - partialRefundPercent}%) für Bestellung #${selectedDispute.order_id.slice(0, 8)}`,
-                  related_order_id: selectedDispute.order_id
-                });
-            }
-          }
-        }
-      }
-
-      // Update dispute status
-      const { error } = await supabase
-        .from('disputes')
-        .update({
-          status,
-          resolution: resolutionText,
-          resolved_at: new Date().toISOString(),
-          admin_assigned: user!.id
-        })
-        .eq('id', selectedDispute.id);
+      const { data, error } = await supabase.functions.invoke('resolve-dispute', {
+        body: {
+          disputeId: selectedDispute.id,
+          resolutionType,
+          resolutionNote: resolution.trim(),
+          partialPercent: partialRefundPercent,
+        },
+      });
 
       if (error) throw error;
+      if (!data?.success) {
+        throw new Error(data?.error || 'Dispute konnte nicht verarbeitet werden.');
+      }
 
-      const actionMessage = resolutionType === 'buyer_favor' 
-        ? 'Käufer wurde das Geld zurückerstattet.'
-        : resolutionType === 'seller_favor'
-        ? 'Geld wurde an Verkäufer freigegeben.'
-        : resolutionType === 'partial'
-        ? `Geld wurde aufgeteilt: ${partialRefundPercent}% an Käufer, ${100 - partialRefundPercent}% an Verkäufer.`
-        : '';
+      const status = resolutionType === 'dismissed' ? 'dismissed' : 'resolved';
+      const actionMessage =
+        resolutionType === 'buyer_favor'
+          ? 'Käufer hat die Krypto-Rückerstattung erhalten.'
+          : resolutionType === 'seller_favor'
+          ? 'Verkäufer hat die Krypto-Auszahlung erhalten.'
+          : resolutionType === 'partial'
+          ? `Aufgeteilt: ${partialRefundPercent}% Käufer / ${100 - partialRefundPercent}% Verkäufer.`
+          : '';
 
       toast({
-        title: "Dispute gelöst",
-        description: `Der Dispute wurde erfolgreich ${status === 'dismissed' ? 'abgelehnt' : 'gelöst'}. ${actionMessage}`
+        title: status === 'dismissed' ? 'Dispute abgelehnt' : 'Dispute gelöst',
+        description: `${actionMessage}`.trim() || 'Erfolgreich gespeichert.',
       });
 
       setSelectedDispute(null);
@@ -632,9 +315,9 @@ export function DisputeResolutionPanel() {
     } catch (error) {
       console.error('Error resolving dispute:', error);
       toast({
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Dispute konnte nicht gelöst werden.",
-        variant: "destructive"
+        title: 'Fehler',
+        description: error instanceof Error ? error.message : 'Dispute konnte nicht gelöst werden.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
