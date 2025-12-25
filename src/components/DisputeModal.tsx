@@ -331,11 +331,11 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
                 {existingDispute.dispute_messages?.map((message) => (
                   <div
                     key={message.id}
-                    className={`p-3 rounded-lg ${
+                    className={`p-3 rounded-lg border ${
                       message.is_admin 
-                        ? 'bg-blue-50 border-blue-200' 
-                        : 'bg-gray-50 border-gray-200'
-                    } border`}
+                        ? 'bg-primary/10 border-primary/20' 
+                        : 'bg-muted border-border'
+                    }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <Badge variant={message.is_admin ? 'default' : 'outline'}>
@@ -345,7 +345,7 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
                         {new Date(message.created_at).toLocaleString('de-DE')}
                       </span>
                     </div>
-                    <p className="text-sm">{message.message}</p>
+                    <p className="text-sm text-foreground">{message.message}</p>
                   </div>
                 ))}
               </CardContent>
