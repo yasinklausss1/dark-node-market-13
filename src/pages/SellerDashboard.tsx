@@ -132,6 +132,7 @@ const SellerDashboard = () => {
   // Seller dispute modal state
   const [sellerDisputeModalOpen, setSellerDisputeModalOpen] = useState(false);
   const [sellerDisputeOrderId, setSellerDisputeOrderId] = useState<string | null>(null);
+  const [sellerDisputeBuyerId, setSellerDisputeBuyerId] = useState<string | null>(null);
   
   // Get chat data
   const { conversations } = useChat();
@@ -1132,6 +1133,7 @@ const fetchOrders = async () => {
                               size="sm"
                               onClick={() => {
                                 setSellerDisputeOrderId(order.id);
+                                setSellerDisputeBuyerId(order.user_id);
                                 setSellerDisputeModalOpen(true);
                               }}
                             >
@@ -1229,6 +1231,7 @@ const fetchOrders = async () => {
           onOpenChange={setSellerDisputeModalOpen}
           orderId={sellerDisputeOrderId || undefined}
           isSeller={true}
+          buyerId={sellerDisputeBuyerId || undefined}
         />
       </div>
     </div>
