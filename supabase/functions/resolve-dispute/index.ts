@@ -101,37 +101,53 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    if (!supabaseUrl || !serviceRoleKey) {
-      throw new Error("Server-Konfiguration fehlt (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)");
+    if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+      throw new Error(
+        "Server-Konfiguration fehlt (SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY)",
+      );
     }
 
-    // Create admin client for database operations
+    // DB client (Service Role) – nur für DB Writes/Reads
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    // Get authorization header - can come from multiple sources
+    // Get authorization header (case-insensitive)
     const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
     console.log("Auth header received:", authHeader ? "Present" : "Missing");
-    
+
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     console.log("Token extracted:", token ? `${token.substring(0, 20)}...` : "Empty");
 
     if (!token) {
       console.log("No token found in request");
-      return new Response(
-        JSON.stringify({ success: false, error: "Nicht eingeloggt." }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
-      );
+      return new Response(JSON.stringify({ success: false, error: "Nicht eingeloggt." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
     }
 
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
-    console.log("User lookup result:", userData?.user?.id || "No user", userError?.message || "No error");
+    // Auth client (Anon Key) – für Session/User Lookup
+    const supabaseAuth = createClient(supabaseUrl, anonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    });
+
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
+    console.log(
+      "User lookup result:",
+      userData?.user?.id || "No user",
+      userError?.message || "No error",
+    );
 
     if (userError || !userData?.user) {
       console.log("Auth failed:", userError?.message);
       return new Response(
-        JSON.stringify({ success: false, error: "Nicht eingeloggt." }),
+        JSON.stringify({ success: false, error: userError?.message || "Nicht eingeloggt." }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
       );
     }
@@ -144,10 +160,10 @@ serve(async (req) => {
 
     if (roleError) throw roleError;
     if (!isModOrAdmin) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Nicht autorisiert." }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 },
-      );
+      return new Response(JSON.stringify({ success: false, error: "Nicht autorisiert." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
     }
 
     const body = await req.json();
