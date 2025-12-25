@@ -15,6 +15,8 @@ interface DisputeModalProps {
   onOpenChange: (open: boolean) => void;
   orderId?: string;
   orderDetails?: any;
+  /** If true, the current user is the seller initiating the dispute */
+  isSeller?: boolean;
 }
 
 interface Dispute {
@@ -33,8 +35,8 @@ interface Dispute {
   }>;
 }
 
-// Dispute reason templates (German)
-const DISPUTE_TEMPLATES = [
+// Dispute reason templates for BUYERS (German)
+const BUYER_DISPUTE_TEMPLATES = [
   { value: "defective_product", label: "Defektes Produkt", text: "Das Produkt, das ich erhalten habe, ist defekt oder beschädigt. Es funktioniert nicht wie beschrieben oder erwartet." },
   { value: "not_as_described", label: "Nicht wie beschrieben", text: "Das Produkt entspricht nicht der Beschreibung oder den Bildern in der Anzeige." },
   { value: "wrong_item", label: "Falscher Artikel erhalten", text: "Ich habe einen anderen Artikel erhalten als den, den ich bestellt habe." },
@@ -47,7 +49,18 @@ const DISPUTE_TEMPLATES = [
   { value: "custom", label: "Sonstiges", text: "" }
 ];
 
-export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: DisputeModalProps) {
+// Dispute reason templates for SELLERS (German)
+const SELLER_DISPUTE_TEMPLATES = [
+  { value: "buyer_claims_not_received", label: "Käufer behauptet Nicht-Erhalt", text: "Der Käufer behauptet, das Produkt nicht erhalten zu haben, obwohl ich einen Versandnachweis/Tracking habe." },
+  { value: "buyer_false_claim", label: "Falsche Behauptung", text: "Der Käufer stellt falsche Behauptungen über das Produkt auf. Das gelieferte Produkt entspricht exakt der Beschreibung." },
+  { value: "buyer_used_product", label: "Produkt bereits benutzt", text: "Der Käufer möchte das Produkt zurückgeben, hat es aber offensichtlich bereits benutzt/geöffnet." },
+  { value: "chargeback_threat", label: "Chargeback-Drohung", text: "Der Käufer droht mit einem Chargeback, obwohl ich das Produkt ordnungsgemäß geliefert habe." },
+  { value: "buyer_no_response", label: "Käufer reagiert nicht", text: "Der Käufer reagiert nicht auf meine Nachrichten bezüglich der Lieferung/des Problems." },
+  { value: "digital_content_delivered", label: "Digitaler Inhalt geliefert", text: "Ich habe den digitalen Inhalt geliefert, aber der Käufer bestreitet den Erhalt." },
+  { value: "custom", label: "Sonstiges", text: "" }
+];
+
+export function DisputeModal({ open, onOpenChange, orderId, orderDetails, isSeller = false }: DisputeModalProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -111,7 +124,7 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
         evidenceUrls = await uploadEvidence(session.user.id);
       }
 
-      // Get seller ID from order
+      // Get order data with buyer and seller info
       const { data: orderData } = await supabase
         .from('orders')
         .select(`
@@ -127,14 +140,21 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
       if (!orderData) throw new Error('Order not found');
 
       const sellerId = orderData.order_items[0]?.products?.seller_id;
+      const buyerId = orderData.user_id;
+      
       if (!sellerId) throw new Error('Seller not found');
+      if (!buyerId) throw new Error('Buyer not found');
+
+      // Determine plaintiff and defendant based on who is creating the dispute
+      const plaintiffId = isSeller ? sellerId : session.user.id;
+      const defendantId = isSeller ? buyerId : sellerId;
 
       const { error } = await supabase
         .from('disputes')
         .insert({
           order_id: orderId,
-          plaintiff_id: session.user.id,
-          defendant_id: sellerId,
+          plaintiff_id: plaintiffId,
+          defendant_id: defendantId,
           reason: reason.trim(),
           status: 'open',
           priority: 'medium',
@@ -166,7 +186,8 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
 
   const handleTemplateSelect = (value: string) => {
     setSelectedTemplate(value);
-    const template = DISPUTE_TEMPLATES.find(t => t.value === value);
+    const templates = isSeller ? SELLER_DISPUTE_TEMPLATES : BUYER_DISPUTE_TEMPLATES;
+    const template = templates.find(t => t.value === value);
     if (template && template.text) {
       setReason(template.text);
     } else {
@@ -295,7 +316,7 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
-            {existingDispute ? 'Dispute-Details' : 'Dispute erstellen'}
+            {existingDispute ? 'Dispute-Details' : (isSeller ? 'Verkäufer-Dispute erstellen' : 'Dispute erstellen')}
           </DialogTitle>
         </DialogHeader>
 
@@ -368,7 +389,10 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
           <div className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground mb-4">
-                Erstelle einen Dispute für Bestellung #{orderId?.slice(0, 8)}, wenn du Probleme mit deinem Kauf hast.
+                {isSeller 
+                  ? `Erstelle einen Dispute für Bestellung #${orderId?.slice(0, 8)}, wenn es Probleme mit dem Käufer gibt (z.B. bestreitet Erhalt trotz Versandnachweis).`
+                  : `Erstelle einen Dispute für Bestellung #${orderId?.slice(0, 8)}, wenn du Probleme mit deinem Kauf hast.`
+                }
               </p>
               
               {/* Template Selector */}
@@ -379,7 +403,7 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
                     <SelectValue placeholder="Wähle einen häufigen Dispute-Grund..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {DISPUTE_TEMPLATES.map((template) => (
+                    {(isSeller ? SELLER_DISPUTE_TEMPLATES : BUYER_DISPUTE_TEMPLATES).map((template) => (
                       <SelectItem key={template.value} value={template.value}>
                         {template.label}
                       </SelectItem>
