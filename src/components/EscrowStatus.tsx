@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, CheckCircle, Clock, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Shield, CheckCircle, Clock, RefreshCw, AlertTriangle, Timer } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -121,35 +121,71 @@ export const EscrowStatus: React.FC<EscrowStatusProps> = ({
     return diffDays;
   };
 
-  // Calculate if dispute can be opened
-  const canOpenDispute = () => {
-    if (escrowStatus !== 'held') return false;
-    
-    // TEMP: Allow immediate dispute for testing
-    return true;
-    
-    // Original logic:
-    // const now = new Date();
-    // const orderDate = new Date(orderCreatedAt);
-    // const diffTime = now.getTime() - orderDate.getTime();
-    // const daysSinceOrder = diffTime / (1000 * 60 * 60 * 24);
-    // const requiredDays = isDigitalProduct ? 2 : 6;
-    // return daysSinceOrder >= requiredDays;
+  // Calculate time until dispute can be opened
+  const getDisputeAvailableAt = () => {
+    const orderDate = new Date(orderCreatedAt);
+    const requiredDays = isDigitalProduct ? 2 : 6;
+    return new Date(orderDate.getTime() + requiredDays * 24 * 60 * 60 * 1000);
   };
 
-  const getDaysUntilDispute = () => {
-    const now = new Date();
-    const orderDate = new Date(orderCreatedAt);
-    const diffTime = now.getTime() - orderDate.getTime();
-    const daysSinceOrder = diffTime / (1000 * 60 * 60 * 24);
+  // State for real-time countdown
+  const [timeUntilDispute, setTimeUntilDispute] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+    canDispute: boolean;
+  }>({ days: 0, hours: 0, minutes: 0, seconds: 0, canDispute: false });
+
+  useEffect(() => {
+    const calculateTimeRemaining = () => {
+      if (escrowStatus !== 'held') {
+        return { days: 0, hours: 0, minutes: 0, seconds: 0, canDispute: false };
+      }
+
+      const now = new Date();
+      const disputeAvailableAt = getDisputeAvailableAt();
+      const diffMs = disputeAvailableAt.getTime() - now.getTime();
+
+      if (diffMs <= 0) {
+        return { days: 0, hours: 0, minutes: 0, seconds: 0, canDispute: true };
+      }
+
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+      return { days, hours, minutes, seconds, canDispute: false };
+    };
+
+    // Initial calculation
+    setTimeUntilDispute(calculateTimeRemaining());
+
+    // Update every second
+    const interval = setInterval(() => {
+      setTimeUntilDispute(calculateTimeRemaining());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [escrowStatus, orderCreatedAt, isDigitalProduct]);
+
+  const formatTimeRemaining = () => {
+    const { days, hours, minutes, seconds } = timeUntilDispute;
     
-    const requiredDays = isDigitalProduct ? 2 : 6;
-    return Math.max(0, Math.ceil(requiredDays - daysSinceOrder));
+    if (days > 0) {
+      return `${days}T ${hours}h ${minutes}m ${seconds}s`;
+    } else if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
   };
 
   const remainingDays = getRemainingDays();
-  const disputeEnabled = canOpenDispute();
-  const daysUntilDispute = getDaysUntilDispute();
+  const disputeEnabled = timeUntilDispute.canDispute;
 
   return (
     <>
@@ -227,14 +263,23 @@ export const EscrowStatus: React.FC<EscrowStatusProps> = ({
                 disabled={!disputeEnabled}
                 onClick={() => setShowDisputeModal(true)}
               >
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                {disputeEnabled ? 'Dispute öffnen' : `Dispute in ${daysUntilDispute} Tag${daysUntilDispute !== 1 ? 'en' : ''}`}
+                {disputeEnabled ? (
+                  <>
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Dispute öffnen
+                  </>
+                ) : (
+                  <>
+                    <Timer className="h-4 w-4 mr-2" />
+                    <span className="font-mono">{formatTimeRemaining()}</span>
+                  </>
+                )}
               </Button>
             </div>
 
             {!disputeEnabled && (
               <p className="text-xs text-muted-foreground">
-                Du kannst einen Dispute öffnen, wenn du nach {isDigitalProduct ? '2' : '6'} Tagen nichts erhalten hast.
+                Du kannst einen Dispute öffnen, wenn {isDigitalProduct ? '2' : '6'} Tage vergangen sind.
               </p>
             )}
           </>
