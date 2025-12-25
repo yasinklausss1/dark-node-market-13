@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Wallet, Bitcoin, Coins } from "lucide-react";
@@ -23,9 +23,9 @@ export function WalletBalance() {
   const [refreshing, setRefreshing] = useState(false);
   const { btcPrice, ltcPrice } = useCryptoPrices();
 
-  const fetchBalance = async () => {
+  const fetchBalance = useCallback(async () => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('wallet_balances')
@@ -34,7 +34,7 @@ export function WalletBalance() {
         .maybeSingle();
 
       if (error) throw error;
-      
+
       if (data) {
         setBalance(data);
       } else {
@@ -63,7 +63,7 @@ export function WalletBalance() {
         variant: "destructive",
       });
     }
-  };
+  }, [toast, user]);
 
 
   const refreshPayments = async () => {
@@ -98,7 +98,31 @@ export function WalletBalance() {
     if (user) {
       fetchBalance();
     }
-  }, [user]);
+  }, [fetchBalance, user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`wallet-balances:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'wallet_balances',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchBalance();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchBalance, user]);
 
   useEffect(() => {
     setLoading(false);
