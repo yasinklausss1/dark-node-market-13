@@ -102,13 +102,13 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
 
     setLoading(true);
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('Nicht angemeldet');
 
       // Upload evidence files if any
       let evidenceUrls: string[] = [];
       if (evidenceFiles.length > 0) {
-        evidenceUrls = await uploadEvidence(user.user.id);
+        evidenceUrls = await uploadEvidence(session.user.id);
       }
 
       // Get seller ID from order
@@ -133,7 +133,7 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
         .from('disputes')
         .insert({
           order_id: orderId,
-          plaintiff_id: user.user.id,
+          plaintiff_id: session.user.id,
           defendant_id: sellerId,
           reason: reason.trim(),
           status: 'open',
@@ -235,14 +235,14 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
 
     setLoading(true);
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('Nicht angemeldet');
 
       const { error } = await supabase
         .from('dispute_messages')
         .insert({
           dispute_id: existingDispute.id,
-          sender_id: user.user.id,
+          sender_id: session.user.id,
           message: newMessage.trim(),
           is_admin: false
         });
