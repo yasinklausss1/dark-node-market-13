@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +27,9 @@ import {
   Calendar,
   ArrowLeft,
   Undo2,
-  Ban
+  Ban,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 
 interface Dispute {
@@ -75,17 +77,107 @@ export function DisputeResolutionPanel() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [partialRefundPercent, setPartialRefundPercent] = useState<number>(50);
+  const [isConnected, setIsConnected] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Scroll to bottom when new messages arrive
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  // Initial data fetch
   useEffect(() => {
     if (isModeratorOrAdmin) {
       fetchDisputes();
     }
   }, [isModeratorOrAdmin]);
 
+  // Fetch messages when dispute is selected
   useEffect(() => {
     if (selectedDispute) {
       fetchMessages(selectedDispute.id);
     }
+  }, [selectedDispute]);
+
+  // Real-time subscription for disputes
+  useEffect(() => {
+    if (!isModeratorOrAdmin) return;
+
+    const disputesChannel = supabase
+      .channel('disputes-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'disputes'
+        },
+        (payload) => {
+          console.log('Dispute change received:', payload);
+          // Refresh disputes list on any change
+          fetchDisputes();
+          
+          // Update selected dispute if it was modified
+          if (selectedDispute && payload.new && (payload.new as any).id === selectedDispute.id) {
+            setSelectedDispute(prev => prev ? { ...prev, ...(payload.new as any) } : null);
+          }
+        }
+      )
+      .subscribe((status) => {
+        setIsConnected(status === 'SUBSCRIBED');
+      });
+
+    return () => {
+      supabase.removeChannel(disputesChannel);
+    };
+  }, [isModeratorOrAdmin, selectedDispute]);
+
+  // Real-time subscription for dispute messages
+  useEffect(() => {
+    if (!selectedDispute) return;
+
+    const messagesChannel = supabase
+      .channel(`dispute-messages-${selectedDispute.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'dispute_messages',
+          filter: `dispute_id=eq.${selectedDispute.id}`
+        },
+        async (payload) => {
+          console.log('New message received:', payload);
+          const newMsg = payload.new as any;
+          
+          // Fetch sender username
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('user_id', newMsg.sender_id)
+            .single();
+
+          const messageWithSender: DisputeMessage = {
+            ...newMsg,
+            sender_username: profileData?.username || 'Unbekannt'
+          };
+
+          setMessages(prev => {
+            // Avoid duplicates
+            if (prev.some(m => m.id === messageWithSender.id)) return prev;
+            return [...prev, messageWithSender];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(messagesChannel);
+    };
   }, [selectedDispute]);
 
   const fetchDisputes = async () => {
@@ -558,6 +650,17 @@ export function DisputeResolutionPanel() {
             <CardTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5" />
               Dispute-Verwaltung
+              {isConnected ? (
+                <Badge variant="outline" className="ml-2 text-green-500 border-green-500">
+                  <Wifi className="h-3 w-3 mr-1" />
+                  Live
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="ml-2 text-red-500 border-red-500">
+                  <WifiOff className="h-3 w-3 mr-1" />
+                  Offline
+                </Badge>
+              )}
             </CardTitle>
             <Button
               variant="outline"
@@ -684,6 +787,12 @@ export function DisputeResolutionPanel() {
                 <h4 className="font-medium flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
                   Kommunikation
+                  {isConnected && (
+                    <span className="text-xs text-green-500 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      Live synchronisiert
+                    </span>
+                  )}
                 </h4>
                 <div className="max-h-80 overflow-y-auto space-y-3 border rounded-lg p-4">
                   {messages.length === 0 ? (
@@ -691,26 +800,29 @@ export function DisputeResolutionPanel() {
                       Noch keine Nachrichten
                     </p>
                   ) : (
-                    messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`p-3 rounded-lg ${
-                          message.is_admin
-                            ? 'bg-primary text-primary-foreground ml-8'
-                            : 'bg-muted mr-8'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium">
-                            {message.is_admin ? '👮 Admin' : message.sender_username}
-                          </span>
-                          <span className="text-xs opacity-70">
-                            {new Date(message.created_at).toLocaleString('de-DE')}
-                          </span>
+                    <>
+                      {messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`p-3 rounded-lg ${
+                            message.is_admin
+                              ? 'bg-primary text-primary-foreground ml-8'
+                              : 'bg-muted mr-8'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-medium">
+                              {message.is_admin ? '👮 Admin' : message.sender_username}
+                            </span>
+                            <span className="text-xs opacity-70">
+                              {new Date(message.created_at).toLocaleString('de-DE')}
+                            </span>
+                          </div>
+                          <p className="text-sm whitespace-pre-wrap">{message.message}</p>
                         </div>
-                        <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                      </div>
-                    ))
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </>
                   )}
                 </div>
 
