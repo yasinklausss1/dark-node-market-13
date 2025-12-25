@@ -397,6 +397,8 @@ const Orders: React.FC = () => {
                       escrowStatus={order.escrow_status}
                       autoReleaseAt={order.auto_release_at}
                       buyerConfirmedAt={order.buyer_confirmed_at}
+                      orderCreatedAt={order.created_at}
+                      isDigitalProduct={(itemsByOrder[order.id] || []).some(item => item.product_type === 'digital')}
                       onRelease={() => {
                         // Refresh orders to update escrow status
                         if (user) {

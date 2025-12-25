@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, CheckCircle, Clock, RefreshCw } from 'lucide-react';
+import { Shield, CheckCircle, Clock, RefreshCw, AlertTriangle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,12 +15,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { DisputeModal } from './DisputeModal';
 
 interface EscrowStatusProps {
   orderId: string;
   escrowStatus: string | null;
   autoReleaseAt: string | null;
   buyerConfirmedAt: string | null;
+  orderCreatedAt: string;
+  isDigitalProduct: boolean;
   onRelease?: () => void;
 }
 
@@ -29,10 +32,13 @@ export const EscrowStatus: React.FC<EscrowStatusProps> = ({
   escrowStatus,
   autoReleaseAt,
   buyerConfirmedAt,
+  orderCreatedAt,
+  isDigitalProduct,
   onRelease
 }) => {
   const { toast } = useToast();
   const [releasing, setReleasing] = useState(false);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
 
   const handleRelease = async () => {
     setReleasing(true);
@@ -115,80 +121,135 @@ export const EscrowStatus: React.FC<EscrowStatusProps> = ({
     return diffDays;
   };
 
+  // Calculate if dispute can be opened
+  const canOpenDispute = () => {
+    if (escrowStatus !== 'held') return false;
+    
+    const now = new Date();
+    const orderDate = new Date(orderCreatedAt);
+    const diffTime = now.getTime() - orderDate.getTime();
+    const daysSinceOrder = diffTime / (1000 * 60 * 60 * 24);
+    
+    // Digital: 2 days, Physical: 6 days
+    const requiredDays = isDigitalProduct ? 2 : 6;
+    return daysSinceOrder >= requiredDays;
+  };
+
+  const getDaysUntilDispute = () => {
+    const now = new Date();
+    const orderDate = new Date(orderCreatedAt);
+    const diffTime = now.getTime() - orderDate.getTime();
+    const daysSinceOrder = diffTime / (1000 * 60 * 60 * 24);
+    
+    const requiredDays = isDigitalProduct ? 2 : 6;
+    return Math.max(0, Math.ceil(requiredDays - daysSinceOrder));
+  };
+
   const remainingDays = getRemainingDays();
+  const disputeEnabled = canOpenDispute();
+  const daysUntilDispute = getDaysUntilDispute();
 
   return (
-    <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Shield className="h-4 w-4 text-blue-600" />
-          <span className="font-medium text-sm">Escrow-Status</span>
+    <>
+      <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-blue-600" />
+            <span className="font-medium text-sm">Escrow-Status</span>
+          </div>
+          {getStatusBadge()}
         </div>
-        {getStatusBadge()}
-      </div>
 
-      {escrowStatus === 'held' && (
-        <>
-          {remainingDays !== null && remainingDays > 0 && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              <span>
-                Auto-Freigabe in {remainingDays} Tag{remainingDays !== 1 ? 'en' : ''}
-                {autoReleaseAt && ` (${new Date(autoReleaseAt).toLocaleDateString('de-DE')})`}
-              </span>
-            </div>
-          )}
+        {escrowStatus === 'held' && (
+          <>
+            {remainingDays !== null && remainingDays > 0 && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                <span>
+                  Auto-Freigabe in {remainingDays} Tag{remainingDays !== 1 ? 'en' : ''}
+                  {autoReleaseAt && ` (${new Date(autoReleaseAt).toLocaleDateString('de-DE')})`}
+                </span>
+              </div>
+            )}
 
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {/* Confirm Receipt Button */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    disabled={releasing}
+                  >
+                    {releasing ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Wird freigegeben...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Erhalt bestätigen
+                      </>
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Erhalt bestätigen?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Durch diese Bestätigung wird die Zahlung an den Verkäufer freigegeben. 
+                      Stelle sicher, dass du das Produkt/die Dienstleistung erhalten hast und 
+                      zufrieden bist, bevor du bestätigst.
+                      <br /><br />
+                      <strong>Diese Aktion kann nicht rückgängig gemacht werden!</strong>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleRelease}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      Ja, Erhalt bestätigen
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              {/* Dispute Button */}
               <Button 
                 size="sm" 
-                className="w-full bg-green-600 hover:bg-green-700"
-                disabled={releasing}
+                variant="destructive"
+                className="flex-1"
+                disabled={!disputeEnabled}
+                onClick={() => setShowDisputeModal(true)}
               >
-                {releasing ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Wird freigegeben...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Erhalt bestätigen & Zahlung freigeben
-                  </>
-                )}
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                {disputeEnabled ? 'Dispute öffnen' : `Dispute in ${daysUntilDispute} Tag${daysUntilDispute !== 1 ? 'en' : ''}`}
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Erhalt bestätigen?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Durch diese Bestätigung wird die Zahlung an den Verkäufer freigegeben. 
-                  Stelle sicher, dass du das Produkt/die Dienstleistung erhalten hast und 
-                  zufrieden bist, bevor du bestätigst.
-                  <br /><br />
-                  <strong>Diese Aktion kann nicht rückgängig gemacht werden!</strong>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleRelease}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Ja, Erhalt bestätigen
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )}
+            </div>
 
-      {escrowStatus === 'released' && buyerConfirmedAt && (
-        <p className="text-xs text-green-600">
-          Bestätigt am {new Date(buyerConfirmedAt).toLocaleString('de-DE')}
-        </p>
-      )}
-    </div>
+            {!disputeEnabled && (
+              <p className="text-xs text-muted-foreground">
+                Du kannst einen Dispute öffnen, wenn du nach {isDigitalProduct ? '2' : '6'} Tagen nichts erhalten hast.
+              </p>
+            )}
+          </>
+        )}
+
+        {escrowStatus === 'released' && buyerConfirmedAt && (
+          <p className="text-xs text-green-600">
+            Bestätigt am {new Date(buyerConfirmedAt).toLocaleString('de-DE')}
+          </p>
+        )}
+      </div>
+
+      <DisputeModal
+        open={showDisputeModal}
+        onOpenChange={setShowDisputeModal}
+        orderId={orderId}
+      />
+    </>
   );
 };
