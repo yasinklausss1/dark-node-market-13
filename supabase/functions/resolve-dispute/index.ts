@@ -101,16 +101,13 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    if (!supabaseUrl || !anonKey || !serviceRoleKey) {
-      throw new Error(
-        "Server-Konfiguration fehlt (SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY)",
-      );
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error("Server-Konfiguration fehlt (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)");
     }
 
-    // DB client (Service Role) – nur für DB Writes/Reads
+    // Admin client with service role - can verify any JWT token
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
     // Get authorization header (case-insensitive)
@@ -128,16 +125,8 @@ serve(async (req) => {
       });
     }
 
-    // Auth client (Anon Key) – für Session/User Lookup
-    const supabaseAuth = createClient(supabaseUrl, anonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    });
-
-    const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
+    // Use service role client to verify the JWT token directly
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
     console.log(
       "User lookup result:",
       userData?.user?.id || "No user",
