@@ -48,6 +48,7 @@ interface Dispute {
   defendant_username?: string;
   order_total?: number;
   message_count?: number;
+  created_by: 'buyer' | 'seller';
 }
 
 interface DisputeMessage {
@@ -119,15 +120,15 @@ export function DisputeResolutionPanel() {
         .select('user_id, username')
         .in('user_id', Array.from(userIds));
 
-      // Fetch orders for totals
+      // Fetch orders for totals and buyer info
       const { data: ordersData } = await supabase
         .from('orders')
-        .select('id, total_amount_eur')
+        .select('id, total_amount_eur, user_id')
         .in('id', Array.from(orderIds));
 
       // Create lookup maps
       const profileMap = new Map(profilesData?.map(p => [p.user_id, p.username]) || []);
-      const orderMap = new Map(ordersData?.map(o => [o.id, o.total_amount_eur]) || []);
+      const orderMap = new Map(ordersData?.map(o => [o.id, { total: o.total_amount_eur, buyer_id: o.user_id }]) || []);
 
       // Get message counts for each dispute
       const disputesWithDetails: Dispute[] = [];
@@ -137,12 +138,17 @@ export function DisputeResolutionPanel() {
           .select('*', { count: 'exact', head: true })
           .eq('dispute_id', dispute.id);
 
+        const orderInfo = orderMap.get(dispute.order_id);
+        // Determine if created by buyer (plaintiff is order's user_id) or seller
+        const createdBy: 'buyer' | 'seller' = orderInfo && dispute.plaintiff_id === orderInfo.buyer_id ? 'buyer' : 'seller';
+
         disputesWithDetails.push({
           ...dispute,
           plaintiff_username: profileMap.get(dispute.plaintiff_id) || 'Unbekannt',
           defendant_username: profileMap.get(dispute.defendant_id) || 'Unbekannt',
-          order_total: orderMap.get(dispute.order_id) || 0,
-          message_count: count || 0
+          order_total: orderInfo?.total || 0,
+          message_count: count || 0,
+          created_by: createdBy
         });
       }
 
@@ -459,12 +465,17 @@ export function DisputeResolutionPanel() {
   });
 
   // Stats
+  const buyerDisputes = filteredDisputes.filter(d => d.created_by === 'buyer');
+  const sellerDisputes = filteredDisputes.filter(d => d.created_by === 'seller');
+
   const stats = {
     total: disputes.length,
     open: disputes.filter(d => d.status === 'open').length,
     inProgress: disputes.filter(d => d.status === 'in_progress').length,
     resolved: disputes.filter(d => d.status === 'resolved').length,
-    dismissed: disputes.filter(d => d.status === 'dismissed').length
+    dismissed: disputes.filter(d => d.status === 'dismissed').length,
+    fromBuyers: disputes.filter(d => d.created_by === 'buyer').length,
+    fromSellers: disputes.filter(d => d.created_by === 'seller').length
   };
 
   if (!isModeratorOrAdmin) {
@@ -853,56 +864,121 @@ export function DisputeResolutionPanel() {
                 </Select>
               </div>
 
-              {/* Disputes List */}
-              {filteredDisputes.length === 0 ? (
-                <div className="text-center py-12">
-                  <ShieldCheck className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    {disputes.length === 0 ? 'Keine Disputes vorhanden' : 'Keine Disputes gefunden'}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredDisputes.map((dispute) => (
-                    <div
-                      key={dispute.id}
-                      className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => setSelectedDispute(dispute)}
-                    >
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="font-medium">#{dispute.id.slice(0, 8)}</span>
-                            <Badge variant={getPriorityVariant(dispute.priority)} className="text-xs">
-                              {getPriorityLabel(dispute.priority)}
-                            </Badge>
-                            <Badge variant={getStatusVariant(dispute.status)} className="flex items-center gap-1 text-xs">
-                              {getStatusIcon(dispute.status)}
-                              {getStatusLabel(dispute.status)}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {dispute.plaintiff_username} vs {dispute.defendant_username}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate mt-1">
-                            {dispute.reason}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">€{dispute.order_total?.toFixed(2)}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(dispute.created_at).toLocaleDateString('de-DE')}
-                          </p>
-                          <p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
-                            <MessageSquare className="h-3 w-3" />
-                            {dispute.message_count}
-                          </p>
-                        </div>
-                      </div>
+              {/* Disputes List with Tabs */}
+              <Tabs defaultValue="buyers" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="buyers" className="flex items-center gap-2">
+                    🛒 Von Käufern
+                    <Badge variant="secondary" className="ml-1">{buyerDisputes.length}</Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="sellers" className="flex items-center gap-2">
+                    🏪 Von Verkäufern
+                    <Badge variant="secondary" className="ml-1">{sellerDisputes.length}</Badge>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="buyers">
+                  {buyerDisputes.length === 0 ? (
+                    <div className="text-center py-12">
+                      <ShieldCheck className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">Keine Käufer-Disputes vorhanden</p>
                     </div>
-                  ))}
-                </div>
-              )}
+                  ) : (
+                    <div className="space-y-3">
+                      {buyerDisputes.map((dispute) => (
+                        <div
+                          key={dispute.id}
+                          className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer transition-colors border-l-4 border-l-green-500"
+                          onClick={() => setSelectedDispute(dispute)}
+                        >
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className="font-medium">#{dispute.id.slice(0, 8)}</span>
+                                <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600">Käufer</Badge>
+                                <Badge variant={getPriorityVariant(dispute.priority)} className="text-xs">
+                                  {getPriorityLabel(dispute.priority)}
+                                </Badge>
+                                <Badge variant={getStatusVariant(dispute.status)} className="flex items-center gap-1 text-xs">
+                                  {getStatusIcon(dispute.status)}
+                                  {getStatusLabel(dispute.status)}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {dispute.plaintiff_username} (Käufer) vs {dispute.defendant_username} (Verkäufer)
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate mt-1">
+                                {dispute.reason}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium">€{dispute.order_total?.toFixed(2)}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(dispute.created_at).toLocaleDateString('de-DE')}
+                              </p>
+                              <p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
+                                <MessageSquare className="h-3 w-3" />
+                                {dispute.message_count}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="sellers">
+                  {sellerDisputes.length === 0 ? (
+                    <div className="text-center py-12">
+                      <ShieldCheck className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">Keine Verkäufer-Disputes vorhanden</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {sellerDisputes.map((dispute) => (
+                        <div
+                          key={dispute.id}
+                          className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer transition-colors border-l-4 border-l-blue-500"
+                          onClick={() => setSelectedDispute(dispute)}
+                        >
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className="font-medium">#{dispute.id.slice(0, 8)}</span>
+                                <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600">Verkäufer</Badge>
+                                <Badge variant={getPriorityVariant(dispute.priority)} className="text-xs">
+                                  {getPriorityLabel(dispute.priority)}
+                                </Badge>
+                                <Badge variant={getStatusVariant(dispute.status)} className="flex items-center gap-1 text-xs">
+                                  {getStatusIcon(dispute.status)}
+                                  {getStatusLabel(dispute.status)}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {dispute.plaintiff_username} (Verkäufer) vs {dispute.defendant_username} (Käufer)
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate mt-1">
+                                {dispute.reason}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium">€{dispute.order_total?.toFixed(2)}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(dispute.created_at).toLocaleDateString('de-DE')}
+                              </p>
+                              <p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
+                                <MessageSquare className="h-3 w-3" />
+                                {dispute.message_count}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
           )}
         </CardContent>
