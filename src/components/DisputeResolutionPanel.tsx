@@ -73,6 +73,7 @@ export function DisputeResolutionPanel() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [partialRefundPercent, setPartialRefundPercent] = useState<number>(50);
 
   useEffect(() => {
     if (isModeratorOrAdmin) {
@@ -435,6 +436,168 @@ export function DisputeResolutionPanel() {
             console.log(`Released ${escrowData.seller_amount_eur} EUR to seller`);
           }
         }
+      } else if (resolutionType === 'partial') {
+        // Partial refund - split based on percentage
+        const { data: escrowData } = await supabase
+          .from('escrow_holdings')
+          .select('*')
+          .eq('order_id', selectedDispute.order_id)
+          .single();
+
+        if (escrowData) {
+          const totalAmount = Number(escrowData.amount_eur);
+          const buyerAmount = (totalAmount * partialRefundPercent) / 100;
+          const sellerAmount = totalAmount - buyerAmount;
+
+          // Refund buyer portion
+          const { data: buyerWallet } = await supabase
+            .from('wallet_balances')
+            .select('*')
+            .eq('user_id', selectedDispute.plaintiff_id)
+            .single();
+
+          if (buyerWallet && buyerAmount > 0) {
+            const newBuyerBalance = Number(buyerWallet.balance_eur) + buyerAmount;
+            
+            await supabase
+              .from('wallet_balances')
+              .update({ 
+                balance_eur: newBuyerBalance,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', selectedDispute.plaintiff_id);
+
+            // Create buyer refund transaction
+            await supabase
+              .from('transactions')
+              .insert({
+                user_id: selectedDispute.plaintiff_id,
+                type: 'refund',
+                amount_eur: buyerAmount,
+                amount_btc: 0,
+                status: 'completed',
+                description: `Teilweise Dispute-Rückerstattung (${partialRefundPercent}%) für Bestellung #${selectedDispute.order_id.slice(0, 8)}`,
+                related_order_id: selectedDispute.order_id
+              });
+
+            console.log(`Partial refund: ${buyerAmount} EUR to buyer`);
+          }
+
+          // Release seller portion
+          const { data: sellerWallet } = await supabase
+            .from('wallet_balances')
+            .select('*')
+            .eq('user_id', selectedDispute.defendant_id)
+            .single();
+
+          if (sellerWallet && sellerAmount > 0) {
+            const newSellerBalance = Number(sellerWallet.balance_eur) + sellerAmount;
+            
+            await supabase
+              .from('wallet_balances')
+              .update({ 
+                balance_eur: newSellerBalance,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', selectedDispute.defendant_id);
+
+            // Create seller release transaction
+            await supabase
+              .from('transactions')
+              .insert({
+                user_id: selectedDispute.defendant_id,
+                type: 'escrow_release',
+                amount_eur: sellerAmount,
+                amount_btc: 0,
+                status: 'completed',
+                description: `Teilweise Dispute-Freigabe (${100 - partialRefundPercent}%) für Bestellung #${selectedDispute.order_id.slice(0, 8)}`,
+                related_order_id: selectedDispute.order_id
+              });
+
+            console.log(`Partial release: ${sellerAmount} EUR to seller`);
+          }
+
+          // Update escrow status
+          await supabase
+            .from('escrow_holdings')
+            .update({ 
+              status: 'partial_refund',
+              released_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', escrowData.id);
+        } else {
+          // Fallback: use order total
+          const { data: orderData } = await supabase
+            .from('orders')
+            .select('total_amount_eur')
+            .eq('id', selectedDispute.order_id)
+            .single();
+
+          if (orderData) {
+            const totalAmount = Number(orderData.total_amount_eur);
+            const buyerAmount = (totalAmount * partialRefundPercent) / 100;
+            const sellerAmount = totalAmount - buyerAmount;
+
+            // Refund buyer portion
+            const { data: buyerWallet } = await supabase
+              .from('wallet_balances')
+              .select('*')
+              .eq('user_id', selectedDispute.plaintiff_id)
+              .single();
+
+            if (buyerWallet && buyerAmount > 0) {
+              await supabase
+                .from('wallet_balances')
+                .update({ 
+                  balance_eur: Number(buyerWallet.balance_eur) + buyerAmount,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('user_id', selectedDispute.plaintiff_id);
+
+              await supabase
+                .from('transactions')
+                .insert({
+                  user_id: selectedDispute.plaintiff_id,
+                  type: 'refund',
+                  amount_eur: buyerAmount,
+                  amount_btc: 0,
+                  status: 'completed',
+                  description: `Teilweise Dispute-Rückerstattung (${partialRefundPercent}%) für Bestellung #${selectedDispute.order_id.slice(0, 8)}`,
+                  related_order_id: selectedDispute.order_id
+                });
+            }
+
+            // Release seller portion
+            const { data: sellerWallet } = await supabase
+              .from('wallet_balances')
+              .select('*')
+              .eq('user_id', selectedDispute.defendant_id)
+              .single();
+
+            if (sellerWallet && sellerAmount > 0) {
+              await supabase
+                .from('wallet_balances')
+                .update({ 
+                  balance_eur: Number(sellerWallet.balance_eur) + sellerAmount,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('user_id', selectedDispute.defendant_id);
+
+              await supabase
+                .from('transactions')
+                .insert({
+                  user_id: selectedDispute.defendant_id,
+                  type: 'escrow_release',
+                  amount_eur: sellerAmount,
+                  amount_btc: 0,
+                  status: 'completed',
+                  description: `Teilweise Dispute-Freigabe (${100 - partialRefundPercent}%) für Bestellung #${selectedDispute.order_id.slice(0, 8)}`,
+                  related_order_id: selectedDispute.order_id
+                });
+            }
+          }
+        }
       }
 
       // Update dispute status
@@ -454,6 +617,8 @@ export function DisputeResolutionPanel() {
         ? 'Käufer wurde das Geld zurückerstattet.'
         : resolutionType === 'seller_favor'
         ? 'Geld wurde an Verkäufer freigegeben.'
+        : resolutionType === 'partial'
+        ? `Geld wurde aufgeteilt: ${partialRefundPercent}% an Käufer, ${100 - partialRefundPercent}% an Verkäufer.`
         : '';
 
       toast({
@@ -855,6 +1020,36 @@ export function DisputeResolutionPanel() {
                     onChange={(e) => setResolution(e.target.value)}
                     rows={3}
                   />
+                  
+                  {/* Partial Refund Percentage */}
+                  <div className="p-4 bg-muted rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Teilweise Erstattung</span>
+                      <span className="text-sm text-muted-foreground">
+                        Käufer: {partialRefundPercent}% | Verkäufer: {100 - partialRefundPercent}%
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-green-600 w-16">Käufer</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={partialRefundPercent}
+                        onChange={(e) => setPartialRefundPercent(Number(e.target.value))}
+                        className="flex-1 h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
+                      />
+                      <span className="text-xs text-blue-600 w-16 text-right">Verkäufer</span>
+                    </div>
+                    {selectedDispute.order_total && (
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>€{((selectedDispute.order_total * partialRefundPercent) / 100).toFixed(2)} an Käufer</span>
+                        <span>€{((selectedDispute.order_total * (100 - partialRefundPercent)) / 100).toFixed(2)} an Verkäufer</span>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     <Button
                       onClick={() => resolveDispute('buyer_favor')}
@@ -862,7 +1057,7 @@ export function DisputeResolutionPanel() {
                       className="bg-green-600 hover:bg-green-700"
                     >
                       <Undo2 className="h-4 w-4 mr-2" />
-                      Käufer
+                      100% Käufer
                     </Button>
                     <Button
                       onClick={() => resolveDispute('seller_favor')}
@@ -870,7 +1065,7 @@ export function DisputeResolutionPanel() {
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Verkäufer
+                      100% Verkäufer
                     </Button>
                     <Button
                       onClick={() => resolveDispute('partial')}
@@ -878,7 +1073,7 @@ export function DisputeResolutionPanel() {
                       variant="secondary"
                     >
                       <Euro className="h-4 w-4 mr-2" />
-                      Teilweise
+                      {partialRefundPercent}/{100 - partialRefundPercent}
                     </Button>
                     <Button
                       onClick={() => resolveDispute('dismissed')}
