@@ -17,6 +17,8 @@ interface DisputeModalProps {
   orderDetails?: any;
   /** If true, the current user is the seller initiating the dispute */
   isSeller?: boolean;
+  /** Buyer ID (required when isSeller=true to avoid RLS issues) */
+  buyerId?: string;
 }
 
 interface Dispute {
@@ -60,7 +62,7 @@ const SELLER_DISPUTE_TEMPLATES = [
   { value: "custom", label: "Sonstiges", text: "" }
 ];
 
-export function DisputeModal({ open, onOpenChange, orderId, orderDetails, isSeller = false }: DisputeModalProps) {
+export function DisputeModal({ open, onOpenChange, orderId, orderDetails, isSeller = false, buyerId }: DisputeModalProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -124,30 +126,35 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails, isSell
         evidenceUrls = await uploadEvidence(session.user.id);
       }
 
-      // Get order data with buyer and seller info
-      const { data: orderData } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (
-            product_id,
-            products (seller_id)
-          )
-        `)
-        .eq('id', orderId)
-        .single();
+      let plaintiffId: string;
+      let defendantId: string;
 
-      if (!orderData) throw new Error('Order not found');
+      if (isSeller && buyerId) {
+        // Seller is creating dispute - use passed buyerId
+        plaintiffId = session.user.id; // seller
+        defendantId = buyerId; // buyer
+      } else {
+        // Buyer is creating dispute - need to fetch seller from order
+        const { data: orderData } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            order_items (
+              product_id,
+              products (seller_id)
+            )
+          `)
+          .eq('id', orderId)
+          .single();
 
-      const sellerId = orderData.order_items[0]?.products?.seller_id;
-      const buyerId = orderData.user_id;
-      
-      if (!sellerId) throw new Error('Seller not found');
-      if (!buyerId) throw new Error('Buyer not found');
+        if (!orderData) throw new Error('Order not found');
 
-      // Determine plaintiff and defendant based on who is creating the dispute
-      const plaintiffId = isSeller ? sellerId : session.user.id;
-      const defendantId = isSeller ? buyerId : sellerId;
+        const sellerId = orderData.order_items[0]?.products?.seller_id;
+        if (!sellerId) throw new Error('Seller not found');
+
+        plaintiffId = session.user.id; // buyer
+        defendantId = sellerId; // seller
+      }
 
       const { error } = await supabase
         .from('disputes')
