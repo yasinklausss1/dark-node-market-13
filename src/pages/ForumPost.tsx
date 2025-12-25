@@ -504,7 +504,6 @@ const ForumPost: React.FC = () => {
               >
                 <span className="text-3xl block mb-2">{award.icon}</span>
                 <p className="font-medium">{award.name}</p>
-                <p className="text-xs text-muted-foreground">{award.cost_credits} Credits</p>
               </button>
             ))}
           </div>
