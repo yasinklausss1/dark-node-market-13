@@ -14,6 +14,89 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_fee_addresses: {
+        Row: {
+          address: string
+          admin_user_id: string
+          balance: number
+          created_at: string
+          currency: string
+          id: string
+          private_key_encrypted: string | null
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          admin_user_id?: string
+          balance?: number
+          created_at?: string
+          currency: string
+          id?: string
+          private_key_encrypted?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          admin_user_id?: string
+          balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          private_key_encrypted?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_fee_transactions: {
+        Row: {
+          amount_crypto: number
+          amount_eur: number
+          created_at: string
+          currency: string
+          destination_address: string | null
+          escrow_holding_id: string | null
+          id: string
+          order_id: string
+          status: string
+          transaction_type: string
+          tx_hash: string | null
+        }
+        Insert: {
+          amount_crypto: number
+          amount_eur: number
+          created_at?: string
+          currency: string
+          destination_address?: string | null
+          escrow_holding_id?: string | null
+          id?: string
+          order_id: string
+          status?: string
+          transaction_type?: string
+          tx_hash?: string | null
+        }
+        Update: {
+          amount_crypto?: number
+          amount_eur?: number
+          created_at?: string
+          currency?: string
+          destination_address?: string | null
+          escrow_holding_id?: string | null
+          id?: string
+          order_id?: string
+          status?: string
+          transaction_type?: string
+          tx_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_fee_transactions_escrow_holding_id_fkey"
+            columns: ["escrow_holding_id"]
+            isOneToOne: false
+            referencedRelation: "escrow_holdings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bitcoin_addresses: {
         Row: {
           address: string
@@ -582,6 +665,71 @@ export type Database = {
         }
         Relationships: []
       }
+      escrow_holdings: {
+        Row: {
+          amount_crypto: number
+          amount_eur: number
+          auto_release_at: string
+          buyer_id: string
+          created_at: string
+          currency: string
+          fee_amount_crypto: number
+          fee_amount_eur: number
+          id: string
+          order_id: string
+          released_at: string | null
+          seller_amount_crypto: number
+          seller_amount_eur: number
+          seller_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_crypto: number
+          amount_eur: number
+          auto_release_at: string
+          buyer_id: string
+          created_at?: string
+          currency: string
+          fee_amount_crypto: number
+          fee_amount_eur: number
+          id?: string
+          order_id: string
+          released_at?: string | null
+          seller_amount_crypto: number
+          seller_amount_eur: number
+          seller_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_crypto?: number
+          amount_eur?: number
+          auto_release_at?: string
+          buyer_id?: string
+          created_at?: string
+          currency?: string
+          fee_amount_crypto?: number
+          fee_amount_eur?: number
+          id?: string
+          order_id?: string
+          released_at?: string | null
+          seller_amount_crypto?: number
+          seller_amount_eur?: number
+          seller_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escrow_holdings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string
@@ -1125,13 +1273,17 @@ export type Database = {
       }
       orders: {
         Row: {
+          auto_release_at: string | null
+          buyer_confirmed_at: string | null
           buyer_notes: string | null
           buyer_notes_images: string[] | null
           created_at: string
+          escrow_status: string | null
           fansign_image_url: string | null
           fansign_uploaded_at: string | null
           id: string
           order_status: Database["public"]["Enums"]["order_status"] | null
+          payment_currency: string | null
           shipping_city: string | null
           shipping_country: string | null
           shipping_first_name: string | null
@@ -1149,13 +1301,17 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auto_release_at?: string | null
+          buyer_confirmed_at?: string | null
           buyer_notes?: string | null
           buyer_notes_images?: string[] | null
           created_at?: string
+          escrow_status?: string | null
           fansign_image_url?: string | null
           fansign_uploaded_at?: string | null
           id?: string
           order_status?: Database["public"]["Enums"]["order_status"] | null
+          payment_currency?: string | null
           shipping_city?: string | null
           shipping_country?: string | null
           shipping_first_name?: string | null
@@ -1173,13 +1329,17 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auto_release_at?: string | null
+          buyer_confirmed_at?: string | null
           buyer_notes?: string | null
           buyer_notes_images?: string[] | null
           created_at?: string
+          escrow_status?: string | null
           fansign_image_url?: string | null
           fansign_uploaded_at?: string | null
           id?: string
           order_status?: Database["public"]["Enums"]["order_status"] | null
+          payment_currency?: string | null
           shipping_city?: string | null
           shipping_country?: string | null
           shipping_first_name?: string | null
@@ -1254,6 +1414,33 @@ export type Database = {
           user_agent?: string | null
           user_id?: string | null
           visited_at?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
         }
         Relationships: []
       }

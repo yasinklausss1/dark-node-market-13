@@ -39,21 +39,41 @@ serve(async (req) => {
 
     if (!userId || !items?.length || !method) throw new Error('Invalid payload');
 
+    // Get escrow settings
+    const { data: settings } = await supabase
+      .from('platform_settings')
+      .select('setting_key, setting_value')
+      .in('setting_key', ['escrow_fee_percent', 'auto_release_days_digital', 'auto_release_days_physical']);
+
+    const escrowFeePercent = Number(settings?.find(s => s.setting_key === 'escrow_fee_percent')?.setting_value || 1);
+    const autoReleaseDaysDigital = Number(settings?.find(s => s.setting_key === 'auto_release_days_digital')?.setting_value || 7);
+    const autoReleaseDaysPhysical = Number(settings?.find(s => s.setting_key === 'auto_release_days_physical')?.setting_value || 14);
+
+    console.log('Escrow settings:', { escrowFeePercent, autoReleaseDaysDigital, autoReleaseDaysPhysical });
+
     // Check if any product requires shipping (physical products)
     let requiresShipping = false;
+    let hasDigitalProducts = false;
     for (const it of items) {
       const { data: product } = await supabase
         .from('products')
         .select('product_type')
         .eq('id', it.id)
         .maybeSingle();
-      if (product && product.product_type !== 'digital') {
-        requiresShipping = true;
-        break;
+      if (product) {
+        if (product.product_type !== 'digital') {
+          requiresShipping = true;
+        } else {
+          hasDigitalProducts = true;
+        }
       }
     }
 
-    // Require shipping address only for physical products
+    // Determine auto-release days based on product types
+    const autoReleaseDays = requiresShipping ? autoReleaseDaysPhysical : autoReleaseDaysDigital;
+    const autoReleaseAt = new Date();
+    autoReleaseAt.setDate(autoReleaseAt.getDate() + autoReleaseDays);
+
     if (requiresShipping && !shippingAddress) {
       throw new Error('Shipping address required for physical products');
     }
@@ -116,11 +136,14 @@ serve(async (req) => {
     if (method === 'btc' && Number(buyerBal.balance_btc) + 1e-12 < totalBTC) throw new Error('Insufficient BTC balance');
     if (method === 'ltc' && Number((buyerBal as any).balance_ltc || 0) + 1e-12 < totalLTC) throw new Error('Insufficient LTC balance');
 
-    // Create order with shipping address (if provided) and buyer notes
+    // Create order with escrow status
     const orderData: any = { 
       user_id: userId, 
       total_amount_eur: totalEUR, 
-      status: 'confirmed'
+      status: 'confirmed',
+      escrow_status: 'held',
+      auto_release_at: autoReleaseAt.toISOString(),
+      payment_currency: method.toUpperCase()
     };
     
     if (shippingAddress) {
@@ -133,7 +156,6 @@ serve(async (req) => {
       orderData.shipping_country = shippingAddress.country;
     }
     
-    // Add buyer notes and images for digital products
     if (buyerNotes) {
       orderData.buyer_notes = buyerNotes;
     }
@@ -148,7 +170,9 @@ serve(async (req) => {
       .maybeSingle();
     if (orderErr || !order) throw orderErr ?? new Error('Order creation failed');
 
-    // Create order items and update stock - with correct discounted prices
+    console.log('Order created with escrow:', order.id);
+
+    // Create order items and update stock
     for (const it of items) {
       const { data: product } = await supabase
         .from('products')
@@ -157,7 +181,6 @@ serve(async (req) => {
         .maybeSingle();
       if (!product) throw new Error('Product missing');
 
-      // Recalculate the discounted price for order item
       const { data: bulkDiscounts } = await supabase
         .from('bulk_discounts')
         .select('min_quantity, discount_percentage')
@@ -180,7 +203,7 @@ serve(async (req) => {
         order_id: order.id,
         product_id: it.id,
         quantity: it.quantity,
-        price_eur: discountedPrice, // Store the discounted price
+        price_eur: discountedPrice,
       });
       
       if (itemErr) {
@@ -203,7 +226,7 @@ serve(async (req) => {
         amount_eur: -totalEUR,
         amount_btc: -totalBTC,
         status: 'confirmed',
-        description: `Order #${String(order.id).slice(0,8)} (BTC)`,
+        description: `Order #${String(order.id).slice(0,8)} (BTC) - In Escrow`,
         transaction_direction: 'outgoing',
         related_order_id: order.id
       });
@@ -215,78 +238,44 @@ serve(async (req) => {
         user_id: userId,
         type: 'purchase',
         amount_eur: -totalEUR,
-        amount_btc: -totalLTC, // store LTC amount here as convention
+        amount_btc: -totalLTC,
         status: 'confirmed',
-        description: `Order #${String(order.id).slice(0,8)} (LTC)`,
+        description: `Order #${String(order.id).slice(0,8)} (LTC) - In Escrow`,
         transaction_direction: 'outgoing',
         related_order_id: order.id
       });
     }
 
-    // Get buyer username for transaction tracking
-    const { data: buyerProfile } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    // Credit each seller and create seller transactions
+    // Create escrow holdings for each seller (funds NOT credited yet)
     for (const [sellerId, sums] of Object.entries(sellerTotals)) {
-      if (method === 'btc') {
-        const { data: sBal } = await supabase
-          .from('wallet_balances')
-          .select('balance_btc')
-          .eq('user_id', sellerId)
-          .maybeSingle();
-        if (sBal) {
-          await supabase.from('wallet_balances')
-            .update({ balance_btc: Number(sBal.balance_btc) + sums.btc })
-            .eq('user_id', sellerId);
-        } else {
-          await supabase.from('wallet_balances')
-            .insert({ user_id: sellerId, balance_eur: 0, balance_btc: sums.btc, balance_ltc: 0 });
-        }
-        await supabase.from('transactions').insert({
-          user_id: sellerId,
-          type: 'sale',
-          amount_eur: sums.eur,
-          amount_btc: sums.btc,
-          status: 'confirmed',
-          description: `Sale #${String(order.id).slice(0,8)} (BTC)`,
-          transaction_direction: 'incoming',
-          from_username: buyerProfile?.username || 'Unknown',
-          related_order_id: order.id
-        });
-      } else {
-        const { data: sBal } = await supabase
-          .from('wallet_balances')
-          .select('balance_ltc')
-          .eq('user_id', sellerId)
-          .maybeSingle();
-        if (sBal) {
-          await supabase.from('wallet_balances')
-            .update({ balance_ltc: Number((sBal as any).balance_ltc || 0) + sums.ltc })
-            .eq('user_id', sellerId);
-        } else {
-          await supabase.from('wallet_balances')
-            .insert({ user_id: sellerId, balance_eur: 0, balance_btc: 0, balance_ltc: sums.ltc });
-        }
-        await supabase.from('transactions').insert({
-          user_id: sellerId,
-          type: 'sale',
-          amount_eur: sums.eur,
-          amount_btc: sums.ltc, // store LTC amount here
-          status: 'confirmed',
-          description: `Sale #${String(order.id).slice(0,8)} (LTC)`,
-          transaction_direction: 'incoming',
-          from_username: buyerProfile?.username || 'Unknown',
-          related_order_id: order.id
-        });
-      }
-    }
+      const cryptoAmount = method === 'btc' ? sums.btc : sums.ltc;
+      const feeAmountEur = sums.eur * (escrowFeePercent / 100);
+      const feeAmountCrypto = cryptoAmount * (escrowFeePercent / 100);
+      const sellerAmountEur = sums.eur - feeAmountEur;
+      const sellerAmountCrypto = cryptoAmount - feeAmountCrypto;
 
-    // Mark order as confirmed
-    await supabase.from('orders').update({ status: 'confirmed' }).eq('id', order.id);
+      const { error: escrowErr } = await supabase.from('escrow_holdings').insert({
+        order_id: order.id,
+        seller_id: sellerId,
+        buyer_id: userId,
+        amount_eur: sums.eur,
+        amount_crypto: cryptoAmount,
+        currency: method.toUpperCase(),
+        fee_amount_eur: feeAmountEur,
+        fee_amount_crypto: feeAmountCrypto,
+        seller_amount_eur: sellerAmountEur,
+        seller_amount_crypto: sellerAmountCrypto,
+        status: 'held',
+        auto_release_at: autoReleaseAt.toISOString()
+      });
+
+      if (escrowErr) {
+        console.error('Failed to create escrow holding:', escrowErr);
+        throw new Error(`Failed to create escrow holding: ${escrowErr.message}`);
+      }
+
+      console.log(`Created escrow holding for seller ${sellerId}: ${cryptoAmount} ${method.toUpperCase()} (${feeAmountCrypto} fee)`);
+    }
 
     return new Response(JSON.stringify({ ok: true, orderId: order.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
