@@ -285,7 +285,7 @@ serve(async (req) => {
         {
           const { error: txError } = await supabaseAdmin.from("transactions").insert({
             user_id: buyerId,
-            type: "refund",
+            type: "deposit",
             amount_eur: Number(holding.amount_eur),
             amount_btc: String(currency).toLowerCase() === "btc" ? Number(holding.amount_crypto) : 0,
             status: "confirmed",
@@ -381,7 +381,7 @@ serve(async (req) => {
           await incrementWallet(supabaseAdmin, buyerId, currency, buyerRefundCrypto);
           const { error: refundTxError } = await supabaseAdmin.from("transactions").insert({
             user_id: buyerId,
-            type: "refund",
+            type: "deposit",
             amount_eur: (amountEur * buyerPercent) / 100,
             amount_btc: String(currency).toLowerCase() === "btc" ? buyerRefundCrypto : 0,
             status: "confirmed",
