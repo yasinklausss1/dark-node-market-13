@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./hooks/useCart";
-import PrivacyWarning from "./components/PrivacyWarning";
 import { ChristmasDecorations } from "./components/ChristmasDecorations";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -33,7 +32,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <PrivacyWarning />
+            <ChristmasDecorations />
             <ChristmasDecorations />
             <BrowserRouter>
               <Routes>
