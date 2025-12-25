@@ -189,6 +189,8 @@ export function useForum() {
       return null;
     }
 
+    let updatedViewCount = data.view_count || 0;
+
     // Track unique view per user - only increment if user hasn't viewed before
     if (user) {
       const { data: existingView } = await supabase
@@ -204,14 +206,16 @@ export function useForum() {
           .from('forum_post_views')
           .insert({ post_id: postId, user_id: user.id });
         
+        updatedViewCount = updatedViewCount + 1;
+        
         await supabase
           .from('forum_posts')
-          .update({ view_count: (data.view_count || 0) + 1 })
+          .update({ view_count: updatedViewCount })
           .eq('id', postId);
       }
     }
 
-    let postWithVote = data as unknown as ForumPost;
+    let postWithVote = { ...data, view_count: updatedViewCount } as unknown as ForumPost;
     if (user) {
       const { data: vote } = await supabase
         .from('forum_post_votes')
