@@ -20,6 +20,7 @@ import NewsPanel from '@/components/NewsPanel';
 import { useUserPresence } from '@/hooks/useUserPresence';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { ModernHeroSection } from '@/components/ModernHeroSection';
+import { EscrowTrustBanner } from '@/components/EscrowTrustBanner';
 import { ProductCard } from '@/components/ProductCard';
 import { ChatModal } from '@/components/ChatModal';
 import { OracleLogo } from '@/components/OracleLogo';
@@ -680,6 +681,9 @@ const Marketplace = () => {
             element?.scrollIntoView({ behavior: 'smooth' });
           }}
         />
+
+        {/* Escrow Trust Banner */}
+        <EscrowTrustBanner />
 
         {/* Feedback Notice */}
         <div className="mb-4 p-3 bg-muted/50 border border-border rounded-lg text-center">
