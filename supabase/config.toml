@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.withdraw-admin-fees]
 verify_jwt = true
+
+[functions.resolve-dispute]
+verify_jwt = false
