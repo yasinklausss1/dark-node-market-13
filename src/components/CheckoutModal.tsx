@@ -6,11 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { OrderImageUpload } from '@/components/ui/order-image-upload';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Shield, ShieldCheck, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const checkoutSchema = z.object({
   firstName: z.string().min(1, 'Vorname ist erforderlich'),
@@ -28,7 +30,7 @@ interface CheckoutModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   totalAmount: number;
-  onConfirmOrder: (address: CheckoutFormData | null, buyerNotes?: string, buyerNotesImages?: string[]) => void;
+  onConfirmOrder: (address: CheckoutFormData | null, buyerNotes?: string, buyerNotesImages?: string[], useEscrow?: boolean) => void;
   loading?: boolean;
   requiresShipping?: boolean;
 }
@@ -90,6 +92,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 }) => {
   const [buyerNotes, setBuyerNotes] = useState('');
   const [buyerNotesImages, setBuyerNotesImages] = useState<string[]>([]);
+  const [useEscrow, setUseEscrow] = useState(true); // Default to escrow enabled
   
   const form = useForm<CheckoutFormData>({
     resolver: requiresShipping ? zodResolver(checkoutSchema) : undefined,
@@ -105,15 +108,66 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   });
 
   const onSubmit = (data: CheckoutFormData) => {
-    onConfirmOrder(requiresShipping ? data : null);
+    onConfirmOrder(requiresShipping ? data : null, undefined, undefined, useEscrow);
   };
 
   // For digital products, confirm with buyer notes and images
   const handleDigitalConfirm = () => {
-    onConfirmOrder(null, buyerNotes.trim() || undefined, buyerNotesImages.length > 0 ? buyerNotesImages : undefined);
+    onConfirmOrder(null, buyerNotes.trim() || undefined, buyerNotesImages.length > 0 ? buyerNotesImages : undefined, useEscrow);
     setBuyerNotes('');
     setBuyerNotesImages([]);
   };
+
+  // Escrow selection component
+  const EscrowSelection = () => (
+    <div className="p-4 rounded-lg border bg-card space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {useEscrow ? (
+            <ShieldCheck className="h-5 w-5 text-green-500" />
+          ) : (
+            <Shield className="h-5 w-5 text-muted-foreground" />
+          )}
+          <Label htmlFor="escrow-toggle" className="font-medium cursor-pointer">
+            Escrow-Schutz aktivieren
+          </Label>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Mit Escrow wird dein Geld sicher verwahrt, bis du die Ware erhalten hast. Wenn etwas schiefgeht, bekommst du dein Geld zurück.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <Switch
+          id="escrow-toggle"
+          checked={useEscrow}
+          onCheckedChange={setUseEscrow}
+        />
+      </div>
+      
+      {useEscrow ? (
+        <div className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 p-3 rounded-md">
+          <p className="font-medium">✓ Käuferschutz aktiv</p>
+          <p className="text-xs mt-1 text-green-600/80 dark:text-green-400/80">
+            Dein Geld wird sicher verwahrt und erst nach Bestätigung des Erhalts an den Verkäufer freigegeben. 
+            Bei Problemen erhältst du eine volle Rückerstattung.
+          </p>
+        </div>
+      ) : (
+        <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md">
+          <p className="font-medium">⚠ Kein Käuferschutz</p>
+          <p className="text-xs mt-1 text-amber-600/80 dark:text-amber-400/80">
+            Bei Direktzahlung ohne Escrow erfolgt die Zahlung sofort an den Verkäufer. 
+            Du trägst das Risiko, falls etwas schiefgeht.
+          </p>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -130,9 +184,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <p className="text-lg font-semibold">Gesamtbetrag: €{totalAmount.toFixed(2)}</p>
           </div>
 
-          {requiresShipping ? (
+        {requiresShipping ? (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {/* Escrow Selection */}
+                <EscrowSelection />
+
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -275,6 +332,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </Form>
           ) : (
             <div className="space-y-4">
+              {/* Escrow Selection for digital products */}
+              <EscrowSelection />
+
               <div className="p-4 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
                 <p className="text-sm text-center font-medium text-amber-800 dark:text-amber-200 mb-2">
                   ⚠️ Kaufbestätigung

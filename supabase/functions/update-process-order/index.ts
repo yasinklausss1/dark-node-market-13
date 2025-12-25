@@ -18,7 +18,7 @@ serve(async (req) => {
     );
 
     const body = await req.json();
-    const { userId, items, method, btcPrice, ltcPrice, shippingAddress, buyerNotes, buyerNotesImages } = body as {
+    const { userId, items, method, btcPrice, ltcPrice, shippingAddress, buyerNotes, buyerNotesImages, useEscrow = true } = body as {
       userId: string;
       items: CartItem[];
       method: 'btc' | 'ltc';
@@ -35,9 +35,12 @@ serve(async (req) => {
       } | null;
       buyerNotes?: string;
       buyerNotesImages?: string[];
+      useEscrow?: boolean;
     };
 
     if (!userId || !items?.length || !method) throw new Error('Invalid payload');
+
+    console.log('Processing order with useEscrow:', useEscrow);
 
     // Get escrow settings
     const { data: settings } = await supabase
@@ -136,13 +139,13 @@ serve(async (req) => {
     if (method === 'btc' && Number(buyerBal.balance_btc) + 1e-12 < totalBTC) throw new Error('Insufficient BTC balance');
     if (method === 'ltc' && Number((buyerBal as any).balance_ltc || 0) + 1e-12 < totalLTC) throw new Error('Insufficient LTC balance');
 
-    // Create order with escrow status
+    // Create order with escrow status based on user choice
     const orderData: any = { 
       user_id: userId, 
       total_amount_eur: totalEUR, 
       status: 'confirmed',
-      escrow_status: 'held',
-      auto_release_at: autoReleaseAt.toISOString(),
+      escrow_status: useEscrow ? 'held' : 'none',
+      auto_release_at: useEscrow ? autoReleaseAt.toISOString() : null,
       payment_currency: method.toUpperCase()
     };
     
@@ -170,7 +173,7 @@ serve(async (req) => {
       .maybeSingle();
     if (orderErr || !order) throw orderErr ?? new Error('Order creation failed');
 
-    console.log('Order created with escrow:', order.id);
+    console.log('Order created with escrow status:', order.escrow_status, 'Order ID:', order.id);
 
     // Create order items and update stock
     for (const it of items) {
@@ -216,6 +219,8 @@ serve(async (req) => {
     }
 
     // Deduct buyer balance and create buyer transaction
+    const escrowLabel = useEscrow ? ' - In Escrow' : '';
+    
     if (method === 'btc') {
       await supabase.from('wallet_balances')
         .update({ balance_btc: Number(buyerBal.balance_btc) - totalBTC })
@@ -226,7 +231,7 @@ serve(async (req) => {
         amount_eur: -totalEUR,
         amount_btc: -totalBTC,
         status: 'confirmed',
-        description: `Order #${String(order.id).slice(0,8)} (BTC) - In Escrow`,
+        description: `Order #${String(order.id).slice(0,8)} (BTC)${escrowLabel}`,
         transaction_direction: 'outgoing',
         related_order_id: order.id
       });
@@ -240,44 +245,153 @@ serve(async (req) => {
         amount_eur: -totalEUR,
         amount_btc: -totalLTC,
         status: 'confirmed',
-        description: `Order #${String(order.id).slice(0,8)} (LTC) - In Escrow`,
+        description: `Order #${String(order.id).slice(0,8)} (LTC)${escrowLabel}`,
         transaction_direction: 'outgoing',
         related_order_id: order.id
       });
     }
 
-    // Create escrow holdings for each seller (funds NOT credited yet)
-    for (const [sellerId, sums] of Object.entries(sellerTotals)) {
-      const cryptoAmount = method === 'btc' ? sums.btc : sums.ltc;
-      const feeAmountEur = sums.eur * (escrowFeePercent / 100);
-      const feeAmountCrypto = cryptoAmount * (escrowFeePercent / 100);
-      const sellerAmountEur = sums.eur - feeAmountEur;
-      const sellerAmountCrypto = cryptoAmount - feeAmountCrypto;
+    // Handle based on escrow choice
+    if (useEscrow) {
+      // Create escrow holdings for each seller (funds NOT credited yet)
+      for (const [sellerId, sums] of Object.entries(sellerTotals)) {
+        const cryptoAmount = method === 'btc' ? sums.btc : sums.ltc;
+        const feeAmountEur = sums.eur * (escrowFeePercent / 100);
+        const feeAmountCrypto = cryptoAmount * (escrowFeePercent / 100);
+        const sellerAmountEur = sums.eur - feeAmountEur;
+        const sellerAmountCrypto = cryptoAmount - feeAmountCrypto;
 
-      const { error: escrowErr } = await supabase.from('escrow_holdings').insert({
-        order_id: order.id,
-        seller_id: sellerId,
-        buyer_id: userId,
-        amount_eur: sums.eur,
-        amount_crypto: cryptoAmount,
-        currency: method.toUpperCase(),
-        fee_amount_eur: feeAmountEur,
-        fee_amount_crypto: feeAmountCrypto,
-        seller_amount_eur: sellerAmountEur,
-        seller_amount_crypto: sellerAmountCrypto,
-        status: 'held',
-        auto_release_at: autoReleaseAt.toISOString()
-      });
+        const { error: escrowErr } = await supabase.from('escrow_holdings').insert({
+          order_id: order.id,
+          seller_id: sellerId,
+          buyer_id: userId,
+          amount_eur: sums.eur,
+          amount_crypto: cryptoAmount,
+          currency: method.toUpperCase(),
+          fee_amount_eur: feeAmountEur,
+          fee_amount_crypto: feeAmountCrypto,
+          seller_amount_eur: sellerAmountEur,
+          seller_amount_crypto: sellerAmountCrypto,
+          status: 'held',
+          auto_release_at: autoReleaseAt.toISOString()
+        });
 
-      if (escrowErr) {
-        console.error('Failed to create escrow holding:', escrowErr);
-        throw new Error(`Failed to create escrow holding: ${escrowErr.message}`);
+        if (escrowErr) {
+          console.error('Failed to create escrow holding:', escrowErr);
+          throw new Error(`Failed to create escrow holding: ${escrowErr.message}`);
+        }
+
+        console.log(`Created escrow holding for seller ${sellerId}: ${cryptoAmount} ${method.toUpperCase()} (${feeAmountCrypto} fee)`);
+
+        // Send notification to seller about escrow order
+        // Get buyer username for notification
+        const { data: buyerProfile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        const buyerUsername = buyerProfile?.username || 'Ein Käufer';
+
+        // Create notification via conversation/message
+        // First check if there's already a conversation
+        const productIds = items.map(i => i.id);
+        for (const productId of productIds) {
+          const { data: product } = await supabase
+            .from('products')
+            .select('seller_id, title')
+            .eq('id', productId)
+            .maybeSingle();
+          
+          if (product && product.seller_id === sellerId) {
+            // Create or find conversation
+            const { data: existingConv } = await supabase
+              .from('conversations')
+              .select('id')
+              .eq('buyer_id', userId)
+              .eq('seller_id', sellerId)
+              .eq('product_id', productId)
+              .maybeSingle();
+
+            let conversationId = existingConv?.id;
+
+            if (!conversationId) {
+              const { data: newConv } = await supabase
+                .from('conversations')
+                .insert({
+                  buyer_id: userId,
+                  seller_id: sellerId,
+                  product_id: productId,
+                  order_id: order.id
+                })
+                .select('id')
+                .maybeSingle();
+              conversationId = newConv?.id;
+            }
+
+            // Send escrow notification message
+            if (conversationId) {
+              await supabase.from('chat_messages').insert({
+                conversation_id: conversationId,
+                sender_id: userId,
+                message: `🛡️ **Escrow-Bestellung**\n\n${buyerUsername} hat eine Bestellung mit Escrow-Schutz aufgegeben.\n\nProdukt: ${product.title}\nBetrag: €${sums.eur.toFixed(2)}\n\nDas Geld wird sicher verwahrt und nach Bestätigung des Käufers freigegeben.`,
+                message_type: 'system'
+              });
+
+              // Update last message timestamp
+              await supabase.from('conversations')
+                .update({ last_message_at: new Date().toISOString() })
+                .eq('id', conversationId);
+            }
+            break; // One notification per seller is enough
+          }
+        }
       }
+    } else {
+      // Direct payment - credit sellers immediately
+      for (const [sellerId, sums] of Object.entries(sellerTotals)) {
+        const cryptoAmount = method === 'btc' ? sums.btc : sums.ltc;
+        const feeAmountEur = sums.eur * (escrowFeePercent / 100);
+        const feeAmountCrypto = cryptoAmount * (escrowFeePercent / 100);
+        const sellerAmountEur = sums.eur - feeAmountEur;
+        const sellerAmountCrypto = cryptoAmount - feeAmountCrypto;
 
-      console.log(`Created escrow holding for seller ${sellerId}: ${cryptoAmount} ${method.toUpperCase()} (${feeAmountCrypto} fee)`);
+        // Credit seller wallet immediately
+        const { data: sellerBal } = await supabase
+          .from('wallet_balances')
+          .select('balance_btc, balance_ltc')
+          .eq('user_id', sellerId)
+          .maybeSingle();
+
+        if (sellerBal) {
+          if (method === 'btc') {
+            await supabase.from('wallet_balances')
+              .update({ balance_btc: Number(sellerBal.balance_btc || 0) + sellerAmountCrypto })
+              .eq('user_id', sellerId);
+          } else {
+            await supabase.from('wallet_balances')
+              .update({ balance_ltc: Number((sellerBal as any).balance_ltc || 0) + sellerAmountCrypto })
+              .eq('user_id', sellerId);
+          }
+        }
+
+        // Create seller transaction
+        await supabase.from('transactions').insert({
+          user_id: sellerId,
+          type: 'sale',
+          amount_eur: sellerAmountEur,
+          amount_btc: method === 'btc' ? sellerAmountCrypto : 0,
+          status: 'confirmed',
+          description: `Verkauf Order #${String(order.id).slice(0,8)} (Direktzahlung)`,
+          transaction_direction: 'incoming',
+          related_order_id: order.id
+        });
+
+        console.log(`Direct payment to seller ${sellerId}: ${sellerAmountCrypto} ${method.toUpperCase()}`);
+      }
     }
 
-    return new Response(JSON.stringify({ ok: true, orderId: order.id }), {
+    return new Response(JSON.stringify({ ok: true, orderId: order.id, useEscrow }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (e) {
