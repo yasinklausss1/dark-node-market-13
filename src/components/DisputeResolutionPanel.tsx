@@ -280,12 +280,23 @@ export function DisputeResolutionPanel() {
 
     setLoading(true);
     try {
+      // Get current session to pass authorization
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+
+      if (!accessToken) {
+        throw new Error('Nicht eingeloggt. Bitte neu anmelden.');
+      }
+
       const { data, error } = await supabase.functions.invoke('resolve-dispute', {
         body: {
           disputeId: selectedDispute.id,
           resolutionType,
           resolutionNote: resolution.trim(),
           partialPercent: partialRefundPercent,
+        },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
         },
       });
 
