@@ -3,35 +3,25 @@ import { Shield, Lock, CheckCircle, Clock, Info, ChevronDown, ChevronUp } from '
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-
 export const EscrowTrustBanner: React.FC = () => {
   const [expanded, setExpanded] = useState(false);
   const [dismissed, setDismissed] = useState(() => {
     return sessionStorage.getItem('escrow-banner-dismissed') === 'true';
   });
-
   const handleDismiss = () => {
     sessionStorage.setItem('escrow-banner-dismissed', 'true');
     setDismissed(true);
   };
-
   if (dismissed) {
-    return (
-      <button
-        onClick={() => {
-          sessionStorage.removeItem('escrow-banner-dismissed');
-          setDismissed(false);
-        }}
-        className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
+    return <button onClick={() => {
+      sessionStorage.removeItem('escrow-banner-dismissed');
+      setDismissed(false);
+    }} className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <Shield className="h-4 w-4 text-green-500" />
         <span>Escrow-Schutz Info anzeigen</span>
-      </button>
-    );
+      </button>;
   }
-
-  return (
-    <Card className="mb-6 border-green-500/30 bg-gradient-to-r from-green-500/5 via-emerald-500/5 to-teal-500/5 overflow-hidden relative">
+  return <Card className="mb-6 border-green-500/30 bg-gradient-to-r from-green-500/5 via-emerald-500/5 to-teal-500/5 overflow-hidden relative">
       {/* Animated shield background */}
       <div className="absolute top-0 right-0 w-32 h-32 opacity-5">
         <Shield className="w-full h-full text-green-500" />
@@ -118,38 +108,21 @@ export const EscrowTrustBanner: React.FC = () => {
               </div>
 
               {/* Expand/Collapse button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setExpanded(!expanded)}
-                className="mt-2 text-muted-foreground hover:text-foreground h-8 px-2"
-              >
-                {expanded ? (
-                  <>
+              <Button variant="ghost" size="sm" onClick={() => setExpanded(!expanded)} className="mt-2 text-muted-foreground hover:text-foreground h-8 px-2">
+                {expanded ? <>
                     <ChevronUp className="h-4 w-4 mr-1" />
                     Weniger anzeigen
-                  </>
-                ) : (
-                  <>
+                  </> : <>
                     <ChevronDown className="h-4 w-4 mr-1" />
                     Wie funktioniert Escrow?
-                  </>
-                )}
+                  </>}
               </Button>
             </div>
           </div>
 
           {/* Close button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDismiss}
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground flex-shrink-0"
-          >
-            ✕
-          </Button>
+          
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
