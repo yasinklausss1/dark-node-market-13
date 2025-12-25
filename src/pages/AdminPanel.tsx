@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Plus, Users, Edit, Eye, Wifi, Bitcoin, RefreshCw, UserPlus, Globe, Shield } from 'lucide-react';
+import { Trash2, Plus, Users, Edit, Eye, Wifi, Bitcoin, RefreshCw, UserPlus, Globe, Shield, Settings } from 'lucide-react';
+import { EscrowSettings } from '@/components/EscrowSettings';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EditProductModal from '@/components/EditProductModal';
 import NewsEditor from '@/components/NewsEditor';
@@ -603,6 +604,9 @@ const AdminPanel = () => {
             <AdminOrdersOverview />
             <AdminDepositsOverview />
             <AdminWithdrawalsOverview />
+            
+            {/* Escrow Settings */}
+            <EscrowSettings />
           </>
         )}
 

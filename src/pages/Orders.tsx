@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Star, Package, Truck, CheckCircle, ExternalLink, ArrowLeft, Download, FileText, FileIcon } from 'lucide-react';
 import ReviewModal from '@/components/ReviewModal';
 import SellerProfileModal from '@/components/SellerProfileModal';
+import { EscrowStatus } from '@/components/EscrowStatus';
 
 interface Order {
   id: string;
@@ -25,6 +26,9 @@ interface Order {
   shipping_postal_code: string | null;
   shipping_city: string | null;
   shipping_country: string | null;
+  escrow_status: string | null;
+  auto_release_at: string | null;
+  buyer_confirmed_at: string | null;
 }
 
 interface OrderWithSellers extends Order {
@@ -386,6 +390,27 @@ const Orders: React.FC = () => {
                         </div>
                       </div>
                     )}
+
+                    {/* Escrow Status */}
+                    <EscrowStatus
+                      orderId={order.id}
+                      escrowStatus={order.escrow_status}
+                      autoReleaseAt={order.auto_release_at}
+                      buyerConfirmedAt={order.buyer_confirmed_at}
+                      onRelease={() => {
+                        // Refresh orders to update escrow status
+                        if (user) {
+                          supabase
+                            .from('orders')
+                            .select('*')
+                            .eq('user_id', user.id)
+                            .order('created_at', { ascending: false })
+                            .then(({ data }) => {
+                              if (data) setOrders(data as any);
+                            });
+                        }
+                      }}
+                    />
 
                     <div className="grid grid-cols-1 gap-4">
                       <div>
