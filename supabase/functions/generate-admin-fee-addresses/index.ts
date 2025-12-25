@@ -7,7 +7,7 @@ const corsHeaders = {
 }
 
 // ADMkz user ID - main platform admin
-const ADMIN_USER_ID = 'b7f1a65f-4d3a-43a3-a3ac-6ca95aa5c959'
+const ADMIN_USER_ID = '0af916bb-1c03-4173-a898-fd4274ae4a2b'
 
 // Encryption utilities using AES-GCM
 async function encryptPrivateKey(privateKey: string, encryptionKey: string): Promise<string> {

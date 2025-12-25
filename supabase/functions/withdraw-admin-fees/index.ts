@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const ADMIN_USER_ID = 'b7f1a65f-4d3a-43a3-a3ac-6ca95aa5c959'
+const ADMIN_USER_ID = '0af916bb-1c03-4173-a898-fd4274ae4a2b'
 
 // Decryption utility
 async function decryptPrivateKey(encryptedKey: string, encryptionKey: string): Promise<string> {
