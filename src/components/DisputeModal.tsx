@@ -33,17 +33,18 @@ interface Dispute {
   }>;
 }
 
-// Dispute reason templates
+// Dispute reason templates (German)
 const DISPUTE_TEMPLATES = [
-  { value: "defective_product", label: "Defective Product", text: "The product I received is defective or damaged. It does not function as described or expected." },
-  { value: "not_as_described", label: "Not as Described", text: "The product does not match the description or images shown in the listing." },
-  { value: "wrong_item", label: "Wrong Item Received", text: "I received a different item than what I ordered." },
-  { value: "missing_parts", label: "Missing Parts", text: "The product is missing essential parts or accessories that should be included." },
-  { value: "delivery_issues", label: "Delivery Issues", text: "There were problems with the delivery of my order (delayed, damaged during shipping, etc.)." },
-  { value: "quality_issues", label: "Quality Issues", text: "The quality of the product is significantly lower than expected based on the description and price." },
-  { value: "seller_communication", label: "Seller Communication", text: "The seller is not responding to my messages or refusing to resolve the issue." },
-  { value: "refund_request", label: "Refund Request", text: "I would like to request a refund for this order due to the issues described." },
-  { value: "custom", label: "Other (Custom)", text: "" }
+  { value: "defective_product", label: "Defektes Produkt", text: "Das Produkt, das ich erhalten habe, ist defekt oder beschädigt. Es funktioniert nicht wie beschrieben oder erwartet." },
+  { value: "not_as_described", label: "Nicht wie beschrieben", text: "Das Produkt entspricht nicht der Beschreibung oder den Bildern in der Anzeige." },
+  { value: "wrong_item", label: "Falscher Artikel erhalten", text: "Ich habe einen anderen Artikel erhalten als den, den ich bestellt habe." },
+  { value: "missing_parts", label: "Fehlende Teile", text: "Dem Produkt fehlen wesentliche Teile oder Zubehör, die enthalten sein sollten." },
+  { value: "delivery_issues", label: "Lieferprobleme", text: "Es gab Probleme mit der Lieferung meiner Bestellung (verzögert, beim Versand beschädigt, etc.)." },
+  { value: "quality_issues", label: "Qualitätsprobleme", text: "Die Qualität des Produkts ist deutlich niedriger als erwartet basierend auf der Beschreibung und dem Preis." },
+  { value: "seller_communication", label: "Verkäufer-Kommunikation", text: "Der Verkäufer antwortet nicht auf meine Nachrichten oder weigert sich, das Problem zu lösen." },
+  { value: "refund_request", label: "Erstattungsanfrage", text: "Ich möchte aufgrund der beschriebenen Probleme eine Rückerstattung für diese Bestellung beantragen." },
+  { value: "not_received", label: "Nicht erhalten", text: "Ich habe das Produkt/die digitale Ware nicht erhalten." },
+  { value: "custom", label: "Sonstiges", text: "" }
 ];
 
 export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: DisputeModalProps) {
@@ -92,8 +93,8 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
   const createDispute = async () => {
     if (!orderId || !reason.trim()) {
       toast({
-        title: "Error",
-        description: "Please provide a reason for the dispute",
+        title: "Fehler",
+        description: "Bitte gib einen Grund für den Dispute an",
         variant: "destructive",
       });
       return;
@@ -143,8 +144,8 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
       if (error) throw error;
 
       toast({
-        title: "Dispute Created",
-        description: "Your dispute has been submitted and will be reviewed by our team.",
+        title: "Dispute erstellt",
+        description: "Dein Dispute wurde eingereicht und wird von unserem Team geprüft.",
       });
 
       setReason("");
@@ -154,8 +155,8 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
     } catch (error) {
       console.error('Error creating dispute:', error);
       toast({
-        title: "Error",
-        description: "Failed to create dispute. Please try again.",
+        title: "Fehler",
+        description: "Dispute konnte nicht erstellt werden. Bitte versuche es erneut.",
         variant: "destructive",
       });
     } finally {
@@ -181,8 +182,8 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
       
       if (!isValidType) {
         toast({
-          title: "Invalid file type",
-          description: "Only images and PDF files are allowed",
+          title: "Ungültiger Dateityp",
+          description: "Nur Bilder und PDF-Dateien sind erlaubt",
           variant: "destructive",
         });
         return false;
@@ -190,8 +191,8 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
       
       if (!isValidSize) {
         toast({
-          title: "File too large",
-          description: "Files must be smaller than 5MB",
+          title: "Datei zu groß",
+          description: "Dateien müssen kleiner als 5MB sein",
           variant: "destructive",
         });
         return false;
@@ -253,8 +254,8 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
+        title: "Fehler",
+        description: "Nachricht konnte nicht gesendet werden. Bitte versuche es erneut.",
         variant: "destructive",
       });
     } finally {
@@ -294,7 +295,7 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
-            {existingDispute ? 'Dispute Details' : 'Create Dispute'}
+            {existingDispute ? 'Dispute-Details' : 'Dispute erstellen'}
           </DialogTitle>
         </DialogHeader>
 
@@ -312,20 +313,19 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <p><strong>Reason:</strong> {existingDispute.reason}</p>
-                  <p><strong>Priority:</strong> {existingDispute.priority}</p>
-                  <p><strong>Created:</strong> {new Date(existingDispute.created_at).toLocaleDateString()}</p>
+                  <p><strong>Grund:</strong> {existingDispute.reason}</p>
+                  <p><strong>Priorität:</strong> {existingDispute.priority}</p>
+                  <p><strong>Erstellt:</strong> {new Date(existingDispute.created_at).toLocaleDateString('de-DE')}</p>
                   {existingDispute.resolution && (
-                    <p><strong>Resolution:</strong> {existingDispute.resolution}</p>
+                    <p><strong>Lösung:</strong> {existingDispute.resolution}</p>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Messages */}
             <Card>
               <CardHeader>
-                <CardTitle>Messages</CardTitle>
+                <CardTitle>Nachrichten</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 max-h-96 overflow-y-auto">
                 {existingDispute.dispute_messages?.map((message) => (
@@ -339,10 +339,10 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
                   >
                     <div className="flex items-center justify-between mb-2">
                       <Badge variant={message.is_admin ? 'default' : 'outline'}>
-                        {message.is_admin ? 'Admin' : 'User'}
+                        {message.is_admin ? 'Admin' : 'Benutzer'}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(message.created_at).toLocaleString()}
+                        {new Date(message.created_at).toLocaleString('de-DE')}
                       </span>
                     </div>
                     <p className="text-sm">{message.message}</p>
@@ -351,16 +351,15 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
               </CardContent>
             </Card>
 
-            {/* Send new message */}
             {existingDispute.status !== 'closed' && existingDispute.status !== 'resolved' && (
               <div className="space-y-2">
                 <Textarea
-                  placeholder="Type your message..."
+                  placeholder="Schreibe deine Nachricht..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                 />
                 <Button onClick={sendMessage} disabled={loading || !newMessage.trim()}>
-                  Send Message
+                  Nachricht senden
                 </Button>
               </div>
             )}
@@ -369,15 +368,15 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
           <div className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground mb-4">
-                Create a dispute for order #{orderId?.slice(0, 8)} if you're experiencing issues with your purchase.
+                Erstelle einen Dispute für Bestellung #{orderId?.slice(0, 8)}, wenn du Probleme mit deinem Kauf hast.
               </p>
               
               {/* Template Selector */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Choose a Reason Template (Optional)</label>
+                <label className="text-sm font-medium">Wähle eine Vorlage (Optional)</label>
                 <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a common dispute reason..." />
+                    <SelectValue placeholder="Wähle einen häufigen Dispute-Grund..." />
                   </SelectTrigger>
                   <SelectContent>
                     {DISPUTE_TEMPLATES.map((template) => (
@@ -390,10 +389,10 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
               </div>
               
               {/* Reason Text Area */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Reason for Dispute</label>
+              <div className="space-y-2 mt-4">
+                <label className="text-sm font-medium">Grund für den Dispute</label>
                 <Textarea
-                  placeholder="Please describe the issue in detail..."
+                  placeholder="Bitte beschreibe das Problem ausführlich..."
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   rows={4}
@@ -401,10 +400,10 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
               </div>
 
               {/* Evidence Upload Section */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Upload Evidence (Optional)</label>
+              <div className="space-y-2 mt-4">
+                <label className="text-sm font-medium">Beweise hochladen (Optional)</label>
                 <p className="text-xs text-muted-foreground">
-                  Upload photos, screenshots, or PDF documents to support your dispute (max 5MB per file)
+                  Lade Fotos, Screenshots oder PDF-Dokumente hoch, um deinen Dispute zu unterstützen (max. 5MB pro Datei)
                 </p>
                 
                 <input
@@ -423,13 +422,13 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
                   className="w-full"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  Select Files
+                  Dateien auswählen
                 </Button>
 
                 {/* Display Selected Files */}
                 {evidenceFiles.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Selected Files:</p>
+                    <p className="text-sm font-medium">Ausgewählte Dateien:</p>
                     {evidenceFiles.map((file, index) => (
                       <div key={index} className="flex items-center justify-between p-2 bg-muted rounded border">
                         <div className="flex items-center gap-2">
@@ -456,10 +455,10 @@ export function DisputeModal({ open, onOpenChange, orderId, orderDetails }: Disp
 
             <div className="flex gap-2">
               <Button onClick={createDispute} disabled={loading || !reason.trim()}>
-                {loading ? 'Creating...' : 'Create Dispute'}
+                {loading ? 'Wird erstellt...' : 'Dispute erstellen'}
               </Button>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                Abbrechen
               </Button>
             </div>
           </div>
