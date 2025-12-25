@@ -100,11 +100,15 @@ serve(async (req) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error("Server-Konfiguration fehlt (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)");
+    }
+
     // Create admin client for database operations
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    );
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
     // Get authorization header - can come from multiple sources
     const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
@@ -216,25 +220,31 @@ serve(async (req) => {
         // Refund buyer full amount, no fees collected
         await incrementWallet(supabaseAdmin, buyerId, currency, Number(holding.amount_crypto));
 
-        await supabaseAdmin
-          .from("escrow_holdings")
-          .update({
-            status: "refunded",
-            released_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", holding.id);
+        {
+          const { error: escrowUpdateError } = await supabaseAdmin
+            .from("escrow_holdings")
+            .update({
+              status: "refunded",
+              released_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", holding.id);
+          if (escrowUpdateError) throw escrowUpdateError;
+        }
 
-        await supabaseAdmin.from("transactions").insert({
-          user_id: buyerId,
-          type: "refund",
-          amount_eur: holding.amount_eur,
-          amount_btc: String(currency).toLowerCase() === "btc" ? holding.amount_crypto : 0,
-          status: "completed",
-          description: `Dispute-Rückerstattung #${String(dispute.order_id).slice(0, 8)} (${currency.toUpperCase()})`,
-          transaction_direction: "incoming",
-          related_order_id: dispute.order_id,
-        });
+        {
+          const { error: txError } = await supabaseAdmin.from("transactions").insert({
+            user_id: buyerId,
+            type: "refund",
+            amount_eur: Number(holding.amount_eur),
+            amount_btc: String(currency).toLowerCase() === "btc" ? Number(holding.amount_crypto) : 0,
+            status: "confirmed",
+            description: `Dispute-Rückerstattung #${String(dispute.order_id).slice(0, 8)} (${currency.toUpperCase()})`,
+            transaction_direction: "incoming",
+            related_order_id: dispute.order_id,
+          });
+          if (txError) throw txError;
+        }
       }
 
       if (resolutionType === "seller_favor") {
@@ -242,49 +252,61 @@ serve(async (req) => {
         await incrementWallet(supabaseAdmin, sellerId, currency, Number(holding.seller_amount_crypto));
 
         // Admin fee address + transaction
-        const { data: feeAddress } = await supabaseAdmin
+        const { data: feeAddress, error: feeAddressError } = await supabaseAdmin
           .from("admin_fee_addresses")
           .select("*")
           .eq("admin_user_id", ADMIN_USER_ID)
           .eq("currency", currency.toUpperCase())
           .maybeSingle();
 
+        if (feeAddressError) throw feeAddressError;
+
         if (feeAddress) {
-          await supabaseAdmin
+          const { error: feeAddrUpdateError } = await supabaseAdmin
             .from("admin_fee_addresses")
             .update({ balance: Number(feeAddress.balance) + Number(holding.fee_amount_crypto) })
             .eq("id", feeAddress.id);
+          if (feeAddrUpdateError) throw feeAddrUpdateError;
         }
 
-        await supabaseAdmin.from("admin_fee_transactions").insert({
-          escrow_holding_id: holding.id,
-          order_id: dispute.order_id,
-          amount_eur: holding.fee_amount_eur,
-          amount_crypto: holding.fee_amount_crypto,
-          currency: currency.toUpperCase(),
-          transaction_type: "fee_collected",
-          status: "completed",
-        });
+        {
+          const { error: feeTxError } = await supabaseAdmin.from("admin_fee_transactions").insert({
+            escrow_holding_id: holding.id,
+            order_id: dispute.order_id,
+            amount_eur: Number(holding.fee_amount_eur),
+            amount_crypto: Number(holding.fee_amount_crypto),
+            currency: currency.toUpperCase(),
+            transaction_type: "fee_collected",
+            status: "completed",
+          });
+          if (feeTxError) throw feeTxError;
+        }
 
-        await supabaseAdmin
-          .from("escrow_holdings")
-          .update({
-            status: "released",
-            released_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", holding.id);
+        {
+          const { error: escrowUpdateError } = await supabaseAdmin
+            .from("escrow_holdings")
+            .update({
+              status: "released",
+              released_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", holding.id);
+          if (escrowUpdateError) throw escrowUpdateError;
+        }
 
-        await supabaseAdmin.from("transactions").insert({
-          user_id: sellerId,
-          type: "sale",
-          amount_eur: holding.seller_amount_eur,
-          amount_btc: String(currency).toLowerCase() === "btc" ? holding.seller_amount_crypto : 0,
-          status: "confirmed",
-          description: `Sale #${String(dispute.order_id).slice(0, 8)} (${currency.toUpperCase()}) - Dispute entschieden`,
-          transaction_direction: "incoming",
-          related_order_id: dispute.order_id,
-        });
+        {
+          const { error: saleTxError } = await supabaseAdmin.from("transactions").insert({
+            user_id: sellerId,
+            type: "sale",
+            amount_eur: Number(holding.seller_amount_eur),
+            amount_btc: String(currency).toLowerCase() === "btc" ? Number(holding.seller_amount_crypto) : 0,
+            status: "confirmed",
+            description: `Sale #${String(dispute.order_id).slice(0, 8)} (${currency.toUpperCase()}) - Dispute entschieden`,
+            transaction_direction: "incoming",
+            related_order_id: dispute.order_id,
+          });
+          if (saleTxError) throw saleTxError;
+        }
       }
 
       if (resolutionType === "partial") {
@@ -307,21 +329,22 @@ serve(async (req) => {
 
         if (buyerRefundCrypto > 0) {
           await incrementWallet(supabaseAdmin, buyerId, currency, buyerRefundCrypto);
-          await supabaseAdmin.from("transactions").insert({
+          const { error: refundTxError } = await supabaseAdmin.from("transactions").insert({
             user_id: buyerId,
             type: "refund",
             amount_eur: (amountEur * buyerPercent) / 100,
             amount_btc: String(currency).toLowerCase() === "btc" ? buyerRefundCrypto : 0,
-            status: "completed",
+            status: "confirmed",
             description: `Teilweise Dispute-Rückerstattung (${buyerPercent}%) #${String(dispute.order_id).slice(0, 8)} (${currency.toUpperCase()})`,
             transaction_direction: "incoming",
             related_order_id: dispute.order_id,
           });
+          if (refundTxError) throw refundTxError;
         }
 
         if (sellerNetCrypto > 0) {
           await incrementWallet(supabaseAdmin, sellerId, currency, sellerNetCrypto);
-          await supabaseAdmin.from("transactions").insert({
+          const { error: saleTxError } = await supabaseAdmin.from("transactions").insert({
             user_id: sellerId,
             type: "sale",
             amount_eur: (amountEur * sellerPercent) / 100 - feeEur,
@@ -331,24 +354,28 @@ serve(async (req) => {
             transaction_direction: "incoming",
             related_order_id: dispute.order_id,
           });
+          if (saleTxError) throw saleTxError;
         }
 
         if (feeCrypto > 0) {
-          const { data: feeAddress } = await supabaseAdmin
+          const { data: feeAddress, error: feeAddressError } = await supabaseAdmin
             .from("admin_fee_addresses")
             .select("*")
             .eq("admin_user_id", ADMIN_USER_ID)
             .eq("currency", currency.toUpperCase())
             .maybeSingle();
 
+          if (feeAddressError) throw feeAddressError;
+
           if (feeAddress) {
-            await supabaseAdmin
+            const { error: feeAddrUpdateError } = await supabaseAdmin
               .from("admin_fee_addresses")
               .update({ balance: Number(feeAddress.balance) + feeCrypto })
               .eq("id", feeAddress.id);
+            if (feeAddrUpdateError) throw feeAddrUpdateError;
           }
 
-          await supabaseAdmin.from("admin_fee_transactions").insert({
+          const { error: feeTxError } = await supabaseAdmin.from("admin_fee_transactions").insert({
             escrow_holding_id: holding.id,
             order_id: dispute.order_id,
             amount_eur: feeEur,
@@ -357,16 +384,20 @@ serve(async (req) => {
             transaction_type: "fee_collected",
             status: "completed",
           });
+          if (feeTxError) throw feeTxError;
         }
 
-        await supabaseAdmin
-          .from("escrow_holdings")
-          .update({
-            status: "partial_refund",
-            released_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", holding.id);
+        {
+          const { error: escrowUpdateError } = await supabaseAdmin
+            .from("escrow_holdings")
+            .update({
+              status: "partial_refund",
+              released_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", holding.id);
+          if (escrowUpdateError) throw escrowUpdateError;
+        }
       }
     }
 
@@ -378,10 +409,13 @@ serve(async (req) => {
           ? "released"
           : "partial_refund";
 
-    await supabaseAdmin
-      .from("orders")
-      .update({ escrow_status: nextEscrowStatus })
-      .eq("id", dispute.order_id);
+    {
+      const { error: orderUpdateError } = await supabaseAdmin
+        .from("orders")
+        .update({ escrow_status: nextEscrowStatus })
+        .eq("id", dispute.order_id);
+      if (orderUpdateError) throw orderUpdateError;
+    }
 
     // Update dispute record (single source of truth)
     const { error: updateDisputeError } = await supabaseAdmin

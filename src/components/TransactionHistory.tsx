@@ -49,6 +49,28 @@ export function TransactionHistory() {
 
   useEffect(() => {
     fetchTransactions();
+
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`transactions:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchTransactions();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   if (loading) {
@@ -108,15 +130,16 @@ export function TransactionHistory() {
               };
 
               // Translate type
-              const getTypeLabel = (type: string) => {
-                switch (type) {
-                  case 'deposit': return 'Einzahlung';
-                  case 'purchase': return 'Kauf';
-                  case 'sale': return 'Verkauf';
-                  case 'withdrawal': return 'Auszahlung';
-                  default: return type;
-                }
-              };
+               const getTypeLabel = (type: string) => {
+                 switch (type) {
+                   case 'deposit': return 'Einzahlung';
+                   case 'purchase': return 'Kauf';
+                   case 'sale': return 'Verkauf';
+                   case 'refund': return 'Erstattung';
+                   case 'withdrawal': return 'Auszahlung';
+                   default: return type;
+                 }
+               };
 
               return (
                 <div key={transaction.id} className="border rounded-lg p-3">
