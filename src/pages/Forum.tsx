@@ -109,11 +109,11 @@ const Forum: React.FC = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center">
+        <div className="container flex h-14 items-center px-3 sm:px-6">
           <Button variant="ghost" size="icon" onClick={() => navigate('/marketplace')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold ml-2">Forum</h1>
+          <h1 className="text-lg sm:text-xl font-bold ml-2">Forum</h1>
           <div className="ml-auto flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={loadPosts}>
               <RefreshCw className="h-4 w-4" />
@@ -123,10 +123,46 @@ const Forum: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <div className="container py-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar */}
-          <aside className="lg:w-64 shrink-0">
+      <div className="container py-4 sm:py-6 px-3 sm:px-6">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+          {/* Mobile: Create Post Button & Categories */}
+          <div className="lg:hidden space-y-3">
+            {user && (
+              <Button 
+                className="w-full" 
+                size="default"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <span className="mr-2">+</span>
+                Post erstellen
+              </Button>
+            )}
+            {/* Mobile Category Scroll */}
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-3 px-3 scrollbar-hide">
+              <Button
+                variant={selectedCategory === null ? "default" : "outline"}
+                size="sm"
+                className="shrink-0"
+                onClick={() => setSelectedCategory(null)}
+              >
+                Alle
+              </Button>
+              {categories.map(category => (
+                <Button
+                  key={category.id}
+                  variant={selectedCategory === category.id ? "default" : "outline"}
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => setSelectedCategory(category.id)}
+                >
+                  {category.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Desktop Sidebar */}
+          <aside className="hidden lg:block lg:w-64 shrink-0">
             <ForumSidebar
               categories={categories}
               selectedCategory={selectedCategory}
@@ -137,35 +173,35 @@ const Forum: React.FC = () => {
           </aside>
 
           {/* Posts Feed */}
-          <main className="flex-1">
+          <main className="flex-1 min-w-0">
             {/* Sort Tabs */}
             <Tabs value={sortBy} onValueChange={(v) => setSortBy(v as any)} className="mb-4">
-              <TabsList>
-                <TabsTrigger value="hot" className="gap-1">
-                  <Flame className="h-4 w-4" />
-                  Hot
+              <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex">
+                <TabsTrigger value="hot" className="gap-1 text-xs sm:text-sm">
+                  <Flame className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Hot</span>
                 </TabsTrigger>
-                <TabsTrigger value="new" className="gap-1">
-                  <Clock className="h-4 w-4" />
-                  Neu
+                <TabsTrigger value="new" className="gap-1 text-xs sm:text-sm">
+                  <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Neu</span>
                 </TabsTrigger>
-                <TabsTrigger value="top" className="gap-1">
-                  <TrendingUp className="h-4 w-4" />
-                  Top
+                <TabsTrigger value="top" className="gap-1 text-xs sm:text-sm">
+                  <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Top</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
 
             {/* Posts List */}
             {loading ? (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-32 w-full" />
+                  <Skeleton key={i} className="h-28 sm:h-32 w-full" />
                 ))}
               </div>
             ) : posts.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">Keine Posts gefunden.</p>
+              <div className="text-center py-8 sm:py-12">
+                <p className="text-muted-foreground text-sm sm:text-base">Keine Posts gefunden.</p>
                 {user && (
                   <Button 
                     className="mt-4"
@@ -176,7 +212,7 @@ const Forum: React.FC = () => {
                 )}
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {posts.map(post => (
                   <ForumPostCard
                     key={post.id}

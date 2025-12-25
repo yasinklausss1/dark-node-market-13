@@ -67,10 +67,10 @@ const CommentItem: React.FC<CommentProps> = ({
   }
 
   return (
-    <div className={cn("relative", depth > 0 && "ml-4 pl-4 border-l-2 border-border/50")}>
-      <div className="py-2">
+    <div className={cn("relative", depth > 0 && "ml-2 sm:ml-4 pl-2 sm:pl-4 border-l-2 border-border/50")}>
+      <div className="py-1.5 sm:py-2">
         {/* Header */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+        <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground mb-1 flex-wrap">
           <button 
             onClick={() => setCollapsed(!collapsed)}
             className="hover:text-foreground"
@@ -81,29 +81,30 @@ const CommentItem: React.FC<CommentProps> = ({
             className="flex items-center gap-1 hover:underline"
             onClick={() => comment.author && setProfileModalOpen(true)}
           >
-            <Avatar className="h-5 w-5">
+            <Avatar className="h-4 w-4 sm:h-5 sm:w-5">
               <AvatarImage src={comment.author?.profile_picture_url || ''} />
-              <AvatarFallback className="text-[10px]">
+              <AvatarFallback className="text-[8px] sm:text-[10px]">
                 {comment.author?.username?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <span className="font-medium text-foreground hover:text-primary transition-colors">
+            <span className="font-medium text-foreground hover:text-primary transition-colors truncate max-w-[100px] sm:max-w-none">
               {comment.author?.username || '[Gelöscht]'}
             </span>
             {comment.author?.is_verified && (
-              <BadgeCheck className="h-3 w-3 text-primary" />
+              <BadgeCheck className="h-3 w-3 text-primary shrink-0" />
             )}
             {comment.author?.role === 'seller' && (
-              <Badge variant="outline" className="text-[10px] px-1 py-0">Seller</Badge>
+              <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 py-0 hidden sm:inline-flex">Seller</Badge>
             )}
             {comment.author?.role === 'admin' && (
-              <Badge className="text-[10px] px-1 py-0 bg-red-500">Admin</Badge>
+              <Badge className="text-[9px] sm:text-[10px] px-1 py-0 bg-red-500">Admin</Badge>
             )}
           </button>
-          <span>•</span>
-          <span>{timeAgo}</span>
-          <span>•</span>
+          <span className="hidden xs:inline">•</span>
+          <span className="hidden xs:inline">{timeAgo}</span>
+          <span className="hidden sm:inline">•</span>
           <span className={cn(
+            "hidden sm:inline",
             score > 0 && "text-orange-500",
             score < 0 && "text-blue-500"
           )}>
@@ -115,15 +116,27 @@ const CommentItem: React.FC<CommentProps> = ({
           <>
             {/* Content */}
             <div className={cn(
-              "text-sm pl-6",
+              "text-xs sm:text-sm pl-4 sm:pl-6",
               comment.is_deleted && "italic text-muted-foreground"
             )}>
               {comment.content}
             </div>
 
+            {/* Mobile: Show time and score under content */}
+            <div className="flex items-center gap-2 pl-4 sm:hidden text-[10px] text-muted-foreground mt-1">
+              <span>{timeAgo}</span>
+              <span>•</span>
+              <span className={cn(
+                score > 0 && "text-orange-500",
+                score < 0 && "text-blue-500"
+              )}>
+                {score} Punkte
+              </span>
+            </div>
+
             {/* Actions */}
             {!comment.is_deleted && (
-              <div className="flex items-center gap-2 mt-1 pl-6">
+              <div className="flex items-center gap-1 sm:gap-2 mt-1 pl-4 sm:pl-6">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -133,7 +146,7 @@ const CommentItem: React.FC<CommentProps> = ({
                   )}
                   onClick={() => onVote(comment.id, 'up')}
                 >
-                  <ArrowBigUp className="h-4 w-4" />
+                  <ArrowBigUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -144,32 +157,32 @@ const CommentItem: React.FC<CommentProps> = ({
                   )}
                   onClick={() => onVote(comment.id, 'down')}
                 >
-                  <ArrowBigDown className="h-4 w-4" />
+                  <ArrowBigDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
                 {!isLocked && user && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 text-xs"
+                    className="h-6 text-[10px] sm:text-xs px-1 sm:px-2"
                     onClick={() => setShowReplyForm(!showReplyForm)}
                   >
-                    <MessageSquare className="h-3 w-3 mr-1" />
-                    Antworten
+                    <MessageSquare className="h-3 w-3 mr-0.5 sm:mr-1" />
+                    <span className="hidden xs:inline">Antworten</span>
                   </Button>
                 )}
                 {(isAuthor || isAdmin) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-6 px-1">
-                        <MoreHorizontal className="h-4 w-4" />
+                        <MoreHorizontal className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                       <DropdownMenuItem 
-                        className="text-red-500"
+                        className="text-red-500 text-xs sm:text-sm"
                         onClick={() => onDelete(comment.id)}
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
+                        <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
                         Löschen
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -180,21 +193,22 @@ const CommentItem: React.FC<CommentProps> = ({
 
             {/* Reply form */}
             {showReplyForm && (
-              <div className="mt-2 pl-6 space-y-2">
+              <div className="mt-2 pl-4 sm:pl-6 space-y-2">
                 <Textarea
                   placeholder="Schreibe eine Antwort..."
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
-                  className="min-h-[80px]"
+                  className="min-h-[60px] sm:min-h-[80px] text-sm"
                 />
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={handleReply}>
+                  <Button size="sm" onClick={handleReply} className="text-xs sm:text-sm">
                     Antworten
                   </Button>
                   <Button 
                     size="sm" 
                     variant="ghost" 
                     onClick={() => setShowReplyForm(false)}
+                    className="text-xs sm:text-sm"
                   >
                     Abbrechen
                   </Button>
@@ -263,7 +277,7 @@ export const ForumCommentSection: React.FC<ForumCommentSectionProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* New comment form */}
       {user && !isLocked && (
         <div className="space-y-2">
@@ -271,22 +285,22 @@ export const ForumCommentSection: React.FC<ForumCommentSectionProps> = ({
             placeholder="Was denkst du?"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            className="min-h-[100px]"
+            className="min-h-[80px] sm:min-h-[100px] text-sm"
           />
-          <Button onClick={handleSubmit} disabled={!newComment.trim()}>
+          <Button onClick={handleSubmit} disabled={!newComment.trim()} size="sm" className="sm:size-default">
             Kommentieren
           </Button>
         </div>
       )}
 
       {isLocked && (
-        <div className="p-4 rounded-lg bg-muted/50 text-center text-muted-foreground">
+        <div className="p-3 sm:p-4 rounded-lg bg-muted/50 text-center text-muted-foreground text-sm">
           Dieser Thread ist gesperrt. Neue Kommentare sind nicht möglich.
         </div>
       )}
 
       {!user && (
-        <div className="p-4 rounded-lg bg-muted/50 text-center text-muted-foreground">
+        <div className="p-3 sm:p-4 rounded-lg bg-muted/50 text-center text-muted-foreground text-sm">
           Melde dich an, um zu kommentieren.
         </div>
       )}
@@ -294,7 +308,7 @@ export const ForumCommentSection: React.FC<ForumCommentSectionProps> = ({
       {/* Comments list */}
       <div className="space-y-1">
         {comments.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">
+          <p className="text-center text-muted-foreground py-6 sm:py-8 text-sm">
             Noch keine Kommentare. Sei der Erste!
           </p>
         ) : (

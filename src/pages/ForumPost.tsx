@@ -196,15 +196,15 @@ const ForumPost: React.FC = () => {
     return (
       <div className="min-h-screen bg-background">
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-          <div className="container flex h-14 items-center">
+          <div className="container flex h-14 items-center px-3 sm:px-6">
             <Button variant="ghost" size="icon" onClick={() => navigate('/forum')}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <Skeleton className="h-6 w-48 ml-2" />
+            <Skeleton className="h-6 w-32 sm:w-48 ml-2" />
           </div>
         </header>
-        <div className="container py-6 max-w-4xl">
-          <Skeleton className="h-64 w-full" />
+        <div className="container py-4 sm:py-6 px-3 sm:px-6 max-w-4xl">
+          <Skeleton className="h-48 sm:h-64 w-full" />
         </div>
       </div>
     );
@@ -212,9 +212,9 @@ const ForumPost: React.FC = () => {
 
   if (!post) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">Post nicht gefunden.</p>
+          <p className="text-muted-foreground mb-4 text-sm sm:text-base">Post nicht gefunden.</p>
           <Button onClick={() => navigate('/forum')}>Zurück zum Forum</Button>
         </div>
       </div>
@@ -229,36 +229,36 @@ const ForumPost: React.FC = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-        <div className="container flex h-14 items-center">
+        <div className="container flex h-14 items-center px-3 sm:px-6">
           <Button variant="ghost" size="icon" onClick={() => navigate('/forum')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <span className="text-sm text-muted-foreground ml-2 truncate">
+          <span className="text-xs sm:text-sm text-muted-foreground ml-2 truncate">
             {post.category?.name}
           </span>
         </div>
       </header>
 
       {/* Post Content */}
-      <div className="container py-6 max-w-4xl">
+      <div className="container py-4 sm:py-6 px-3 sm:px-6 max-w-4xl">
         <Card>
-          <CardHeader className="pb-2">
-            <div className="flex gap-4">
+          <CardHeader className="pb-2 p-3 sm:p-6">
+            <div className="flex gap-2 sm:gap-4">
               {/* Vote buttons */}
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-0.5 sm:gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "h-10 w-10 rounded-full",
+                    "h-8 w-8 sm:h-10 sm:w-10 rounded-full",
                     post.user_vote === 'up' && "text-orange-500 bg-orange-500/10"
                   )}
                   onClick={() => handleVotePost('up')}
                 >
-                  <ArrowBigUp className="h-6 w-6" />
+                  <ArrowBigUp className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
                 <span className={cn(
-                  "text-lg font-bold",
+                  "text-base sm:text-lg font-bold",
                   score > 0 && "text-orange-500",
                   score < 0 && "text-blue-500"
                 )}>
@@ -268,71 +268,71 @@ const ForumPost: React.FC = () => {
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "h-10 w-10 rounded-full",
+                    "h-8 w-8 sm:h-10 sm:w-10 rounded-full",
                     post.user_vote === 'down' && "text-blue-500 bg-blue-500/10"
                   )}
                   onClick={() => handleVotePost('down')}
                 >
-                  <ArrowBigDown className="h-6 w-6" />
+                  <ArrowBigDown className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
               </div>
 
               {/* Content */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 {/* Meta info */}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
                   <Badge 
                     variant="secondary" 
+                    className="text-[10px] sm:text-xs"
                     style={{ backgroundColor: `${post.category?.color}20`, color: post.category?.color }}
                   >
                     {post.category?.name}
                   </Badge>
-                  <span>•</span>
+                  <span className="hidden xs:inline">•</span>
                   <button 
                     className="flex items-center gap-1 hover:underline"
                     onClick={() => setProfileModalOpen(true)}
                   >
-                    <Avatar className="h-5 w-5">
+                    <Avatar className="h-4 w-4 sm:h-5 sm:w-5">
                       <AvatarImage src={post.author?.profile_picture_url || ''} />
-                      <AvatarFallback className="text-[10px]">
+                      <AvatarFallback className="text-[8px] sm:text-[10px]">
                         {post.author?.username?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="font-medium text-foreground hover:text-primary transition-colors">
+                    <span className="font-medium text-foreground hover:text-primary transition-colors truncate max-w-[100px] sm:max-w-none">
                       {post.author?.username}
                     </span>
                     {post.author?.is_verified && (
-                      <BadgeCheck className="h-3 w-3 text-primary" />
+                      <BadgeCheck className="h-3 w-3 text-primary shrink-0" />
                     )}
                   </button>
                   {post.author?.role === 'seller' && (
-                    <Badge variant="outline" className="text-[10px] px-1 py-0">Seller</Badge>
+                    <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 py-0 hidden sm:inline-flex">Seller</Badge>
                   )}
                   {post.author?.role === 'admin' && (
-                    <Badge className="text-[10px] px-1 py-0 bg-red-500">Admin</Badge>
+                    <Badge className="text-[9px] sm:text-[10px] px-1 py-0 bg-red-500">Admin</Badge>
                   )}
-                  <span>•</span>
-                  <span title={fullDate}>{timeAgo}</span>
+                  <span className="hidden xs:inline">•</span>
+                  <span className="hidden xs:inline" title={fullDate}>{timeAgo}</span>
                   {post.is_pinned && (
-                    <>
-                      <span>•</span>
-                      <Pin className="h-3 w-3 text-amber-500" />
-                      <span className="text-amber-500">Angepinnt</span>
-                    </>
+                    <Pin className="h-3 w-3 text-amber-500 shrink-0" />
                   )}
                   {post.is_locked && (
-                    <>
-                      <span>•</span>
-                      <Lock className="h-3 w-3 text-red-500" />
-                      <span className="text-red-500">Gesperrt</span>
-                    </>
+                    <Lock className="h-3 w-3 text-red-500 shrink-0" />
                   )}
                 </div>
 
+                {/* Mobile: time */}
+                <div className="xs:hidden text-[10px] text-muted-foreground mt-0.5">
+                  {timeAgo}
+                  {post.is_pinned && <span className="text-amber-500 ml-2">Angepinnt</span>}
+                  {post.is_locked && <span className="text-red-500 ml-2">Gesperrt</span>}
+                </div>
+
                 {/* Title */}
-                <h1 className="text-2xl font-bold mt-2">
+                <h1 className="text-lg sm:text-2xl font-bold mt-2">
                   {post.flair && (
-                    <Badge variant="outline" className="mr-2 text-sm">
+                    <Badge variant="outline" className="mr-1 sm:mr-2 text-[10px] sm:text-sm">
                       {post.flair}
                     </Badge>
                   )}
@@ -341,7 +341,7 @@ const ForumPost: React.FC = () => {
 
                 {/* Awards - grouped by type */}
                 {post.awards && post.awards.length > 0 && (
-                  <div className="flex gap-1.5 mt-2 flex-wrap">
+                  <div className="flex gap-1 sm:gap-1.5 mt-2 flex-wrap">
                     {Object.entries(
                       post.awards.reduce((acc, award) => {
                         acc[award.icon] = acc[award.icon] || { ...award, count: 0 };
@@ -351,10 +351,10 @@ const ForumPost: React.FC = () => {
                     ).map(([icon, { name, count }]) => (
                       <span 
                         key={icon} 
-                        className="text-lg bg-muted rounded px-2 py-0.5 flex items-center gap-1" 
+                        className="text-sm sm:text-lg bg-muted rounded px-1.5 sm:px-2 py-0.5 flex items-center gap-0.5 sm:gap-1" 
                         title={`${count}x ${name}`}
                       >
-                        {count > 1 && <span className="text-sm font-medium">{count}</span>}
+                        {count > 1 && <span className="text-xs sm:text-sm font-medium">{count}</span>}
                         {icon}
                       </span>
                     ))}
@@ -364,69 +364,69 @@ const ForumPost: React.FC = () => {
             </div>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
             {/* Post content */}
-            <div className="prose prose-sm dark:prose-invert max-w-none pl-14">
-              <p className="whitespace-pre-wrap">{post.content}</p>
+            <div className="prose prose-sm dark:prose-invert max-w-none pl-10 sm:pl-14">
+              <p className="whitespace-pre-wrap text-sm sm:text-base">{post.content}</p>
             </div>
 
             {/* Linked Product */}
             {post.linked_product && (
-              <div className="mt-4 ml-14 p-3 rounded-lg bg-muted/50 flex items-center gap-3">
-                <ShoppingBag className="h-5 w-5 text-primary" />
-                <div className="flex-1">
-                  <p className="font-medium">{post.linked_product.title}</p>
-                  <p className="text-sm text-muted-foreground">{post.linked_product.price}€</p>
+              <div className="mt-3 sm:mt-4 ml-10 sm:ml-14 p-2 sm:p-3 rounded-lg bg-muted/50 flex items-center gap-2 sm:gap-3">
+                <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm sm:text-base truncate">{post.linked_product.title}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{post.linked_product.price}€</p>
                 </div>
-                <Button size="sm" variant="outline" asChild>
+                <Button size="sm" variant="outline" asChild className="shrink-0 text-xs sm:text-sm">
                   <Link to={`/marketplace?product=${post.linked_product.id}`}>
-                    <ExternalLink className="h-4 w-4 mr-1" />
-                    Ansehen
+                    <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Ansehen</span>
                   </Link>
                 </Button>
               </div>
             )}
 
             {/* Actions */}
-            <div className="flex items-center gap-4 mt-6 pl-14 text-sm text-muted-foreground border-t pt-4">
-              <div className="flex items-center gap-1">
-                <Eye className="h-4 w-4" />
-                <span>{post.view_count} Aufrufe</span>
+            <div className="flex items-center gap-2 sm:gap-4 mt-4 sm:mt-6 pl-10 sm:pl-14 text-[10px] sm:text-sm text-muted-foreground border-t pt-3 sm:pt-4 flex-wrap">
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>{post.view_count}</span>
+                <span className="hidden sm:inline">Aufrufe</span>
               </div>
               <button 
                 onClick={handleSave}
                 className={cn(
-                  "flex items-center gap-1 hover:text-foreground transition-colors",
+                  "flex items-center gap-0.5 sm:gap-1 hover:text-foreground transition-colors",
                   post.is_saved && "text-primary"
                 )}
               >
-                <Bookmark className={cn("h-4 w-4", post.is_saved && "fill-current")} />
-                <span>{post.is_saved ? 'Gespeichert' : 'Speichern'}</span>
+                <Bookmark className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", post.is_saved && "fill-current")} />
+                <span className="hidden sm:inline">{post.is_saved ? 'Gespeichert' : 'Speichern'}</span>
               </button>
               {user && (
                 <button 
                   onClick={() => setShowAwardModal(true)}
-                  className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  className="flex items-center gap-0.5 sm:gap-1 hover:text-foreground transition-colors"
                 >
-                  <Award className="h-4 w-4" />
-                  <span>Award geben</span>
+                  <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Award geben</span>
                 </button>
               )}
               <button 
                 onClick={() => {
                   const url = `https://oracle-market.store/forum/post/${postId}`;
                   navigator.clipboard.writeText(url);
-                  // Show toast or visual feedback
                   const toast = document.createElement('div');
                   toast.textContent = 'Link kopiert!';
                   toast.className = 'fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-lg z-50 animate-in fade-in slide-in-from-bottom-2';
                   document.body.appendChild(toast);
                   setTimeout(() => toast.remove(), 2000);
                 }}
-                className="flex items-center gap-1 hover:text-foreground transition-colors"
+                className="flex items-center gap-0.5 sm:gap-1 hover:text-foreground transition-colors"
               >
-                <Share2 className="h-4 w-4" />
-                <span>Teilen</span>
+                <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Teilen</span>
               </button>
               
               {(isAuthor || isAdmin) && (
@@ -439,19 +439,19 @@ const ForumPost: React.FC = () => {
                   <DropdownMenuContent align="end">
                     {isAdmin && (
                       <>
-                        <DropdownMenuItem onClick={handlePin}>
-                          <Pin className="h-4 w-4 mr-2" />
+                        <DropdownMenuItem onClick={handlePin} className="text-xs sm:text-sm">
+                          <Pin className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
                           {post.is_pinned ? 'Nicht mehr anpinnen' : 'Anpinnen'}
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleLock}>
+                        <DropdownMenuItem onClick={handleLock} className="text-xs sm:text-sm">
                           {post.is_locked ? (
                             <>
-                              <Unlock className="h-4 w-4 mr-2" />
+                              <Unlock className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
                               Entsperren
                             </>
                           ) : (
                             <>
-                              <Lock className="h-4 w-4 mr-2" />
+                              <Lock className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
                               Sperren
                             </>
                           )}
@@ -460,10 +460,10 @@ const ForumPost: React.FC = () => {
                       </>
                     )}
                     <DropdownMenuItem 
-                      className="text-red-500"
+                      className="text-red-500 text-xs sm:text-sm"
                       onClick={handleDelete}
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
                       Löschen
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -474,8 +474,8 @@ const ForumPost: React.FC = () => {
         </Card>
 
         {/* Comments Section */}
-        <div className="mt-6">
-          <h2 className="text-lg font-semibold mb-4">
+        <div className="mt-4 sm:mt-6">
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
             {post.comment_count} {post.comment_count === 1 ? 'Kommentar' : 'Kommentare'}
           </h2>
           <ForumCommentSection
