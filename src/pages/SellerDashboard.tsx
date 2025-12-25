@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Edit, Package, User, Truck, CheckCircle, Plus } from 'lucide-react';
+import { Upload, Edit, Package, User, Truck, CheckCircle, Plus, AlertTriangle } from 'lucide-react';
 import { MultiFileUpload } from '@/components/ui/multi-file-upload';
 import EditProductModal from '@/components/EditProductModal';
 import OrderStatusModal from '@/components/OrderStatusModal';
@@ -24,6 +24,7 @@ import { ChatModal } from '@/components/ChatModal';
 import DigitalContentModal from '@/components/DigitalContentModal';
 import { FileText } from 'lucide-react';
 import SellerOwnProfilePanel from '@/components/SellerOwnProfilePanel';
+import { DisputeModal } from '@/components/DisputeModal';
 
 interface Product {
   id: string;
@@ -127,6 +128,10 @@ const SellerDashboard = () => {
     currentImages: string[];
     currentFiles: string[];
   } | null>(null);
+  
+  // Seller dispute modal state
+  const [sellerDisputeModalOpen, setSellerDisputeModalOpen] = useState(false);
+  const [sellerDisputeOrderId, setSellerDisputeOrderId] = useState<string | null>(null);
   
   // Get chat data
   const { conversations } = useChat();
@@ -1114,14 +1119,26 @@ const fetchOrders = async () => {
                           )}
 
                           {/* Update Status Button */}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-3"
-                            onClick={() => handleUpdateOrderStatus(order.id, order.order_status)}
-                          >
-                            Status aktualisieren
-                          </Button>
+                          <div className="flex gap-2 mt-3 flex-wrap">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUpdateOrderStatus(order.id, order.order_status)}
+                            >
+                              Status aktualisieren
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSellerDisputeOrderId(order.id);
+                                setSellerDisputeModalOpen(true);
+                              }}
+                            >
+                              <AlertTriangle className="h-4 w-4 mr-1" />
+                              Dispute
+                            </Button>
+                          </div>
                         </div>
                         
                         <div>
@@ -1205,6 +1222,14 @@ const fetchOrders = async () => {
             onContentSaved={fetchOrders}
           />
         )}
+
+        {/* Seller Dispute Modal */}
+        <DisputeModal
+          open={sellerDisputeModalOpen}
+          onOpenChange={setSellerDisputeModalOpen}
+          orderId={sellerDisputeOrderId || undefined}
+          isSeller={true}
+        />
       </div>
     </div>
   );
