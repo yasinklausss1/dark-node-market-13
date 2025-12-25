@@ -179,6 +179,17 @@ serve(async (req) => {
     if (disputeError) throw disputeError;
     if (!dispute) throw new Error("Dispute nicht gefunden");
 
+    // Check if dispute is already resolved
+    if (dispute.status === "resolved" || dispute.status === "dismissed") {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Dispute wurde bereits als '${dispute.status}' markiert.` 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      );
+    }
+
     const status = resolutionType === "dismissed" ? "dismissed" : "resolved";
     const resolutionText = `[${getResolutionLabel(resolutionType)}] ${resolutionNote}`;
 
@@ -202,15 +213,49 @@ serve(async (req) => {
       );
     }
 
-    // Fetch held escrow holdings for this order
-    const { data: holdings, error: holdingsError } = await supabaseAdmin
+    // Fetch escrow holdings for this order (check all statuses first)
+    const { data: allHoldings, error: allHoldingsError } = await supabaseAdmin
       .from("escrow_holdings")
       .select("*")
-      .eq("order_id", dispute.order_id)
-      .eq("status", "held");
+      .eq("order_id", dispute.order_id);
 
-    if (holdingsError) throw holdingsError;
-    if (!holdings || holdings.length === 0) {
+    if (allHoldingsError) throw allHoldingsError;
+
+    // Check if escrow was already processed
+    if (allHoldings && allHoldings.length > 0) {
+      const alreadyProcessed = allHoldings.every(h => h.status !== "held");
+      if (alreadyProcessed) {
+        // Escrow already processed - just update dispute status
+        console.log("Escrow already processed, just updating dispute status");
+        const { error: updateDisputeError } = await supabaseAdmin
+          .from("disputes")
+          .update({
+            status,
+            resolution: resolutionText,
+            resolved_at: new Date().toISOString(),
+            admin_assigned: userData.user.id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", disputeId);
+
+        if (updateDisputeError) throw updateDisputeError;
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            status, 
+            resolution: resolutionText,
+            note: "Escrow war bereits verarbeitet - nur Dispute-Status aktualisiert."
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+    // Filter to only 'held' escrows for processing
+    const holdings = allHoldings?.filter(h => h.status === "held") || [];
+    
+    if (holdings.length === 0) {
       throw new Error("Kein 'held' Escrow für diese Bestellung gefunden");
     }
 
