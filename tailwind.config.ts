@@ -120,7 +120,7 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'pulse-accent': 'pulse-accent 2s ease-in-out infinite',
         'float': 'float 3s ease-in-out infinite',
-        'marquee': 'marquee 30s linear infinite'
+        'marquee': 'marquee 15s linear infinite'
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
