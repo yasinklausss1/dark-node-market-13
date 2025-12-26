@@ -27,35 +27,15 @@ const ads: AdItem[] = [
 
 const TelegramAdBanner = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const hasMultipleAds = ads.length > 1;
 
   const goToNext = useCallback(() => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % ads.length);
-      setTimeout(() => setIsTransitioning(false), 500);
-    }, 300);
-  }, [isTransitioning]);
+    setCurrentIndex((prev) => (prev + 1) % ads.length);
+  }, []);
 
   const goToPrev = useCallback(() => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setCurrentIndex((prev) => (prev - 1 + ads.length) % ads.length);
-      setTimeout(() => setIsTransitioning(false), 500);
-    }, 300);
-  }, [isTransitioning]);
-
-  const goToIndex = useCallback((index: number) => {
-    if (isTransitioning || index === currentIndex) return;
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setCurrentIndex(index);
-      setTimeout(() => setIsTransitioning(false), 500);
-    }, 300);
-  }, [isTransitioning, currentIndex]);
+    setCurrentIndex((prev) => (prev - 1 + ads.length) % ads.length);
+  }, []);
 
   // Auto-scroll alle 10 Sekunden
   useEffect(() => {
@@ -65,41 +45,41 @@ const TelegramAdBanner = () => {
     return () => clearInterval(interval);
   }, [hasMultipleAds, goToNext]);
 
-  const currentAd = ads[currentIndex];
-
   return (
     <div className="mb-6 relative">
       {/* Werbung Container */}
       <div className="relative rounded-xl overflow-hidden border-2 border-white">
-        <a
-          href={currentAd.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block hover:opacity-95"
+        {/* Sliding Container */}
+        <div 
+          className="flex transition-transform duration-500 ease-in-out"
+          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
         >
-          {/* Content with fade transition */}
-          <div 
-            className={`transition-opacity duration-500 ease-in-out ${
-              isTransitioning ? 'opacity-0' : 'opacity-100'
-            }`}
-          >
-            {/* Trust Text Header */}
-            <div className="bg-black/70 backdrop-blur-sm px-4 py-3">
-              <p className="text-center text-xs md:text-sm text-white/90 leading-relaxed">
-                {currentAd.description}
-              </p>
-            </div>
+          {ads.map((ad) => (
+            <a
+              key={ad.id}
+              href={ad.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block hover:opacity-95 min-w-full flex-shrink-0"
+            >
+              {/* Trust Text Header */}
+              <div className="bg-black/70 backdrop-blur-sm px-4 py-3">
+                <p className="text-center text-xs md:text-sm text-white/90 leading-relaxed">
+                  {ad.description}
+                </p>
+              </div>
 
-            {/* Banner Image Container */}
-            <div className="bg-black w-full aspect-[16/5] flex items-center justify-center">
-              <img
-                src={currentAd.image}
-                alt="Werbung"
-                className="max-w-full max-h-full object-contain"
-              />
-            </div>
-          </div>
-        </a>
+              {/* Banner Image Container */}
+              <div className="bg-black w-full aspect-[16/5] flex items-center justify-center">
+                <img
+                  src={ad.image}
+                  alt="Werbung"
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
+            </a>
+          ))}
+        </div>
 
         {/* Werbung Badge */}
         <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 backdrop-blur-sm rounded text-[10px] text-white uppercase tracking-wider z-10">
@@ -140,7 +120,7 @@ const TelegramAdBanner = () => {
                 key={index}
                 onClick={(e) => {
                   e.preventDefault();
-                  goToIndex(index);
+                  setCurrentIndex(index);
                 }}
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
                   index === currentIndex
