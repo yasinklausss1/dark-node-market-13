@@ -26,6 +26,7 @@ import { ChatModal } from '@/components/ChatModal';
 import { OracleLogo } from '@/components/OracleLogo';
 import { ForumInline } from '@/components/forum/ForumInline';
 import { OnlineUsersMarquee } from '@/components/OnlineUsersMarquee';
+import TelegramAdBanner from '@/components/TelegramAdBanner';
 
 import { ConversationsModal } from '@/components/ConversationsModal';
 import { useChat } from '@/hooks/useChat';
@@ -682,6 +683,9 @@ const Marketplace = () => {
             element?.scrollIntoView({ behavior: 'smooth' });
           }}
         />
+
+        {/* Telegram Ad Banner */}
+        <TelegramAdBanner />
 
         {/* Escrow Trust Banner */}
         <EscrowTrustBanner />
