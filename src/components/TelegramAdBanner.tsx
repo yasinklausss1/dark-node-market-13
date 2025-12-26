@@ -59,12 +59,12 @@ const TelegramAdBanner = () => {
         rel="noopener noreferrer"
         className="block w-full"
       >
-        <div className="relative w-full aspect-[4/1] bg-black overflow-hidden">
+        <div className="relative w-full aspect-[4/1] bg-black overflow-hidden flex items-center justify-center">
           <img
             key={currentAd.id}
             src={currentAd.image}
             alt="Werbung"
-            className="w-full h-full object-cover animate-fade-in"
+            className="max-w-full max-h-full object-contain animate-fade-in"
           />
         </div>
       </a>
