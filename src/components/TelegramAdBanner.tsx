@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import telegramBanner from '@/assets/telegram-ad-banner.jpg';
+import telegramBanner2 from '@/assets/telegram-ad-banner-2.jpg';
 
 interface AdItem {
   id: string;
@@ -9,7 +10,6 @@ interface AdItem {
   description: string;
 }
 
-// Hier können weitere Werbungen hinzugefügt werden
 const ads: AdItem[] = [
   {
     id: '1',
@@ -17,13 +17,12 @@ const ads: AdItem[] = [
     link: 'https://t.me/+BJSbVCkJgloyYWI6',
     description: 'In dieser Gruppe sind nur zuverlässige und vertrauenswürdige Verkäufer vertreten, sodass ihr euch auf faire und sichere Geschäfte verlassen könnt.'
   },
-  // Weitere Werbungen hier hinzufügen:
-  // {
-  //   id: '2',
-  //   image: anotherBanner,
-  //   link: 'https://example.com',
-  //   description: 'Beschreibung der Werbung'
-  // },
+  {
+    id: '2',
+    image: telegramBanner2,
+    link: 'https://t.me/+S0FF6yqfO8U5MTcy',
+    description: 'BTW guys I also run a channel where I drop fresh accounts, streaming accounts, methods, and other useful stuff. If you want updates, drops, and exclusive things before anyone else — make sure you join.'
+  },
 ];
 
 const TelegramAdBanner = () => {
