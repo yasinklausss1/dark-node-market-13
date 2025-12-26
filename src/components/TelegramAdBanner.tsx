@@ -45,48 +45,45 @@ const TelegramAdBanner = () => {
     return () => clearInterval(interval);
   }, [hasMultipleAds, goToNext]);
 
+  const currentAd = ads[currentIndex];
+
   return (
     <div className="mb-6 relative">
       {/* Werbung Container */}
       <div className="relative rounded-xl overflow-hidden border-2 border-white">
-        {/* Sliding Container */}
-        <div 
-          className="flex transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+        <a
+          href={currentAd.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block"
         >
-          {ads.map((ad) => (
-            <a
-              key={ad.id}
-              href={ad.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block hover:opacity-95 min-w-full flex-shrink-0"
+          {/* Trust Text Header - fixed height */}
+          <div className="bg-black/70 backdrop-blur-sm px-4 py-3">
+            <p 
+              key={currentAd.id + '-text'}
+              className="text-center text-xs md:text-sm text-white/90 leading-relaxed animate-fade-in"
             >
-              {/* Trust Text Header */}
-              <div className="bg-black/70 backdrop-blur-sm px-4 py-3">
-                <p className="text-center text-xs md:text-sm text-white/90 leading-relaxed">
-                  {ad.description}
-                </p>
-              </div>
+              {currentAd.description}
+            </p>
+          </div>
 
-              {/* Banner Image Container */}
-              <div className="bg-black w-full aspect-[16/5] flex items-center justify-center">
-                <img
-                  src={ad.image}
-                  alt="Werbung"
-                  className="max-w-full max-h-full object-contain"
-                />
-              </div>
-            </a>
-          ))}
-        </div>
+          {/* Banner Image Container - fixed aspect ratio */}
+          <div className="bg-black w-full aspect-[16/6] relative overflow-hidden">
+            <img
+              key={currentAd.id + '-img'}
+              src={currentAd.image}
+              alt="Werbung"
+              className="absolute inset-0 w-full h-full object-contain animate-fade-in"
+            />
+          </div>
+        </a>
 
         {/* Werbung Badge */}
         <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 backdrop-blur-sm rounded text-[10px] text-white uppercase tracking-wider z-10">
           Werbung
         </div>
 
-        {/* Navigation Arrows - nur bei mehreren Werbungen */}
+        {/* Navigation Arrows */}
         {hasMultipleAds && (
           <>
             <button
@@ -112,7 +109,7 @@ const TelegramAdBanner = () => {
           </>
         )}
 
-        {/* Dots Indicator - nur bei mehreren Werbungen */}
+        {/* Dots Indicator */}
         {hasMultipleAds && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
             {ads.map((_, index) => (
