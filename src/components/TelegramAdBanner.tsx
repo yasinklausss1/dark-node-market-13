@@ -47,9 +47,10 @@ const TelegramAdBanner = () => {
 
   return (
     <div className="mb-6">
-      {/* Werbung Label */}
-      <div className="text-xs text-muted-foreground mb-1">
-        Werbung
+      {/* Advertisement Label */}
+      <div className="text-xs text-muted-foreground mb-1 flex items-center gap-2">
+        <span>Advertisement</span>
+        <span className="text-muted-foreground/60">— click on picture</span>
       </div>
       
       {/* Banner Container - fixed aspect ratio for consistent banner look */}
