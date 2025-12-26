@@ -670,6 +670,9 @@ export type Database = {
           amount_crypto: number
           amount_eur: number
           auto_release_at: string
+          blockchain_fee_satoshi: number | null
+          blockchain_tx_hash: string | null
+          blockchain_tx_status: string | null
           buyer_id: string
           created_at: string
           currency: string
@@ -688,6 +691,9 @@ export type Database = {
           amount_crypto: number
           amount_eur: number
           auto_release_at: string
+          blockchain_fee_satoshi?: number | null
+          blockchain_tx_hash?: string | null
+          blockchain_tx_status?: string | null
           buyer_id: string
           created_at?: string
           currency: string
@@ -706,6 +712,9 @@ export type Database = {
           amount_crypto?: number
           amount_eur?: number
           auto_release_at?: string
+          blockchain_fee_satoshi?: number | null
+          blockchain_tx_hash?: string | null
+          blockchain_tx_status?: string | null
           buyer_id?: string
           created_at?: string
           currency?: string

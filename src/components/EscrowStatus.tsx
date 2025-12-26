@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, CheckCircle, Clock, RefreshCw, AlertTriangle, Timer } from 'lucide-react';
+import { Shield, CheckCircle, Clock, RefreshCw, AlertTriangle, Timer, ExternalLink } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +25,9 @@ interface EscrowStatusProps {
   orderCreatedAt: string;
   isDigitalProduct: boolean;
   onRelease?: () => void;
+  blockchainTxHash?: string | null;
+  blockchainTxStatus?: string | null;
+  paymentCurrency?: string | null;
 }
 
 export const EscrowStatus: React.FC<EscrowStatusProps> = ({
@@ -34,7 +37,10 @@ export const EscrowStatus: React.FC<EscrowStatusProps> = ({
   buyerConfirmedAt,
   orderCreatedAt,
   isDigitalProduct,
-  onRelease
+  onRelease,
+  blockchainTxHash,
+  blockchainTxStatus,
+  paymentCurrency
 }) => {
   const { toast } = useToast();
   const [releasing, setReleasing] = useState(false);
@@ -285,10 +291,35 @@ export const EscrowStatus: React.FC<EscrowStatusProps> = ({
           </>
         )}
 
-        {escrowStatus === 'released' && buyerConfirmedAt && (
-          <p className="text-xs text-green-600">
-            Bestätigt am {new Date(buyerConfirmedAt).toLocaleString('de-DE')}
-          </p>
+        {escrowStatus === 'released' && (
+          <div className="space-y-2">
+            {buyerConfirmedAt && (
+              <p className="text-xs text-green-600">
+                Bestätigt am {new Date(buyerConfirmedAt).toLocaleString('de-DE')}
+              </p>
+            )}
+            
+            {blockchainTxHash && (
+              <div className="flex items-center gap-2 p-2 bg-green-100 dark:bg-green-900/30 rounded text-xs">
+                <CheckCircle className="h-3 w-3 text-green-600" />
+                <span className="text-green-700 dark:text-green-300">
+                  Blockchain TX: 
+                </span>
+                <a 
+                  href={paymentCurrency?.toUpperCase() === 'LTC' 
+                    ? `https://live.blockcypher.com/ltc/tx/${blockchainTxHash}/`
+                    : `https://live.blockcypher.com/btc/tx/${blockchainTxHash}/`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-blue-600 hover:underline flex items-center gap-1"
+                >
+                  {blockchainTxHash.slice(0, 12)}...{blockchainTxHash.slice(-8)}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
