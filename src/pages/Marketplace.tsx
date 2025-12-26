@@ -25,6 +25,7 @@ import { ProductCard } from '@/components/ProductCard';
 import { ChatModal } from '@/components/ChatModal';
 import { OracleLogo } from '@/components/OracleLogo';
 import { ForumInline } from '@/components/forum/ForumInline';
+import { OnlineUsersMarquee } from '@/components/OnlineUsersMarquee';
 
 import { ConversationsModal } from '@/components/ConversationsModal';
 import { useChat } from '@/hooks/useChat';
@@ -729,6 +730,9 @@ const Marketplace = () => {
           <>
             {/* Search and Filter */}
             <div className="mb-8 space-y-4">
+              {/* Online Users Marquee */}
+              <OnlineUsersMarquee />
+              
               <div className="flex flex-col gap-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
