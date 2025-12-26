@@ -29,6 +29,7 @@ interface Order {
   escrow_status: string | null;
   auto_release_at: string | null;
   buyer_confirmed_at: string | null;
+  payment_currency: string | null;
 }
 
 interface OrderWithSellers extends Order {
@@ -37,6 +38,8 @@ interface OrderWithSellers extends Order {
     seller_username: string;
     has_review: boolean;
   }>;
+  blockchain_tx_hash?: string | null;
+  blockchain_tx_status?: string | null;
 }
 
 interface OrderItem {
@@ -182,11 +185,20 @@ const Orders: React.FC = () => {
               });
             }
 
+            // Fetch escrow blockchain data
+            const { data: escrowData } = await supabase
+              .from('escrow_holdings')
+              .select('blockchain_tx_hash, blockchain_tx_status')
+              .eq('order_id', order.id)
+              .maybeSingle();
+
             return {
               ...order,
               sellers: sellers.filter((seller, index, self) => 
                 index === self.findIndex(s => s.seller_id === seller.seller_id)
-              )
+              ),
+              blockchain_tx_hash: escrowData?.blockchain_tx_hash || null,
+              blockchain_tx_status: escrowData?.blockchain_tx_status || null
             };
           })
         );
@@ -399,6 +411,9 @@ const Orders: React.FC = () => {
                       buyerConfirmedAt={order.buyer_confirmed_at}
                       orderCreatedAt={order.created_at}
                       isDigitalProduct={(itemsByOrder[order.id] || []).some(item => item.product_type === 'digital')}
+                      blockchainTxHash={order.blockchain_tx_hash}
+                      blockchainTxStatus={order.blockchain_tx_status}
+                      paymentCurrency={order.payment_currency}
                       onRelease={() => {
                         // Refresh orders to update escrow status
                         if (user) {
