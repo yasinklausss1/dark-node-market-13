@@ -52,19 +52,21 @@ const TelegramAdBanner = () => {
         Werbung
       </div>
       
-      {/* Banner Container */}
+      {/* Banner Container - fixed aspect ratio for consistent banner look */}
       <a
         href={currentAd.link}
         target="_blank"
         rel="noopener noreferrer"
         className="block w-full"
       >
-        <img
-          key={currentAd.id}
-          src={currentAd.image}
-          alt="Werbung"
-          className="w-full h-auto object-contain animate-fade-in"
-        />
+        <div className="relative w-full aspect-[4/1] bg-black overflow-hidden">
+          <img
+            key={currentAd.id}
+            src={currentAd.image}
+            alt="Werbung"
+            className="w-full h-full object-cover animate-fade-in"
+          />
+        </div>
       </a>
     </div>
   );
