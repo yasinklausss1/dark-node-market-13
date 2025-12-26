@@ -37,11 +37,11 @@ const TelegramAdBanner = () => {
     setCurrentIndex((prev) => (prev - 1 + ads.length) % ads.length);
   }, []);
 
-  // Auto-scroll alle 5 Sekunden
+  // Auto-scroll alle 10 Sekunden
   useEffect(() => {
     if (!hasMultipleAds) return;
 
-    const interval = setInterval(goToNext, 5000);
+    const interval = setInterval(goToNext, 10000);
     return () => clearInterval(interval);
   }, [hasMultipleAds, goToNext]);
 
