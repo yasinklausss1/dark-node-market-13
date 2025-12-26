@@ -3,18 +3,21 @@ import telegramBanner from '@/assets/telegram-ad-banner.jpg';
 const TelegramAdBanner = () => {
   return (
     <div className="mb-6">
-      {/* Trust Text Above Banner */}
-      <p className="text-center text-sm md:text-base text-white mb-3 max-w-2xl mx-auto">
-        In dieser Gruppe sind nur zuverlässige und vertrauenswürdige Verkäufer vertreten, sodass ihr euch auf faire und sichere Geschäfte verlassen könnt.
-      </p>
-
-      {/* Clickable Banner Image */}
+      {/* Single bordered container with text header and image */}
       <a
         href="https://t.me/+BJSbVCkJgloyYWI6"
         target="_blank"
         rel="noopener noreferrer"
-        className="block relative rounded-xl overflow-hidden hover:opacity-90 transition-opacity border-2 border-white"
+        className="block relative rounded-xl overflow-hidden hover:opacity-95 transition-opacity border-2 border-white"
       >
+        {/* Trust Text Header inside the box */}
+        <div className="bg-black/70 backdrop-blur-sm px-4 py-3">
+          <p className="text-center text-xs md:text-sm text-white/90 leading-relaxed">
+            In dieser Gruppe sind nur zuverlässige und vertrauenswürdige Verkäufer vertreten, sodass ihr euch auf faire und sichere Geschäfte verlassen könnt.
+          </p>
+        </div>
+
+        {/* Banner Image */}
         <img
           src={telegramBanner}
           alt="Telegram Gruppe beitreten"
