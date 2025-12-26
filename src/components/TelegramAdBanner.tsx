@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import telegramBanner from '@/assets/telegram-ad-banner.jpg';
 import telegramBanner2 from '@/assets/telegram-ad-banner-2.jpg';
+import telegramBanner3 from '@/assets/telegram-ad-banner-3.jpg';
 
 interface AdItem {
   id: string;
@@ -22,6 +23,12 @@ const ads: AdItem[] = [
     image: telegramBanner2,
     link: 'https://t.me/+S0FF6yqfO8U5MTcy',
     description: 'BTW guys I also run a channel where I drop fresh accounts, streaming accounts, methods, and other useful stuff. If you want updates, drops, and exclusive things before anyone else — make sure you join.'
+  },
+  {
+    id: '3',
+    image: telegramBanner3,
+    link: 'https://t.me/+XRli37DPxRljZWRi',
+    description: 'FRANK SERVICE — IBAN DE 70% Accept EZ or SEPA (any amount) | AT IBAN 70% | IBAN NL TIKKIE 70% | IBAN ES BIZUM 70% | Revtag 65% | 3Ds Cashout + Invoice 70% Payout'
   },
 ];
 
