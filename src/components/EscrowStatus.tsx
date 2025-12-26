@@ -124,7 +124,7 @@ export const EscrowStatus: React.FC<EscrowStatusProps> = ({
   // Calculate time until dispute can be opened
   const getDisputeAvailableAt = () => {
     const orderDate = new Date(orderCreatedAt);
-    const requiredDays = isDigitalProduct ? 2 : 6;
+    const requiredDays = isDigitalProduct ? 2 : 5;
     return new Date(orderDate.getTime() + requiredDays * 24 * 60 * 60 * 1000);
   };
 
@@ -279,7 +279,7 @@ export const EscrowStatus: React.FC<EscrowStatusProps> = ({
 
             {!disputeEnabled && (
               <p className="text-xs text-muted-foreground">
-                Du kannst einen Dispute öffnen, wenn {isDigitalProduct ? '2' : '6'} Tage vergangen sind.
+                Du kannst einen Dispute öffnen, wenn {isDigitalProduct ? '2' : '5'} Tage vergangen sind.
               </p>
             )}
           </>
