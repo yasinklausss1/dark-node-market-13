@@ -27,15 +27,35 @@ const ads: AdItem[] = [
 
 const TelegramAdBanner = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const hasMultipleAds = ads.length > 1;
 
   const goToNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % ads.length);
-  }, []);
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentIndex((prev) => (prev + 1) % ads.length);
+      setTimeout(() => setIsTransitioning(false), 500);
+    }, 300);
+  }, [isTransitioning]);
 
   const goToPrev = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + ads.length) % ads.length);
-  }, []);
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentIndex((prev) => (prev - 1 + ads.length) % ads.length);
+      setTimeout(() => setIsTransitioning(false), 500);
+    }, 300);
+  }, [isTransitioning]);
+
+  const goToIndex = useCallback((index: number) => {
+    if (isTransitioning || index === currentIndex) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentIndex(index);
+      setTimeout(() => setIsTransitioning(false), 500);
+    }, 300);
+  }, [isTransitioning, currentIndex]);
 
   // Auto-scroll alle 10 Sekunden
   useEffect(() => {
@@ -55,22 +75,29 @@ const TelegramAdBanner = () => {
           href={currentAd.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="block hover:opacity-95 transition-opacity"
+          className="block hover:opacity-95"
         >
-          {/* Trust Text Header */}
-          <div className="bg-black/70 backdrop-blur-sm px-4 py-3">
-            <p className="text-center text-xs md:text-sm text-white/90 leading-relaxed">
-              {currentAd.description}
-            </p>
-          </div>
+          {/* Content with fade transition */}
+          <div 
+            className={`transition-opacity duration-500 ease-in-out ${
+              isTransitioning ? 'opacity-0' : 'opacity-100'
+            }`}
+          >
+            {/* Trust Text Header */}
+            <div className="bg-black/70 backdrop-blur-sm px-4 py-3">
+              <p className="text-center text-xs md:text-sm text-white/90 leading-relaxed">
+                {currentAd.description}
+              </p>
+            </div>
 
-          {/* Banner Image Container */}
-          <div className="bg-black w-full aspect-[16/5] flex items-center justify-center">
-            <img
-              src={currentAd.image}
-              alt="Werbung"
-              className="max-w-full max-h-full object-contain"
-            />
+            {/* Banner Image Container */}
+            <div className="bg-black w-full aspect-[16/5] flex items-center justify-center">
+              <img
+                src={currentAd.image}
+                alt="Werbung"
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
           </div>
         </a>
 
@@ -113,9 +140,9 @@ const TelegramAdBanner = () => {
                 key={index}
                 onClick={(e) => {
                   e.preventDefault();
-                  setCurrentIndex(index);
+                  goToIndex(index);
                 }}
-                className={`w-2 h-2 rounded-full transition-all ${
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
                   index === currentIndex
                     ? 'bg-white w-4'
                     : 'bg-white/50 hover:bg-white/70'
