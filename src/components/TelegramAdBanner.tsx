@@ -68,12 +68,12 @@ const TelegramAdBanner = () => {
           </div>
 
           {/* Banner Image Container */}
-          <div className="bg-black w-full">
+          <div className="bg-black w-full flex justify-center">
             <img
               key={currentAd.id + '-img'}
               src={currentAd.image}
               alt="Werbung"
-              className="w-full h-auto max-h-[300px] object-cover animate-fade-in"
+              className="h-auto max-h-[280px] w-auto max-w-full object-contain animate-fade-in"
             />
           </div>
         </a>
