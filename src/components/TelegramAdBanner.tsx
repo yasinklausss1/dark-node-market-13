@@ -39,7 +39,7 @@ const TelegramAdBanner = () => {
   useEffect(() => {
     if (!hasMultipleAds) return;
 
-    const interval = setInterval(goToNext, 10000);
+    const interval = setInterval(goToNext, 6000);
     return () => clearInterval(interval);
   }, [hasMultipleAds, goToNext]);
 
