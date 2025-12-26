@@ -111,8 +111,8 @@ export default {
           '50%': { transform: 'translateY(-5px)' }
         },
         'marquee': {
-          '0%': { transform: 'translateX(0%)' },
-          '100%': { transform: 'translateX(-33.33%)' }
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' }
         }
       },
       animation: {

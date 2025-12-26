@@ -43,15 +43,15 @@ export const OnlineUsersMarquee = () => {
   if (users.length === 0) return null;
 
   // Duplicate users for seamless infinite scroll
-  const duplicatedUsers = [...users, ...users, ...users];
+  const duplicatedUsers = [...users, ...users];
 
   return (
     <div className="relative overflow-hidden border-y border-border/50 bg-muted/30 py-2">
-      <div className="flex animate-marquee whitespace-nowrap">
+      <div className="flex w-max animate-marquee">
         {duplicatedUsers.map((user, index) => (
           <div
             key={`${user.user_id}-${index}`}
-            className="inline-flex items-center gap-1.5 mx-4 text-sm text-muted-foreground"
+            className="inline-flex items-center gap-1.5 mx-4 text-sm text-muted-foreground shrink-0"
           >
             <User className="h-3.5 w-3.5" />
             <span>{user.username}</span>
