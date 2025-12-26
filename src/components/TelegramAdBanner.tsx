@@ -64,12 +64,14 @@ const TelegramAdBanner = () => {
             </p>
           </div>
 
-          {/* Banner Image */}
-          <img
-            src={currentAd.image}
-            alt="Werbung"
-            className="w-full h-auto object-cover"
-          />
+          {/* Banner Image Container */}
+          <div className="bg-black w-full aspect-[16/5] flex items-center justify-center">
+            <img
+              src={currentAd.image}
+              alt="Werbung"
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
         </a>
 
         {/* Werbung Badge */}
