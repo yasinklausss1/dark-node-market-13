@@ -12,17 +12,28 @@ const Index = () => {
 
   // Check if user has seen splash this session
   useEffect(() => {
-    const seen = sessionStorage.getItem('splashSeen');
-    if (seen) {
+    try {
+      const seen = sessionStorage.getItem('splashSeen');
+      if (seen) {
+        setShowSplash(false);
+        setHasSeenSplash(true);
+      }
+    } catch {
+      // If storage is blocked, don't get stuck on splash
       setShowSplash(false);
       setHasSeenSplash(true);
     }
   }, []);
 
   const handleSplashComplete = () => {
-    sessionStorage.setItem('splashSeen', 'true');
+    // Never let storage errors keep the splash visible
     setShowSplash(false);
     setHasSeenSplash(true);
+    try {
+      sessionStorage.setItem('splashSeen', 'true');
+    } catch {
+      // ignore
+    }
   };
 
   // Show splash for unauthenticated users who haven't seen it yet
