@@ -34,14 +34,22 @@ const ads: AdItem[] = [
 ];
 
 const TelegramAdBanner = () => {
+  const [shuffledAds] = useState(() => {
+    const shuffled = [...ads];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
-  const hasMultipleAds = ads.length > 1;
+  const hasMultipleAds = shuffledAds.length > 1;
 
   const goToNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % ads.length);
-  }, []);
+    setCurrentIndex((prev) => (prev + 1) % shuffledAds.length);
+  }, [shuffledAds.length]);
 
-  // Auto-scroll alle 10 Sekunden
+  // Auto-scroll alle 6 Sekunden
   useEffect(() => {
     if (!hasMultipleAds) return;
 
@@ -49,7 +57,7 @@ const TelegramAdBanner = () => {
     return () => clearInterval(interval);
   }, [hasMultipleAds, goToNext]);
 
-  const currentAd = ads[currentIndex];
+  const currentAd = shuffledAds[currentIndex];
 
   return (
     <div className="mb-6">
