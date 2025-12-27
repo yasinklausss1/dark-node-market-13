@@ -67,14 +67,14 @@ const TelegramAdBanner = () => {
         <span className="text-muted-foreground/60">— click on picture</span>
       </div>
       
-      {/* Banner Container - fixed aspect ratio for consistent banner look */}
+      {/* Banner Container - compact size */}
       <a
         href={currentAd.link}
         target="_blank"
         rel="noopener noreferrer"
         className="block w-full"
       >
-        <div className="relative w-full aspect-[4/1] bg-black overflow-hidden flex items-center justify-center">
+        <div className="relative w-full aspect-[6/1] bg-black overflow-hidden flex items-center justify-center">
           <img
             key={currentAd.id}
             src={currentAd.image}
