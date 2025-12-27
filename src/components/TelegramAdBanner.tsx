@@ -3,6 +3,7 @@ import telegramBanner from '@/assets/telegram-ad-banner.jpg';
 import telegramBanner2 from '@/assets/telegram-ad-banner-2.jpg';
 import telegramBanner3 from '@/assets/telegram-ad-banner-3.jpg';
 import telegramBanner4 from '@/assets/telegram-ad-banner-4.jpg';
+import telegramBanner5 from '@/assets/telegram-ad-banner-5.jpg';
 
 interface AdItem {
   id: string;
@@ -30,6 +31,11 @@ const ads: AdItem[] = [
     id: '4',
     image: telegramBanner4,
     link: 'https://t.me/DeutschrapLeakzz1Backup',
+  },
+  {
+    id: '5',
+    image: telegramBanner5,
+    link: 'https://t.me/niggacafe',
   },
 ];
 
