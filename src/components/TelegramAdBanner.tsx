@@ -4,6 +4,7 @@ import telegramBanner2 from '@/assets/telegram-ad-banner-2.jpg';
 import telegramBanner3 from '@/assets/telegram-ad-banner-3.jpg';
 import telegramBanner4 from '@/assets/telegram-ad-banner-4.jpg';
 import telegramBanner5 from '@/assets/telegram-ad-banner-5.jpg';
+import telegramBanner6 from '@/assets/telegram-ad-banner-6.jpg';
 
 interface AdItem {
   id: string;
@@ -36,6 +37,11 @@ const ads: AdItem[] = [
     id: '5',
     image: telegramBanner5,
     link: 'https://t.me/niggacafe',
+  },
+  {
+    id: '6',
+    image: telegramBanner6,
+    link: 'https://t.me/Liquidforallofus',
   },
 ];
 
