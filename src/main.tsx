@@ -3,10 +3,11 @@ import App from './App.tsx'
 import './index.css'
 
 // Handle GitHub Pages 404 redirect
+// 404.html redirects "/some/path" -> "?some/path" (no key), so we need to recover it.
 const searchParams = new URLSearchParams(window.location.search);
-const redirectPath = searchParams.get('');
-if (redirectPath) {
-  const path = redirectPath.startsWith('/') ? redirectPath : `/${redirectPath}`;
+const firstKey = searchParams.keys().next().value as string | undefined;
+if (firstKey && !firstKey.includes('=')) {
+  const path = firstKey.startsWith('/') ? firstKey : `/${firstKey}`;
   window.history.replaceState(null, '', path);
 }
 
