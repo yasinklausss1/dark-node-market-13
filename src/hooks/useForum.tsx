@@ -526,9 +526,16 @@ export function useForum() {
   };
 
   const deleteComment = async (commentId: string) => {
+    // First delete any votes on this comment
+    await supabase
+      .from('forum_comment_votes')
+      .delete()
+      .eq('comment_id', commentId);
+
+    // Then delete the comment itself
     const { error } = await supabase
       .from('forum_comments')
-      .update({ is_deleted: true, content: '[Gelöscht]' })
+      .delete()
       .eq('id', commentId);
 
     if (error) {
