@@ -391,96 +391,98 @@ export function DepositRequest() {
   if (existingRequest) {
     const cryptoName = existingRequest.currency === 'BTC' ? 'bitcoin' : 'litecoin';
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6">
+          <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2">
               {cryptoName === "bitcoin" ? (
-                <Bitcoin className="h-5 w-5 text-orange-500" />
+                <div className="p-1.5 bg-orange-500/10 rounded-lg">
+                  <Bitcoin className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
+                </div>
               ) : (
-                <Coins className="h-5 w-5 text-blue-500" />
+                <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                  <Coins className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                </div>
               )}
-              Aktive Einzahlungsanfrage
+              <span className="text-base sm:text-lg">Aktive Einzahlung</span>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={closeDepositRequest}
-              className="text-red-600 hover:text-red-700"
+              className="text-red-600 hover:text-red-700 h-9 self-stretch sm:self-auto"
             >
-              <X className="h-4 w-4 mr-1" />
+              <X className="h-4 w-4 mr-1.5" />
               Schließen
             </Button>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="bg-muted p-4 rounded-lg space-y-2">
-            <div className="flex justify-between">
-              <span>Betrag (EUR):</span>
+        <CardContent className="space-y-4 sm:space-y-6 px-3 sm:px-6 pb-4 sm:pb-6">
+          {/* Amount Info */}
+          <div className="bg-muted/50 p-3 sm:p-4 rounded-xl space-y-2">
+            <div className="flex justify-between text-sm sm:text-base">
+              <span className="text-muted-foreground">Betrag (EUR):</span>
               <span className="font-bold">€{existingRequest.requested_eur.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between">
-              <span>Betrag ({existingRequest.currency}):</span>
-              <span className="font-bold">{existingRequest.crypto_amount.toFixed(8)}</span>
+            <div className="flex justify-between text-sm sm:text-base">
+              <span className="text-muted-foreground">Betrag ({existingRequest.currency}):</span>
+              <span className="font-bold font-mono text-xs sm:text-sm">{existingRequest.crypto_amount.toFixed(8)}</span>
             </div>
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Läuft ab um:</span>
-              <span>{new Date(existingRequest.expires_at).toLocaleString('de-DE')}</span>
-            </div>
-            <div className="flex justify-between text-sm font-medium">
-              <span>Verbleibende Zeit:</span>
-              <span className={timeLeft === "Abgelaufen" ? "text-red-500" : "text-primary"}>{timeLeft}</span>
-            </div>
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Fingerabdruck:</span>
-              <span>+{existingRequest.fingerprint} {cryptoName === "bitcoin" ? "Sats" : "Litoshis"}</span>
+            <div className="flex justify-between text-xs sm:text-sm">
+              <span className="text-muted-foreground">Verbleibend:</span>
+              <span className={`font-medium ${timeLeft === "Abgelaufen" ? "text-red-500" : "text-primary"}`}>
+                {timeLeft}
+              </span>
             </div>
           </div>
 
-          <div className="text-center">
-            <QRCodeSVG 
-              value={existingRequest.qr_data}
-              size={200}
-              className="mx-auto border rounded-lg p-2"
-            />
+          {/* QR Code */}
+          <div className="flex justify-center">
+            <div className="bg-white p-2 sm:p-3 rounded-xl">
+              <QRCodeSVG 
+                value={existingRequest.qr_data}
+                size={160}
+                className="w-36 h-36 sm:w-48 sm:h-48"
+              />
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">BIP21 Zahlungs-URI:</Label>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 p-2 bg-muted rounded text-xs break-all">
-                  {existingRequest.qr_data}
-                </code>
-                <Button variant="outline" size="sm" onClick={copyQRData}>
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">
-                Deine {cryptoName === "bitcoin" ? "Bitcoin" : "Litecoin"}-Adresse:
+          {/* Copy Buttons */}
+          <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm font-medium text-muted-foreground">
+                {cryptoName === "bitcoin" ? "Bitcoin" : "Litecoin"}-Adresse:
               </Label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 p-2 bg-muted rounded text-sm break-all">
+                <code className="flex-1 p-2 sm:p-2.5 bg-muted rounded-lg text-[10px] sm:text-xs break-all font-mono">
                   {existingRequest.address}
                 </code>
-                <Button variant="outline" size="sm" onClick={copyAddress}>
+                <Button variant="outline" size="sm" onClick={copyAddress} className="h-9 w-9 p-0 flex-shrink-0">
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm font-medium text-muted-foreground">Zahlungs-URI:</Label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 p-2 sm:p-2.5 bg-muted rounded-lg text-[10px] sm:text-xs break-all font-mono">
+                  {existingRequest.qr_data}
+                </code>
+                <Button variant="outline" size="sm" onClick={copyQRData} className="h-9 w-9 p-0 flex-shrink-0">
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           </div>
 
-          <div className="bg-card border p-4 rounded-lg">
-            <h4 className="font-medium mb-2">Wichtig:</h4>
-            <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>Sende EXAKT {existingRequest.crypto_amount.toFixed(8)} {existingRequest.currency}</li>
-              <li>Dies ist deine persönliche {existingRequest.currency}-Adresse</li>
-              <li>Zahlung wird nach 1 Bestätigung gutgeschrieben</li>
-              <li>Anfrage läuft ab um {new Date(existingRequest.expires_at).toLocaleString('de-DE')}</li>
-              <li>Du kannst diese Anfrage jederzeit über Schließen beenden</li>
+          {/* Important Notes */}
+          <div className="bg-primary/5 border border-primary/20 p-3 sm:p-4 rounded-xl">
+            <h4 className="font-medium text-xs sm:text-sm mb-2">Wichtig:</h4>
+            <ul className="space-y-1 text-[10px] sm:text-xs text-muted-foreground">
+              <li>• Sende EXAKT <span className="font-mono font-medium text-foreground">{existingRequest.crypto_amount.toFixed(8)} {existingRequest.currency}</span></li>
+              <li>• Zahlung nach 1 Bestätigung gutgeschrieben</li>
+              <li>• Läuft ab: {new Date(existingRequest.expires_at).toLocaleString('de-DE')}</li>
             </ul>
           </div>
         </CardContent>
@@ -491,18 +493,18 @@ export function DepositRequest() {
   // Show loading state while generating addresses
   if (generatingAddresses || !userAddresses) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Euro className="h-5 w-5 text-primary" />
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Euro className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             Wallet wird eingerichtet
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-center py-8">
-          <div className="flex flex-col items-center gap-4">
-            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">
-              {generatingAddresses ? "Deine Bitcoin- und Litecoin-Adressen werden erstellt..." : "Adressen werden geladen..."}
+        <CardContent className="text-center py-6 sm:py-8 px-3 sm:px-6">
+          <div className="flex flex-col items-center gap-3">
+            <RefreshCw className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground text-xs sm:text-sm">
+              {generatingAddresses ? "Adressen werden erstellt..." : "Adressen werden geladen..."}
             </p>
           </div>
         </CardContent>
@@ -511,94 +513,105 @@ export function DepositRequest() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Euro className="h-5 w-5 text-primary" />
-          Einzahlungsanfrage erstellen
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6">
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <Euro className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+          Einzahlung
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="amount">Betrag (EUR)</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              min="1"
-              placeholder="Betrag in EUR eingeben"
-              value={eurAmount}
-              onChange={(e) => setEurAmount(e.target.value)}
-              disabled={!user}
-            />
-            {!user && (
-              <p className="text-sm text-muted-foreground">
-                Bitte melde dich an um Einzahlungsanfragen zu erstellen
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <Label className="text-sm font-medium">Kryptowährung auswählen:</Label>
-            <RadioGroup 
-              value={selectedCrypto} 
-              onValueChange={(value) => setSelectedCrypto(value as "bitcoin" | "litecoin")}
-              className="flex gap-6"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="bitcoin" id="bitcoin" />
-                <Label htmlFor="bitcoin" className="flex items-center gap-2 cursor-pointer">
-                  <Bitcoin className="h-4 w-4 text-orange-500" />
-                  Bitcoin (BTC)
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="litecoin" id="litecoin" />
-                <Label htmlFor="litecoin" className="flex items-center gap-2 cursor-pointer">
-                  <Coins className="h-4 w-4 text-blue-500" />
-                  Litecoin (LTC)
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {userAddresses && (
-            <div className="bg-muted p-4 rounded-lg space-y-2">
-              <h4 className="font-medium text-sm">Deine Adressen:</h4>
-              <div className="text-xs space-y-1">
-                <div><strong>BTC:</strong> {userAddresses.btc}</div>
-                <div><strong>LTC:</strong> {userAddresses.ltc}</div>
-              </div>
-            </div>
-          )}
-
-          <Button 
-            onClick={createDepositRequest} 
-            disabled={loading || !user || !eurAmount || parseFloat(eurAmount) <= 0 || !!existingRequest}
-            className="w-full"
-          >
-            {loading ? (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                Anfrage wird erstellt...
-              </>
-            ) : existingRequest ? (
-              'Schließe zuerst die aktuelle Anfrage ab'
-            ) : (
-              'Einzahlungsanfrage erstellen'
-            )}
-          </Button>
+      <CardContent className="space-y-4 sm:space-y-6 px-3 sm:px-6 pb-4 sm:pb-6">
+        {/* Amount Input */}
+        <div className="space-y-1.5 sm:space-y-2">
+          <Label htmlFor="amount" className="text-xs sm:text-sm">Betrag (EUR)</Label>
+          <Input
+            id="amount"
+            type="number"
+            step="0.01"
+            min="1"
+            placeholder="Betrag eingeben"
+            value={eurAmount}
+            onChange={(e) => setEurAmount(e.target.value)}
+            disabled={!user}
+            className="h-11 sm:h-10 text-base sm:text-sm"
+          />
         </div>
 
-        <div className="text-sm text-muted-foreground space-y-2">
-          <p><strong>So funktioniert es:</strong></p>
-          <ul className="list-disc list-inside space-y-1">
-            <li>Gib den gewünschten EUR-Betrag ein</li>
-            <li>Wähle Bitcoin oder Litecoin</li>
-            <li>Sende an deine persönliche Krypto-Adresse</li>
-            <li>Nur eine aktive Anfrage gleichzeitig erlaubt</li>
-            <li>Anfragen laufen nach 6 Stunden ab</li>
+        {/* Crypto Selection - Mobile Optimized */}
+        <div className="space-y-2 sm:space-y-3">
+          <Label className="text-xs sm:text-sm font-medium">Kryptowährung:</Label>
+          <RadioGroup 
+            value={selectedCrypto} 
+            onValueChange={(value) => setSelectedCrypto(value as "bitcoin" | "litecoin")}
+            className="grid grid-cols-2 gap-2 sm:gap-3"
+          >
+            <div className={`relative flex items-center justify-center p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all ${
+              selectedCrypto === 'bitcoin' 
+                ? 'border-orange-500 bg-orange-500/5' 
+                : 'border-muted hover:border-muted-foreground/50'
+            }`}>
+              <RadioGroupItem value="bitcoin" id="bitcoin" className="sr-only" />
+              <Label htmlFor="bitcoin" className="flex flex-col items-center gap-1.5 cursor-pointer">
+                <Bitcoin className="h-5 w-5 sm:h-6 sm:w-6 text-orange-500" />
+                <span className="text-xs sm:text-sm font-medium">Bitcoin</span>
+              </Label>
+            </div>
+            <div className={`relative flex items-center justify-center p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all ${
+              selectedCrypto === 'litecoin' 
+                ? 'border-blue-500 bg-blue-500/5' 
+                : 'border-muted hover:border-muted-foreground/50'
+            }`}>
+              <RadioGroupItem value="litecoin" id="litecoin" className="sr-only" />
+              <Label htmlFor="litecoin" className="flex flex-col items-center gap-1.5 cursor-pointer">
+                <Coins className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
+                <span className="text-xs sm:text-sm font-medium">Litecoin</span>
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {/* User Addresses - Collapsed on Mobile */}
+        {userAddresses && (
+          <div className="bg-muted/50 p-3 sm:p-4 rounded-xl">
+            <h4 className="font-medium text-xs sm:text-sm mb-2">Deine Adressen:</h4>
+            <div className="space-y-1.5 text-[10px] sm:text-xs">
+              <div className="flex items-start gap-1">
+                <span className="font-medium text-orange-500">BTC:</span>
+                <span className="font-mono break-all text-muted-foreground">{userAddresses.btc}</span>
+              </div>
+              <div className="flex items-start gap-1">
+                <span className="font-medium text-blue-500">LTC:</span>
+                <span className="font-mono break-all text-muted-foreground">{userAddresses.ltc}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create Button */}
+        <Button 
+          onClick={createDepositRequest} 
+          disabled={loading || !user || !eurAmount || parseFloat(eurAmount) <= 0 || !!existingRequest}
+          className="w-full h-11 sm:h-10 text-sm sm:text-base"
+        >
+          {loading ? (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              Wird erstellt...
+            </>
+          ) : existingRequest ? (
+            'Anfrage aktiv'
+          ) : (
+            'Einzahlung starten'
+          )}
+        </Button>
+
+        {/* How it works - Collapsed */}
+        <div className="text-[10px] sm:text-xs text-muted-foreground space-y-1">
+          <p className="font-medium">So funktioniert es:</p>
+          <ul className="space-y-0.5 pl-2">
+            <li>• Betrag eingeben & Krypto wählen</li>
+            <li>• An deine persönliche Adresse senden</li>
+            <li>• Anfragen laufen nach 6 Stunden ab</li>
           </ul>
         </div>
       </CardContent>

@@ -3,6 +3,7 @@ import { useState, useCallback } from "react";
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { WalletBalance } from "@/components/WalletBalance";
 import { DepositRequest } from "@/components/DepositRequest";
 import { TransactionHistory } from "@/components/TransactionHistory";
@@ -19,6 +20,7 @@ export default function Wallet() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { isAdmin, loading: roleLoading } = useUserRole();
+  const isMobile = useIsMobile();
   const [withdrawalModalOpen, setWithdrawalModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -34,7 +36,7 @@ export default function Wallet() {
   if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-16 w-16 sm:h-32 sm:w-32 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -43,107 +45,105 @@ export default function Wallet() {
     return <Navigate to="/auth" replace />;
   }
 
+  const WalletActions = () => (
+    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:gap-3">
+      <Button 
+        onClick={() => setWithdrawalModalOpen(true)}
+        className="flex items-center justify-center gap-1.5 sm:gap-2 h-11 sm:h-10 text-xs sm:text-sm px-3 sm:px-4"
+        size={isMobile ? "sm" : "default"}
+      >
+        <Download className="h-4 w-4 flex-shrink-0" />
+        <span className="truncate">{isMobile ? "Abheben" : "Krypto abheben"}</span>
+      </Button>
+      <Button 
+        variant="outline"
+        onClick={() => setImportModalOpen(true)}
+        className="flex items-center justify-center gap-1.5 sm:gap-2 h-11 sm:h-10 text-xs sm:text-sm px-3 sm:px-4"
+        size={isMobile ? "sm" : "default"}
+      >
+        <Upload className="h-4 w-4 flex-shrink-0" />
+        <span className="truncate">{isMobile ? "Import" : "Wallet importieren"}</span>
+      </Button>
+    </div>
+  );
+
+  const WalletContent = () => (
+    <div className="space-y-4 sm:space-y-6">
+      {/* Main Balance Card - Full Width on Mobile */}
+      <WalletBalance key={refreshKey} />
+      
+      {/* Actions */}
+      <WalletActions />
+      
+      {/* Deposit Section */}
+      <DepositRequest />
+      
+      {/* Admin Test Panel */}
+      {isAdmin && <WalletTestPanel onBalanceChange={handleBalanceChange} />}
+      
+      {/* Transaction & Withdrawal History */}
+      <div className="space-y-4 sm:space-y-6">
+        <TransactionHistory />
+        <WithdrawalHistory key={refreshKey} />
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-8 max-w-full overflow-hidden">
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2 sm:gap-4 mb-4">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 max-w-4xl">
+        {/* Mobile-Optimized Header */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => navigate('/marketplace')}
-              className="flex items-center gap-1 sm:gap-2 text-sm"
+              className="h-9 w-9 sm:h-10 sm:w-auto p-0 sm:px-3"
             >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Zurück</span>
+              <ArrowLeft className="h-5 w-5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline ml-2">Zurück</span>
             </Button>
+            <div className="flex items-center gap-2">
+              <WalletIcon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Wallet</h1>
+            </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Wallet</h1>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base px-2">
+          <p className="text-muted-foreground text-xs sm:text-sm lg:text-base leading-relaxed">
             Verwalte dein Guthaben, zahle ein und hebe Kryptowährungen ab
           </p>
         </div>
 
-        {/* Admin gets tabs for regular wallet and fee wallet */}
+        {/* Admin Tabs or Regular Wallet */}
         {isAdmin ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="wallet" className="flex items-center gap-2">
-                <WalletIcon className="h-4 w-4" />
-                Mein Wallet
+            <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-11 sm:h-10">
+              <TabsTrigger 
+                value="wallet" 
+                className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <WalletIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="truncate">Mein Wallet</span>
               </TabsTrigger>
-              <TabsTrigger value="fees" className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Gebühren-Wallet
+              <TabsTrigger 
+                value="fees" 
+                className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="truncate">Gebühren</span>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="wallet">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
-                <div className="space-y-4 sm:space-y-6">
-                  <WalletTestPanel onBalanceChange={handleBalanceChange} />
-                  <WalletBalance key={refreshKey} />
-                  <DepositRequest />
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button 
-                      onClick={() => setWithdrawalModalOpen(true)}
-                      className="flex items-center gap-2 w-full sm:w-auto"
-                    >
-                      <Download className="h-4 w-4" />
-                      Krypto abheben
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => setImportModalOpen(true)}
-                      className="flex items-center gap-2 w-full sm:w-auto"
-                    >
-                      <Upload className="h-4 w-4" />
-                      Wallet importieren
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="space-y-4 sm:space-y-6">
-                  <TransactionHistory />
-                  <WithdrawalHistory key={refreshKey} />
-                </div>
-              </div>
+            <TabsContent value="wallet" className="mt-0">
+              <WalletContent />
             </TabsContent>
 
-            <TabsContent value="fees">
+            <TabsContent value="fees" className="mt-0">
               <AdminFeeWallet />
             </TabsContent>
           </Tabs>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
-            <div className="space-y-4 sm:space-y-6">
-              <WalletTestPanel onBalanceChange={handleBalanceChange} />
-              <WalletBalance key={refreshKey} />
-              <DepositRequest />
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button 
-                  onClick={() => setWithdrawalModalOpen(true)}
-                  className="flex items-center gap-2 w-full sm:w-auto"
-                >
-                  <Download className="h-4 w-4" />
-                  Krypto abheben
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setImportModalOpen(true)}
-                  className="flex items-center gap-2 w-full sm:w-auto"
-                >
-                  <Upload className="h-4 w-4" />
-                  Wallet importieren
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-4 sm:space-y-6">
-              <TransactionHistory />
-              <WithdrawalHistory key={refreshKey} />
-            </div>
-          </div>
+          <WalletContent />
         )}
       </div>
 
