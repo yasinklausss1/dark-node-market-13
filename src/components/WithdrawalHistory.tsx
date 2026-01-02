@@ -117,13 +117,13 @@ export default function WithdrawalHistory() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Auszahlungsverlauf</CardTitle>
-            <CardDescription>
-              Deine letzten Kryptowährungs-Auszahlungen
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <CardTitle className="text-base sm:text-lg">Auszahlungsverlauf</CardTitle>
+            <CardDescription className="text-xs sm:text-sm mt-0.5">
+              Deine Krypto-Auszahlungen
             </CardDescription>
           </div>
           <Button 
@@ -131,106 +131,88 @@ export default function WithdrawalHistory() {
             size="sm" 
             onClick={fetchWithdrawals}
             disabled={loading}
+            className="h-9 w-9 p-0 flex-shrink-0"
           >
-            {loading ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </CardHeader>
       
-      <CardContent>
+      <CardContent className="px-3 sm:px-6 pb-4 sm:pb-6">
         {withdrawals.length === 0 ? (
-          <div className="text-center py-8">
-            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Keine Auszahlungen gefunden</p>
+          <div className="text-center py-6 sm:py-8">
+            <AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground text-sm">Keine Auszahlungen</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2 sm:space-y-3 max-h-80 sm:max-h-96 overflow-y-auto pr-1">
             {withdrawals.map((withdrawal) => (
-              <div key={withdrawal.id} className="border rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+              <div 
+                key={withdrawal.id} 
+                className="border rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3 bg-card/50"
+              >
+                {/* Header Row */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                     {getStatusIcon(withdrawal.status)}
-                    <Badge className={getStatusColor(withdrawal.status)}>
+                    <Badge className={`${getStatusColor(withdrawal.status)} text-[10px] sm:text-xs px-1.5 sm:px-2`}>
                       {getStatusLabel(withdrawal.status)}
                     </Badge>
-                    <span className="font-medium">
-                      {withdrawal.amount_crypto.toFixed(8)} {withdrawal.currency}
+                    <span className="font-medium text-xs sm:text-sm truncate">
+                      {withdrawal.amount_crypto.toFixed(6)} {withdrawal.currency}
                     </span>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium">
-                      {withdrawal.amount_eur.toFixed(2)} EUR
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Gebühr: {withdrawal.fee_eur.toFixed(2)} EUR
+                  <div className="text-right flex-shrink-0">
+                    <div className="font-medium text-xs sm:text-sm">
+                      €{withdrawal.amount_eur.toFixed(2)}
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
+                {/* Details */}
+                <div className="space-y-1 text-[10px] sm:text-xs">
+                  <div className="flex justify-between gap-2">
                     <span className="text-muted-foreground">An:</span>
-                    <span className="font-mono text-xs">
-                      {withdrawal.destination_address.slice(0, 20)}...
-                      {withdrawal.destination_address.slice(-10)}
+                    <span className="font-mono truncate max-w-[150px] sm:max-w-[200px]">
+                      {withdrawal.destination_address.slice(0, 12)}...{withdrawal.destination_address.slice(-6)}
                     </span>
                   </div>
                   
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Datum:</span>
                     <span>
-                      {new Date(withdrawal.created_at).toLocaleDateString('de-DE')} {' '}
-                      {new Date(withdrawal.created_at).toLocaleTimeString('de-DE')}
+                      {new Date(withdrawal.created_at).toLocaleDateString('de-DE')}
                     </span>
                   </div>
 
-                  {withdrawal.processed_at && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Verarbeitet:</span>
-                      <span>
-                        {new Date(withdrawal.processed_at).toLocaleDateString('de-DE')} {' '}
-                        {new Date(withdrawal.processed_at).toLocaleTimeString('de-DE')}
-                      </span>
-                    </div>
-                  )}
-
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Aktueller Wert:</span>
-                    <span>
-                      {getCurrentValue(withdrawal).toFixed(2)} EUR
-                    </span>
+                    <span className="text-muted-foreground">Gebühr:</span>
+                    <span>€{withdrawal.fee_eur.toFixed(2)}</span>
                   </div>
 
                   {withdrawal.tx_hash && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Transaktion:</span>
+                    <div className="flex justify-between items-center pt-1">
+                      <span className="text-muted-foreground">TX:</span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-auto p-0 text-blue-600 hover:text-blue-800"
+                        className="h-auto p-0 text-primary hover:text-primary/80 text-[10px] sm:text-xs"
                         onClick={() => window.open(
                           getBlockchainExplorerUrl(withdrawal.tx_hash!, withdrawal.currency),
                           '_blank'
                         )}
                       >
-                        <span className="font-mono text-xs">
-                          {withdrawal.tx_hash.slice(0, 8)}...{withdrawal.tx_hash.slice(-8)}
+                        <span className="font-mono">
+                          {withdrawal.tx_hash.slice(0, 6)}...{withdrawal.tx_hash.slice(-6)}
                         </span>
-                        <ExternalLink className="h-3 w-3 ml-1" />
+                        <ExternalLink className="h-2.5 w-2.5 sm:h-3 sm:w-3 ml-1" />
                       </Button>
                     </div>
                   )}
 
                   {withdrawal.notes && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Hinweise:</span>
-                      <span className="text-red-600 text-xs">
-                        {withdrawal.notes}
-                      </span>
+                    <div className="pt-1 text-red-500 text-[10px] sm:text-xs">
+                      {withdrawal.notes}
                     </div>
                   )}
                 </div>

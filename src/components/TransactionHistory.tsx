@@ -89,28 +89,26 @@ export function TransactionHistory() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Letzte Transaktionen</CardTitle>
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6">
+        <CardTitle className="text-base sm:text-lg">Letzte Transaktionen</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 sm:px-6 pb-4 sm:pb-6">
         {transactions.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">
+          <p className="text-muted-foreground text-center py-6 sm:py-8 text-sm">
             Noch keine Transaktionen vorhanden.
           </p>
         ) : (
-          <div className="space-y-4 max-h-96 overflow-y-auto">
+          <div className="space-y-2 sm:space-y-3 max-h-80 sm:max-h-96 overflow-y-auto pr-1">
             {transactions.map((transaction) => {
               const isIncoming = transaction.transaction_direction === 'incoming' || transaction.type === 'deposit';
               const isOutgoing = transaction.transaction_direction === 'outgoing' || transaction.type === 'purchase';
               
-              // Determine crypto amount and symbol
               let cryptoAmount = transaction.amount_btc;
               let cryptoSymbol = 'BTC';
               let IconComponent = Bitcoin;
               let iconColor = 'text-orange-500';
               
-              // If it's LTC transaction (check description or amount patterns)
               if (transaction.description?.toLowerCase().includes('ltc') || 
                   transaction.description?.toLowerCase().includes('litecoin')) {
                 cryptoSymbol = 'LTC';
@@ -118,107 +116,94 @@ export function TransactionHistory() {
                 iconColor = 'text-blue-500';
               }
 
-              // Translate status
               const getStatusLabel = (status: string) => {
                 switch (status) {
-                  case 'completed': return 'Abgeschlossen';
+                  case 'completed': return 'OK';
                   case 'pending': return 'Ausstehend';
                   case 'cancelled': return 'Storniert';
-                  case 'failed': return 'Fehlgeschlagen';
+                  case 'failed': return 'Fehler';
                   default: return status;
                 }
               };
 
-               // Translate type
-               const isDisputeRefund =
-                 transaction.type === 'deposit' &&
-                 (transaction.description?.toLowerCase().includes('dispute-rückerstattung') ||
-                  transaction.description?.toLowerCase().includes('dispute-rueckerstattung') ||
-                  transaction.description?.toLowerCase().includes('teilweise dispute-rückerstattung') ||
-                  transaction.description?.toLowerCase().includes('teilweise dispute-rueckerstattung'));
+              const isDisputeRefund =
+                transaction.type === 'deposit' &&
+                (transaction.description?.toLowerCase().includes('dispute-rückerstattung') ||
+                 transaction.description?.toLowerCase().includes('dispute-rueckerstattung') ||
+                 transaction.description?.toLowerCase().includes('teilweise dispute-rückerstattung') ||
+                 transaction.description?.toLowerCase().includes('teilweise dispute-rueckerstattung'));
 
-               const getTypeLabel = (type: string) => {
-                 if (isDisputeRefund) return 'Erstattung';
-                 switch (type) {
-                   case 'deposit': return 'Einzahlung';
-                   case 'purchase': return 'Kauf';
-                   case 'sale': return 'Verkauf';
-                   case 'refund': return 'Erstattung';
-                   case 'withdrawal': return 'Auszahlung';
-                   default: return type;
-                 }
-               };
+              const getTypeLabel = (type: string) => {
+                if (isDisputeRefund) return 'Erstattung';
+                switch (type) {
+                  case 'deposit': return 'Einzahlung';
+                  case 'purchase': return 'Kauf';
+                  case 'sale': return 'Verkauf';
+                  case 'refund': return 'Erstattung';
+                  case 'withdrawal': return 'Auszahlung';
+                  default: return type;
+                }
+              };
 
               return (
-                <div key={transaction.id} className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                        isIncoming ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                <div 
+                  key={transaction.id} 
+                  className="border rounded-xl p-2.5 sm:p-3 bg-card/50 hover:bg-card transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    {/* Left Side - Icon and Info */}
+                    <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
+                      <div className={`flex-shrink-0 flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full ${
+                        isIncoming ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'
                       }`}>
                         {isIncoming ? (
-                          <ArrowDown className="h-4 w-4" />
+                          <ArrowDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         ) : (
-                          <ArrowUp className="h-4 w-4" />
+                          <ArrowUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         )}
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium capitalize">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                          <span className="font-medium capitalize text-xs sm:text-sm">
                             {getTypeLabel(transaction.type)}
                           </span>
-                          <span className={`px-2 py-1 rounded text-xs ${
+                          <span className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs ${
                             transaction.status === 'completed' 
-                              ? 'bg-green-100 text-green-700' 
+                              ? 'bg-green-500/10 text-green-700 dark:text-green-400' 
                               : transaction.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-gray-100 text-gray-700'
+                              ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400'
+                              : 'bg-muted text-muted-foreground'
                           }`}>
                             {getStatusLabel(transaction.status)}
                           </span>
                         </div>
                         
-                        <p className="text-sm text-muted-foreground">
-                          {transaction.description}
-                        </p>
-                        
-                        {/* Show sender/receiver if available */}
-                        {transaction.from_username && isIncoming && (
-                          <p className="text-xs text-muted-foreground">
-                            Von: @{transaction.from_username}
-                          </p>
-                        )}
-                        {transaction.to_username && isOutgoing && (
-                          <p className="text-xs text-muted-foreground">
-                            An: @{transaction.to_username}
+                        {transaction.description && (
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                            {transaction.description}
                           </p>
                         )}
                         
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(transaction.created_at), 'd. MMM yyyy HH:mm', { locale: de })}
+                        <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                          {format(new Date(transaction.created_at), 'd. MMM HH:mm', { locale: de })}
                         </div>
                       </div>
                     </div>
                     
-                    <div className="text-right">
-                      <div className={`text-lg font-bold ${
+                    {/* Right Side - Amount */}
+                    <div className="text-right flex-shrink-0">
+                      <div className={`text-sm sm:text-base font-bold ${
                         isIncoming ? 'text-green-600' : 'text-red-600'
                       }`}>
                         {isIncoming ? '+' : '-'}€{transaction.amount_eur.toFixed(2)}
                       </div>
                       
                       {cryptoAmount > 0 && (
-                        <div className={`flex items-center gap-1 text-sm ${iconColor} justify-end`}>
-                          <IconComponent className="h-3 w-3" />
-                          <span>
-                            {isIncoming ? '+' : '-'}{cryptoAmount.toFixed(8)} {cryptoSymbol}
+                        <div className={`flex items-center gap-0.5 text-[10px] sm:text-xs ${iconColor} justify-end`}>
+                          <IconComponent className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                          <span className="font-mono">
+                            {cryptoAmount.toFixed(6)}
                           </span>
-                        </div>
-                      )}
-                      
-                      {transaction.btc_confirmations !== null && transaction.btc_confirmations >= 0 && (
-                        <div className="text-xs text-muted-foreground">
-                          {transaction.btc_confirmations} Bestätigungen
                         </div>
                       )}
                     </div>

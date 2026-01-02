@@ -148,89 +148,103 @@ export function WalletBalance() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-2">
-            <Wallet className="h-5 w-5" />
-            Wallet-Guthaben
+            <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            <span className="text-base sm:text-lg">Wallet-Guthaben</span>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={refreshPayments}
             disabled={refreshing}
-            className="flex items-center gap-2"
+            className="flex items-center justify-center gap-2 h-9 text-xs sm:text-sm self-stretch sm:self-auto"
           >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Prüfe...' : 'Aktualisieren'}
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 gap-4">
-          {/* Crypto Balances */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Bitcoin Balance */}
-            <div className="bg-card border p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Bitcoin className="h-5 w-5 text-orange-500" />
-                <h4 className="font-medium">Bitcoin (BTC)</h4>
+      <CardContent className="space-y-4 sm:space-y-6 px-3 sm:px-6 pb-4 sm:pb-6">
+        {/* Crypto Balances - Stacked on Mobile */}
+        <div className="grid grid-cols-1 gap-3 sm:gap-4">
+          {/* Bitcoin Balance */}
+          <div className="bg-gradient-to-br from-orange-500/5 to-orange-500/10 border border-orange-500/20 p-3 sm:p-4 rounded-xl">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 sm:p-2 bg-orange-500/10 rounded-lg">
+                  <Bitcoin className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
+                </div>
+                <h4 className="font-medium text-sm sm:text-base">Bitcoin</h4>
               </div>
-              <div className="space-y-1">
-                <div className="text-2xl font-bold">
-                  {balance?.balance_btc?.toFixed(8) || '0.00000000'} BTC
+              <span className="text-xs text-muted-foreground">BTC</span>
+            </div>
+            <div className="space-y-1">
+              <div className="text-lg sm:text-2xl font-bold tracking-tight">
+                {balance?.balance_btc?.toFixed(8) || '0.00000000'}
+              </div>
+              {btcPrice && balance?.balance_btc !== undefined && (
+                <div className="text-sm sm:text-base font-semibold text-primary">
+                  ≈ €{(balance.balance_btc * btcPrice).toFixed(2)}
                 </div>
-                {btcPrice && balance?.balance_btc && (
-                  <div className="text-lg font-semibold text-primary">
-                    ≈ €{(balance.balance_btc * btcPrice).toFixed(2)}
-                  </div>
-                )}
-                <div className="text-xs text-muted-foreground">
-                  Verfügbar für Einkäufe
-                </div>
+              )}
+              <div className="text-[10px] sm:text-xs text-muted-foreground pt-1">
+                Verfügbar für Einkäufe
               </div>
             </div>
+          </div>
 
-            {/* Litecoin Balance */}
-            <div className="bg-card border p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Coins className="h-5 w-5 text-blue-500" />
-                <h4 className="font-medium">Litecoin (LTC)</h4>
+          {/* Litecoin Balance */}
+          <div className="bg-gradient-to-br from-blue-500/5 to-blue-500/10 border border-blue-500/20 p-3 sm:p-4 rounded-xl">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg">
+                  <Coins className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                </div>
+                <h4 className="font-medium text-sm sm:text-base">Litecoin</h4>
               </div>
-              <div className="space-y-1">
-                <div className="text-2xl font-bold">
-                  {balance?.balance_ltc?.toFixed(8) || '0.00000000'} LTC
+              <span className="text-xs text-muted-foreground">LTC</span>
+            </div>
+            <div className="space-y-1">
+              <div className="text-lg sm:text-2xl font-bold tracking-tight">
+                {balance?.balance_ltc?.toFixed(8) || '0.00000000'}
+              </div>
+              {ltcPrice && balance?.balance_ltc !== undefined && (
+                <div className="text-sm sm:text-base font-semibold text-primary">
+                  ≈ €{(balance.balance_ltc * ltcPrice).toFixed(2)}
                 </div>
-                {ltcPrice && balance?.balance_ltc && (
-                  <div className="text-lg font-semibold text-primary">
-                    ≈ €{(balance.balance_ltc * ltcPrice).toFixed(2)}
-                  </div>
-                )}
-                <div className="text-xs text-muted-foreground">
-                  Verfügbar für Einkäufe
-                </div>
+              )}
+              <div className="text-[10px] sm:text-xs text-muted-foreground pt-1">
+                Verfügbar für Einkäufe
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-muted p-4 rounded-lg">
-          <h4 className="font-medium mb-2">Einzahlungsverlauf</h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>Gesamt Bitcoin eingezahlt:</span>
-              <span className="font-medium">{balance?.balance_btc_deposited?.toFixed(8) || '0.00000000'} BTC</span>
+        {/* Deposit History - Compact on Mobile */}
+        <div className="bg-muted/50 p-3 sm:p-4 rounded-xl">
+          <h4 className="font-medium text-xs sm:text-sm mb-2 sm:mb-3">Einzahlungsverlauf</h4>
+          <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">Gesamt BTC eingezahlt:</span>
+              <span className="font-mono font-medium text-[11px] sm:text-sm">
+                {balance?.balance_btc_deposited?.toFixed(8) || '0.00000000'}
+              </span>
             </div>
-            <div className="flex justify-between">
-              <span>Gesamt Litecoin eingezahlt:</span>
-              <span className="font-medium">{balance?.balance_ltc_deposited?.toFixed(8) || '0.00000000'} LTC</span>
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">Gesamt LTC eingezahlt:</span>
+              <span className="font-mono font-medium text-[11px] sm:text-sm">
+                {balance?.balance_ltc_deposited?.toFixed(8) || '0.00000000'}
+              </span>
             </div>
           </div>
         </div>
 
-        <div className="text-xs text-muted-foreground">
-          <p><strong>Hinweis:</strong> Die obigen Beträge zeigen dein verfügbares Krypto-Guthaben und die Gesamteinzahlungen. Klicke auf Aktualisieren um nach neuen eingehenden Zahlungen zu suchen.</p>
+        {/* Info Note */}
+        <div className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed">
+          <strong>Hinweis:</strong> Klicke auf Aktualisieren um nach neuen Zahlungen zu suchen.
         </div>
       </CardContent>
     </Card>
