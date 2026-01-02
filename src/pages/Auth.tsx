@@ -153,7 +153,7 @@ const Auth = () => {
                   <p className="text-sm text-muted-foreground">
                     Tritt unserer Community bei:
                   </p>
-                  <a href="https://t.me/+yXmX6a5jYN4wMmU0" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:text-primary/80 transition-colors">
+                  <a href="http://t.me/oracleXmarket" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:text-primary/80 transition-colors">
                     Oracle Market Chat →
                   </a>
                 </div>
