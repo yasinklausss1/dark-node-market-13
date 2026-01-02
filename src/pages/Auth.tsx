@@ -63,11 +63,11 @@ const Auth = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-background">
+    return <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'hsl(0, 0%, 4%)' }}>
         <div className="animate-spin rounded-full h-16 w-16 border-2 border-primary border-t-transparent"></div>
       </div>;
   }
-  return <div className="min-h-screen flex bg-background">
+  return <div className="min-h-screen flex" style={{ backgroundColor: 'hsl(0, 0%, 4%)' }}>
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-card">
         {/* Subtle pattern overlay */}
