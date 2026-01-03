@@ -103,25 +103,33 @@ serve(async (req) => {
     const { data: userAddresses, error: addressError } = await supabase
       .from('user_addresses')
       .select('user_id, currency, address')
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .neq('address', 'pending');
 
     if (addressError) throw addressError;
 
     // Get current crypto prices
-    const [btcResponse, ltcResponse] = await Promise.all([
-      fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur'),
-      fetch('https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=eur')
-    ]);
+    let BTC_EUR = 90000;
+    let LTC_EUR = 70;
+    
+    try {
+      const [btcResponse, ltcResponse] = await Promise.all([
+        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur'),
+        fetch('https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=eur')
+      ]);
 
-    const btcData = await btcResponse.json();
-    const ltcData = await ltcResponse.json();
-    const BTC_EUR = btcData.bitcoin.eur as number;
-    const LTC_EUR = ltcData.litecoin.eur as number;
+      const btcData = await btcResponse.json();
+      const ltcData = await ltcResponse.json();
+      BTC_EUR = btcData.bitcoin?.eur || BTC_EUR;
+      LTC_EUR = ltcData.litecoin?.eur || LTC_EUR;
+    } catch (priceError) {
+      console.warn('Failed to fetch prices, using fallback:', priceError);
+    }
 
     let processedCount = 0;
 
     // Process each address
-    for (const userAddr of userAddresses) {
+    for (const userAddr of userAddresses || []) {
       try {
         let apiUrl = '';
         let currentPrice = 0;
@@ -156,10 +164,11 @@ serve(async (req) => {
 
         for (const tx of transactions) {
           let amountSats = 0;
-          let txHash = tx.hash;
+          let txHash = tx.hash || tx.txid;
 
           // Calculate amount received to this address
           if (userAddr.currency === 'BTC') {
+            txHash = tx.txid;
             for (const vout of tx.vout || []) {
               if (vout.scriptpubkey_address === userAddr.address) {
                 amountSats += vout.value;
@@ -178,19 +187,32 @@ serve(async (req) => {
 
           const amountCrypto = amountSats / SATS;
 
-          // Check if we already processed this transaction
-          const { data: existingTx } = await supabase
+          // CRITICAL FIX: Check if this TX hash has ALREADY been processed GLOBALLY (not just for this user)
+          // This prevents the same TX from being matched to multiple deposit requests
+          const { data: existingTxGlobal } = await supabase
             .from('transactions')
             .select('id')
             .eq('btc_tx_hash', txHash)
-            .eq('user_id', userAddr.user_id)
-            .maybeSingle();
+            .limit(1);
 
-          if (existingTx) continue;
+          if (existingTxGlobal && existingTxGlobal.length > 0) {
+            // This TX has already been processed, skip it entirely
+            continue;
+          }
 
-          // Find matching pending deposit request
-          // Use percentage tolerance to handle network fees from sending wallets
-          const tolerance = amountCrypto * TOLERANCE_PERCENT;
+          // Also check if any deposit_request already has this tx_hash
+          const { data: existingDepositWithTx } = await supabase
+            .from('deposit_requests')
+            .select('id')
+            .eq('tx_hash', txHash)
+            .limit(1);
+
+          if (existingDepositWithTx && existingDepositWithTx.length > 0) {
+            // This TX is already linked to a deposit request, skip
+            continue;
+          }
+
+          // Find matching pending deposit request for THIS USER ONLY
           const now = new Date();
 
           // Get all pending requests for this user and currency, then filter
@@ -200,13 +222,13 @@ serve(async (req) => {
             .eq('user_id', userAddr.user_id)
             .eq('currency', userAddr.currency)
             .eq('status', 'pending')
+            .is('tx_hash', null) // CRITICAL: Only match requests that don't have a TX yet
             .gt('expires_at', now.toISOString())
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: true }); // Match oldest first (FIFO)
 
           if (reqErr) throw reqErr;
           
           // Find request where received amount is within 5% of expected (allowing for fees)
-          // Received amount should be <= expected (fees deducted) but >= expected - 5%
           const matchingRequest = requests?.find(req => {
             const expected = req.crypto_amount;
             const minAccepted = expected * (1 - TOLERANCE_PERCENT); // 95% of expected
@@ -214,24 +236,82 @@ serve(async (req) => {
             return amountCrypto >= minAccepted && amountCrypto <= maxAccepted;
           });
 
-          if (!matchingRequest) continue;
-
-          const request = matchingRequest;
-
-          // Get confirmations
+          // Get confirmations first (needed for both matched and orphan deposits)
           let confirmations = 0;
           if (userAddr.currency === 'BTC' && tx.status?.confirmed && tx.status.block_height) {
-            const tipRes = await fetch('https://mempool.space/api/blocks/tip/height');
-            const tip = await tipRes.json();
-            confirmations = Math.max(0, tip - tx.status.block_height + 1);
+            try {
+              const tipRes = await fetch('https://mempool.space/api/blocks/tip/height');
+              const tip = await tipRes.json();
+              confirmations = Math.max(0, tip - tx.status.block_height + 1);
+            } catch (e) {
+              console.warn('Failed to get BTC tip height');
+            }
           } else if (userAddr.currency === 'LTC' && tx.confirmations) {
             confirmations = tx.confirmations;
           }
 
-          // Calculate actual EUR value based on received crypto (may be less due to fees)
-          // Use the locked rate from the request for consistency
+          if (!matchingRequest) {
+            // NO MATCHING REQUEST - but this is a real deposit to the user's address!
+            // Credit it automatically if it has at least 1 confirmation
+            if (confirmations >= 1) {
+              console.log(`📥 Orphan deposit detected: ${amountCrypto} ${userAddr.currency} to ${userAddr.address}`);
+              
+              const amountEur = amountCrypto * currentPrice;
+
+              // Create transaction record
+              const { error: txError } = await supabase.from('transactions').insert({
+                user_id: userAddr.user_id,
+                type: 'deposit',
+                amount_eur: amountEur,
+                amount_btc: amountCrypto,
+                btc_tx_hash: txHash,
+                btc_confirmations: confirmations,
+                status: 'completed',
+                description: `${userAddr.currency} Einzahlung (automatisch erkannt)`
+              });
+
+              if (txError) {
+                console.error('Failed to create orphan transaction:', txError);
+                continue;
+              }
+
+              // Update wallet balance
+              const { data: bal } = await supabase
+                .from('wallet_balances')
+                .select('balance_eur, balance_btc, balance_ltc, balance_btc_deposited, balance_ltc_deposited')
+                .eq('user_id', userAddr.user_id)
+                .maybeSingle();
+
+              if (bal) {
+                const updateData: any = {
+                  balance_eur: Number(bal.balance_eur) + amountEur
+                };
+                
+                if (userAddr.currency === 'BTC') {
+                  updateData.balance_btc = Number(bal.balance_btc) + amountCrypto;
+                  updateData.balance_btc_deposited = Number(bal.balance_btc_deposited || 0) + amountCrypto;
+                } else {
+                  updateData.balance_ltc = Number(bal.balance_ltc) + amountCrypto;
+                  updateData.balance_ltc_deposited = Number(bal.balance_ltc_deposited || 0) + amountCrypto;
+                }
+
+                await supabase
+                  .from('wallet_balances')
+                  .update(updateData)
+                  .eq('user_id', userAddr.user_id);
+
+                console.log(`✅ Orphan deposit credited: ${amountEur.toFixed(2)} EUR (${amountCrypto} ${userAddr.currency}) to user ${userAddr.user_id}`);
+                processedCount++;
+              }
+            }
+            continue;
+          }
+
+          const request = matchingRequest;
+
+          // Calculate actual EUR value based on received crypto
           const actualEur = amountCrypto * request.rate_locked;
-          const amountEur = Math.min(actualEur, request.requested_eur); // Don't credit more than requested
+          const amountEur = Math.min(actualEur, request.requested_eur);
 
           // CRITICAL: If confirmed, do ALL operations atomically before marking as confirmed
           if (confirmations >= 1) {
@@ -240,16 +320,16 @@ serve(async (req) => {
               user_id: request.user_id,
               type: 'deposit',
               amount_eur: amountEur,
-              amount_btc: userAddr.currency === 'BTC' ? amountCrypto : amountCrypto, // Store crypto amount in amount_btc for both
+              amount_btc: amountCrypto,
               btc_tx_hash: txHash,
               btc_confirmations: confirmations,
               status: 'completed',
-              description: `${userAddr.currency} deposit (individual address)`
+              description: `${userAddr.currency} Einzahlung`
             });
 
             if (txError) {
               console.error(`Failed to create transaction for ${request.id}:`, txError);
-              continue; // Skip this one, try again next time
+              continue;
             }
 
             // Step 2: Update wallet balance
@@ -317,20 +397,20 @@ serve(async (req) => {
               await supabase
                 .from('deposit_requests')
                 .update({
-                  status: 'completed', // Use 'completed' to indicate fully processed
+                  status: 'completed',
                   tx_hash: txHash,
                   confirmations: confirmations
                 })
                 .eq('id', request.id);
 
-              console.log(`✅ Credited ${amountEur} EUR (${amountCrypto} ${userAddr.currency}) to user ${request.user_id}`);
+              console.log(`✅ Credited ${amountEur.toFixed(2)} EUR (${amountCrypto} ${userAddr.currency}) to user ${request.user_id}`);
               processedCount++;
             } else {
               // Mark as confirmed but not completed - will be retried
               await supabase
                 .from('deposit_requests')
                 .update({
-                  status: 'confirmed', // Needs balance update retry
+                  status: 'confirmed',
                   tx_hash: txHash,
                   confirmations: confirmations
                 })
@@ -354,11 +434,11 @@ serve(async (req) => {
               user_id: request.user_id,
               type: 'deposit',
               amount_eur: amountEur,
-              amount_btc: userAddr.currency === 'BTC' ? amountCrypto : amountCrypto,
+              amount_btc: amountCrypto,
               btc_tx_hash: txHash,
               btc_confirmations: confirmations,
               status: 'pending',
-              description: `${userAddr.currency} deposit (awaiting confirmation)`
+              description: `${userAddr.currency} Einzahlung (warte auf Bestätigung)`
             });
           }
         }
