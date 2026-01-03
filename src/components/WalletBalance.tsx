@@ -71,14 +71,16 @@ export function WalletBalance() {
 
     setRefreshing(true);
     try {
-      // Check for new deposits (individual addresses + legacy/shared address flow)
-      const [userDepositRes, sharedDepositRes] = await Promise.all([
+      // Check for new deposits (individual addresses + shared/legacy + centralized address flow)
+      const [userDepositRes, sharedDepositRes, centralDepositRes] = await Promise.all([
         supabase.functions.invoke('check-user-deposits'),
         supabase.functions.invoke('check-crypto-deposits'),
+        supabase.functions.invoke('check-central-deposits'),
       ]);
 
       if (userDepositRes.error) throw userDepositRes.error;
       if (sharedDepositRes.error) throw sharedDepositRes.error;
+      if (centralDepositRes.error) throw centralDepositRes.error;
 
       // Refresh balance after checking
       await fetchBalance();

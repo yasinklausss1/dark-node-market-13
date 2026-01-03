@@ -85,7 +85,7 @@ export function CentralizedDeposit() {
         },
         (payload) => {
           const newStatus = payload.new?.status;
-          if (newStatus === 'completed') {
+          if (newStatus === 'completed' || newStatus === 'confirmed') {
             setActiveRequest(null);
             setEurAmount("10");
             toast({
