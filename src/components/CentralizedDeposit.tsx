@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, Bitcoin, Coins, Euro, AlertCircle, CheckCircle, X } from "lucide-react";
+import { Copy, Bitcoin, Coins, Euro, CheckCircle, X, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,53 +17,85 @@ const CENTRAL_ADDRESSES = {
   LTC: 'Lejgj3ZCYryMz4b7ConCzv5wpEHqTZriFy'
 };
 
-interface DepositMemo {
+interface DepositRequest {
   id: string;
-  memo_code: string;
   currency: string;
-  requested_eur: number | null;
+  requested_eur: number;
+  crypto_amount: number;
+  fingerprint: number;
   status: string;
   expires_at: string;
+  address: string;
+  rate_locked: number;
 }
 
 export function CentralizedDeposit() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [selectedCrypto, setSelectedCrypto] = useState<"BTC" | "LTC">("BTC");
-  const [eurAmount, setEurAmount] = useState<string>("");
+  const [eurAmount, setEurAmount] = useState<string>("10");
   const [loading, setLoading] = useState(false);
-  const [activeMemo, setActiveMemo] = useState<DepositMemo | null>(null);
+  const [activeRequest, setActiveRequest] = useState<DepositRequest | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>("");
+  const [cryptoPrices, setCryptoPrices] = useState<{ btc: number; ltc: number }>({ btc: 90000, ltc: 100 });
 
-  // Check for existing active memo
+  // Fetch crypto prices
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const response = await fetch(
+          'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,litecoin&vs_currencies=eur'
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setCryptoPrices({
+            btc: data.bitcoin?.eur || 90000,
+            ltc: data.litecoin?.eur || 100
+          });
+        }
+      } catch (e) {
+        console.log('Using fallback prices');
+      }
+    };
+    fetchPrices();
+    const interval = setInterval(fetchPrices, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Check for existing active request
   useEffect(() => {
     if (user) {
-      checkExistingMemo();
+      checkExistingRequest();
     }
   }, [user]);
 
-  // Subscribe to memo status changes
+  // Subscribe to request status changes
   useEffect(() => {
-    if (!activeMemo || !user) return;
+    if (!activeRequest || !user) return;
 
     const channel = supabase
-      .channel('deposit-memo-status')
+      .channel('deposit-request-status')
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'deposit_memos',
-          filter: `id=eq.${activeMemo.id}`
+          table: 'deposit_requests',
+          filter: `id=eq.${activeRequest.id}`
         },
         (payload) => {
           const newStatus = payload.new?.status;
           if (newStatus === 'completed') {
-            setActiveMemo(null);
-            setEurAmount("");
+            setActiveRequest(null);
+            setEurAmount("10");
             toast({
               title: "Einzahlung erfolgreich! 🎉",
               description: "Dein Guthaben wurde aktualisiert.",
+            });
+          } else if (newStatus === 'received') {
+            toast({
+              title: "Zahlung erkannt! ⏳",
+              description: "Warten auf Blockchain-Bestätigung...",
             });
           }
         }
@@ -73,15 +105,15 @@ export function CentralizedDeposit() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeMemo, user, toast]);
+  }, [activeRequest, user, toast]);
 
   // Countdown timer
   useEffect(() => {
-    if (!activeMemo) return;
+    if (!activeRequest) return;
     
     const updateCountdown = () => {
       const now = new Date().getTime();
-      const expires = new Date(activeMemo.expires_at).getTime();
+      const expires = new Date(activeRequest.expires_at).getTime();
       const difference = expires - now;
       
       if (difference > 0) {
@@ -91,20 +123,20 @@ export function CentralizedDeposit() {
         setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
       } else {
         setTimeLeft("Abgelaufen");
-        setActiveMemo(null);
+        setActiveRequest(null);
       }
     };
     
     updateCountdown();
     const timer = setInterval(updateCountdown, 1000);
     return () => clearInterval(timer);
-  }, [activeMemo]);
+  }, [activeRequest]);
 
-  const checkExistingMemo = async () => {
+  const checkExistingRequest = async () => {
     if (!user) return;
     
     const { data, error } = await supabase
-      .from('deposit_memos')
+      .from('deposit_requests')
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'pending')
@@ -114,12 +146,17 @@ export function CentralizedDeposit() {
       .maybeSingle();
 
     if (!error && data) {
-      setActiveMemo(data);
+      setActiveRequest(data);
       setSelectedCrypto(data.currency as "BTC" | "LTC");
     }
   };
 
-  const createDepositMemo = async () => {
+  // Generate unique fingerprint (last 4 digits of satoshi/litoshi amount)
+  const generateFingerprint = (): number => {
+    return Math.floor(1000 + Math.random() * 8999); // 1000-9999
+  };
+
+  const createDepositRequest = async () => {
     if (!user) {
       toast({
         title: "Anmeldung erforderlich",
@@ -129,7 +166,17 @@ export function CentralizedDeposit() {
       return;
     }
 
-    if (activeMemo) {
+    const eurValue = parseFloat(eurAmount);
+    if (!eurValue || eurValue < 5) {
+      toast({
+        title: "Mindestbetrag",
+        description: "Mindesteinzahlung ist 5€",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (activeRequest) {
       toast({
         title: "Aktive Einzahlung",
         description: "Du hast bereits eine aktive Einzahlungsanfrage",
@@ -141,21 +188,30 @@ export function CentralizedDeposit() {
     setLoading(true);
     
     try {
-      // Generate unique memo code via database function
-      const { data: memoCode, error: codeError } = await supabase.rpc('generate_memo_code');
+      const price = selectedCrypto === "BTC" ? cryptoPrices.btc : cryptoPrices.ltc;
+      const baseCryptoAmount = eurValue / price;
       
-      if (codeError) throw codeError;
+      // Generate unique fingerprint and add to amount
+      const fingerprint = generateFingerprint();
+      // Add fingerprint as last digits: e.g., 0.00123456 -> fingerprint is 3456
+      const cryptoAmount = Math.floor(baseCryptoAmount * 100000000) / 100000000;
+      // Replace last 4 digits with fingerprint
+      const adjustedSatoshi = Math.floor(cryptoAmount * 100000000);
+      const finalSatoshi = Math.floor(adjustedSatoshi / 10000) * 10000 + fingerprint;
+      const finalCryptoAmount = finalSatoshi / 100000000;
 
-      const requestedEur = eurAmount ? parseFloat(eurAmount) : null;
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(); // 2 hours
 
       const { data, error } = await supabase
-        .from('deposit_memos')
+        .from('deposit_requests')
         .insert({
           user_id: user.id,
-          memo_code: memoCode,
           currency: selectedCrypto,
-          requested_eur: requestedEur,
+          requested_eur: eurValue,
+          crypto_amount: finalCryptoAmount,
+          fingerprint: fingerprint,
+          rate_locked: price,
+          address: CENTRAL_ADDRESSES[selectedCrypto],
           expires_at: expiresAt
         })
         .select()
@@ -163,15 +219,15 @@ export function CentralizedDeposit() {
 
       if (error) throw error;
 
-      setActiveMemo(data);
+      setActiveRequest(data);
       
       toast({
-        title: "Einzahlungs-Code erstellt",
-        description: `Dein Memo-Code: ${memoCode}`,
+        title: "Einzahlung erstellt",
+        description: `Sende exakt ${finalCryptoAmount.toFixed(8)} ${selectedCrypto}`,
       });
       
     } catch (error) {
-      console.error('Error creating deposit memo:', error);
+      console.error('Error creating deposit request:', error);
       toast({
         title: "Fehler",
         description: "Einzahlungsanfrage konnte nicht erstellt werden",
@@ -182,16 +238,16 @@ export function CentralizedDeposit() {
     }
   };
 
-  const cancelMemo = async () => {
-    if (!activeMemo) return;
+  const cancelRequest = async () => {
+    if (!activeRequest) return;
     
     await supabase
-      .from('deposit_memos')
+      .from('deposit_requests')
       .update({ status: 'expired' })
-      .eq('id', activeMemo.id);
+      .eq('id', activeRequest.id);
 
-    setActiveMemo(null);
-    setEurAmount("");
+    setActiveRequest(null);
+    setEurAmount("10");
     toast({
       title: "Abgebrochen",
       description: "Einzahlungsanfrage wurde abgebrochen",
@@ -212,22 +268,33 @@ export function CentralizedDeposit() {
   const iconColor = selectedCrypto === "BTC" ? "text-orange-500" : "text-blue-500";
   const bgColor = selectedCrypto === "BTC" ? "bg-orange-500/10" : "bg-blue-500/10";
 
+  // Calculate preview amount
+  const previewEur = parseFloat(eurAmount) || 0;
+  const previewPrice = selectedCrypto === "BTC" ? cryptoPrices.btc : cryptoPrices.ltc;
+  const previewCrypto = previewEur > 0 ? (previewEur / previewPrice).toFixed(8) : "0.00000000";
+
   // Active deposit view
-  if (activeMemo) {
+  if (activeRequest) {
+    const cryptoSymbol = activeRequest.currency;
+    const ActiveIcon = cryptoSymbol === "BTC" ? Bitcoin : Coins;
+    const activeIconColor = cryptoSymbol === "BTC" ? "text-orange-500" : "text-blue-500";
+    const activeBgColor = cryptoSymbol === "BTC" ? "bg-orange-500/10" : "bg-blue-500/10";
+    const activeCryptoName = cryptoSymbol === "BTC" ? "Bitcoin" : "Litecoin";
+
     return (
       <Card className="overflow-hidden">
         <CardHeader className="pb-3 sm:pb-4">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className={`p-1.5 ${bgColor} rounded-lg`}>
-                <CryptoIcon className={`h-5 w-5 ${iconColor}`} />
+              <div className={`p-1.5 ${activeBgColor} rounded-lg`}>
+                <ActiveIcon className={`h-5 w-5 ${activeIconColor}`} />
               </div>
               <span>Aktive Einzahlung</span>
             </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={cancelMemo}
+              onClick={cancelRequest}
               className="text-red-600 hover:text-red-700"
             >
               <X className="h-4 w-4 mr-1" />
@@ -236,36 +303,39 @@ export function CentralizedDeposit() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Important Instructions */}
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
+          {/* Critical: Exact Amount */}
+          <Alert className="border-amber-500 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
             <AlertDescription className="text-sm">
-              <strong>Wichtig:</strong> Füge den Memo-Code als Nachricht/Notiz bei deiner Transaktion hinzu!
+              <strong>WICHTIG:</strong> Sende <strong>EXAKT</strong> den angegebenen Betrag! Der eindeutige Betrag wird dir automatisch zugeordnet.
             </AlertDescription>
           </Alert>
 
-          {/* Memo Code - Most Important */}
+          {/* Exact Amount - Most Important */}
           <div className="bg-primary/10 border-2 border-primary rounded-xl p-4 text-center">
-            <Label className="text-xs text-muted-foreground">DEIN MEMO-CODE</Label>
+            <Label className="text-xs text-muted-foreground">SENDE EXAKT DIESEN BETRAG</Label>
             <div className="flex items-center justify-center gap-2 mt-1">
-              <code className="text-2xl sm:text-3xl font-bold font-mono tracking-widest">
-                {activeMemo.memo_code}
+              <code className="text-xl sm:text-2xl font-bold font-mono">
+                {activeRequest.crypto_amount.toFixed(8)} {cryptoSymbol}
               </code>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => copyToClipboard(activeMemo.memo_code, "Memo-Code")}
+                onClick={() => copyToClipboard(activeRequest.crypto_amount.toFixed(8), "Betrag")}
               >
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              ≈ €{activeRequest.requested_eur.toFixed(2)}
+            </p>
           </div>
 
           {/* QR Code */}
           <div className="flex justify-center">
             <div className="bg-white p-3 rounded-xl">
               <QRCodeSVG 
-                value={address}
+                value={`${cryptoSymbol.toLowerCase()}:${activeRequest.address}?amount=${activeRequest.crypto_amount}`}
                 size={160}
               />
             </div>
@@ -274,16 +344,16 @@ export function CentralizedDeposit() {
           {/* Address */}
           <div className="space-y-1.5">
             <Label className="text-sm text-muted-foreground">
-              {cryptoName}-Adresse:
+              {activeCryptoName}-Adresse:
             </Label>
             <div className="flex items-center gap-2">
               <code className="flex-1 p-2.5 bg-muted rounded-lg text-xs break-all font-mono">
-                {address}
+                {activeRequest.address}
               </code>
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => copyToClipboard(address, "Adresse")}
+                onClick={() => copyToClipboard(activeRequest.address, "Adresse")}
                 className="h-9 w-9 p-0"
               >
                 <Copy className="h-4 w-4" />
@@ -293,12 +363,14 @@ export function CentralizedDeposit() {
 
           {/* Status */}
           <div className="bg-muted/50 p-3 rounded-lg space-y-2 text-sm">
-            {activeMemo.requested_eur && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Gewünschter Betrag:</span>
-                <span className="font-medium">€{activeMemo.requested_eur.toFixed(2)}</span>
-              </div>
-            )}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Betrag:</span>
+              <span className="font-medium">€{activeRequest.requested_eur.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Kurs (gesperrt):</span>
+              <span className="font-medium">€{activeRequest.rate_locked?.toLocaleString()}</span>
+            </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Gültig noch:</span>
               <span className={`font-medium ${timeLeft === "Abgelaufen" ? "text-red-500" : "text-primary"}`}>
@@ -309,10 +381,9 @@ export function CentralizedDeposit() {
 
           {/* Instructions */}
           <div className="text-xs text-muted-foreground space-y-1">
-            <p>1. Kopiere die Adresse und den Memo-Code</p>
-            <p>2. Sende {cryptoName} an die Adresse</p>
-            <p>3. <strong>Wichtig:</strong> Füge den Memo-Code bei der Transaktion hinzu</p>
-            <p>4. Dein Guthaben wird nach Bestätigung gutgeschrieben</p>
+            <p>1. Kopiere die Adresse und den <strong>exakten Betrag</strong></p>
+            <p>2. Sende {activeCryptoName} an die Adresse</p>
+            <p>3. Dein Guthaben wird nach 1 Bestätigung gutgeschrieben</p>
           </div>
         </CardContent>
       </Card>
@@ -369,10 +440,10 @@ export function CentralizedDeposit() {
           </RadioGroup>
         </div>
 
-        {/* Amount (Optional) */}
+        {/* Amount */}
         <div className="space-y-2">
           <Label htmlFor="amount" className="text-sm">
-            Betrag in EUR (optional)
+            Betrag in EUR
           </Label>
           <div className="relative">
             <Euro className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -383,35 +454,51 @@ export function CentralizedDeposit() {
               onChange={(e) => setEurAmount(e.target.value)}
               placeholder="z.B. 50"
               className="pl-9"
-              min="0"
+              min="5"
               step="1"
             />
           </div>
-          <p className="text-xs text-muted-foreground">
-            Optional: Hilft uns deine Einzahlung zuzuordnen
-          </p>
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Min: 5€</span>
+            <span>≈ {previewCrypto} {selectedCrypto}</span>
+          </div>
+        </div>
+
+        {/* Quick amounts */}
+        <div className="flex gap-2 flex-wrap">
+          {[10, 25, 50, 100, 250].map((amount) => (
+            <Button
+              key={amount}
+              variant={eurAmount === String(amount) ? "default" : "outline"}
+              size="sm"
+              onClick={() => setEurAmount(String(amount))}
+              className="text-xs"
+            >
+              €{amount}
+            </Button>
+          ))}
         </div>
 
         {/* Advantages */}
         <div className="bg-muted/50 p-3 rounded-lg text-xs space-y-1">
           <div className="flex items-center gap-2 text-green-600">
             <CheckCircle className="h-3.5 w-3.5" />
-            <span>Keine Mindesteinzahlung</span>
+            <span>Automatische Zuordnung durch eindeutigen Betrag</span>
           </div>
           <div className="flex items-center gap-2 text-green-600">
             <CheckCircle className="h-3.5 w-3.5" />
-            <span>Automatische Gutschrift</span>
+            <span>Kurs wird für 2 Stunden gesperrt</span>
           </div>
           <div className="flex items-center gap-2 text-green-600">
             <CheckCircle className="h-3.5 w-3.5" />
-            <span>24 Stunden gültig</span>
+            <span>Funktioniert mit allen Wallets (Exodus, Ledger, etc.)</span>
           </div>
         </div>
 
         {/* Create Button */}
         <Button 
-          onClick={createDepositMemo} 
-          disabled={loading}
+          onClick={createDepositRequest} 
+          disabled={loading || !eurAmount || parseFloat(eurAmount) < 5}
           className="w-full"
         >
           {loading ? (

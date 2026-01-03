@@ -9,12 +9,8 @@ const corsHeaders = {
 const CENTRAL_BTC_ADDRESS = '16rmws2YNweEAsbVAV2KauwhFjP2myDfsf';
 const CENTRAL_LTC_ADDRESS = 'Lejgj3ZCYryMz4b7ConCzv5wpEHqTZriFy';
 
-interface Transaction {
-  txid: string;
-  value: number;
-  confirmations: number;
-  time?: number;
-}
+// Tolerance for amount matching (to account for minor network fee variations)
+const AMOUNT_TOLERANCE = 0.00000100; // 100 satoshi tolerance
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -26,7 +22,7 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('🔍 Starting central deposit check...');
+    console.log('🔍 Starting deposit check with fingerprint matching...');
 
     // Get current crypto prices
     let btcPrice = 90000;
@@ -47,21 +43,28 @@ Deno.serve(async (req) => {
 
     console.log(`💰 Prices: BTC=${btcPrice}€, LTC=${ltcPrice}€`);
 
-    // Get all pending deposit memos
-    const { data: pendingMemos, error: memosError } = await supabase
-      .from('deposit_memos')
+    // Get all pending deposit requests
+    const { data: pendingRequests, error: requestsError } = await supabase
+      .from('deposit_requests')
       .select('*')
-      .eq('status', 'pending')
+      .in('status', ['pending', 'received'])
       .gt('expires_at', new Date().toISOString());
 
-    if (memosError) {
-      console.error('Error fetching pending memos:', memosError);
-      throw memosError;
+    if (requestsError) {
+      console.error('Error fetching pending requests:', requestsError);
+      throw requestsError;
     }
 
-    console.log(`📋 Found ${pendingMemos?.length || 0} pending deposit memos`);
+    console.log(`📋 Found ${pendingRequests?.length || 0} pending deposit requests`);
 
-    if (!pendingMemos || pendingMemos.length === 0) {
+    if (!pendingRequests || pendingRequests.length === 0) {
+      // Expire old requests
+      await supabase
+        .from('deposit_requests')
+        .update({ status: 'expired' })
+        .eq('status', 'pending')
+        .lt('expires_at', new Date().toISOString());
+
       return new Response(JSON.stringify({ 
         success: true, 
         message: 'No pending deposits to check',
@@ -74,8 +77,8 @@ Deno.serve(async (req) => {
     let processedCount = 0;
 
     // Check BTC transactions
-    const btcMemos = pendingMemos.filter(m => m.currency === 'BTC');
-    if (btcMemos.length > 0) {
+    const btcRequests = pendingRequests.filter(r => r.currency === 'BTC');
+    if (btcRequests.length > 0) {
       try {
         console.log(`🔍 Checking BTC address: ${CENTRAL_BTC_ADDRESS}`);
         const btcResponse = await fetch(
@@ -87,7 +90,7 @@ Deno.serve(async (req) => {
           console.log(`📦 Found ${btcTxs.length} BTC transactions`);
           
           for (const tx of btcTxs) {
-            // Check if already processed
+            // Check if already processed globally
             const { data: existing } = await supabase
               .from('processed_deposits')
               .select('id')
@@ -107,39 +110,29 @@ Deno.serve(async (req) => {
             if (receivedSats === 0) continue;
 
             const receivedBtc = receivedSats / 100000000;
-            const receivedEur = receivedBtc * btcPrice;
             const confirmations = tx.status?.confirmed ? 1 : 0;
 
-            console.log(`💸 BTC TX ${tx.txid.substring(0, 16)}...: ${receivedBtc} BTC (${receivedEur.toFixed(2)}€)`);
+            console.log(`💸 BTC TX ${tx.txid.substring(0, 16)}...: ${receivedBtc} BTC, ${confirmations} conf`);
 
-            // Try to match with a memo (look for memo in OP_RETURN or amount matching)
-            // For now, credit to oldest pending BTC memo
-            const matchingMemo = btcMemos.find(m => m.status === 'pending');
+            // Match by fingerprint (exact amount matching)
+            const matchingRequest = btcRequests.find(r => {
+              const expectedAmount = r.crypto_amount;
+              const diff = Math.abs(receivedBtc - expectedAmount);
+              return diff <= AMOUNT_TOLERANCE;
+            });
 
-            if (matchingMemo && confirmations >= 1) {
-              console.log(`✅ Matched to memo ${matchingMemo.memo_code} for user ${matchingMemo.user_id}`);
+            if (matchingRequest) {
+              console.log(`✅ Matched TX to request ${matchingRequest.id} (fingerprint: ${matchingRequest.fingerprint})`);
               
-              // Update wallet balance
-              const { error: balanceError } = await supabase.rpc('get_or_create_wallet_balance', {
-                user_uuid: matchingMemo.user_id
-              });
-
-              if (!balanceError) {
-                await supabase
-                  .from('wallet_balances')
-                  .update({
-                    balance_btc_deposited: supabase.rpc('coalesce', { 
-                      value: receivedBtc,
-                      fallback: receivedBtc 
-                    })
-                  })
-                  .eq('user_id', matchingMemo.user_id);
-
-                // Direct SQL update for balance
+              if (confirmations >= 1) {
+                // Confirmed - credit balance
+                const receivedEur = receivedBtc * btcPrice;
+                
+                // Get current balance
                 const { data: currentBalance } = await supabase
                   .from('wallet_balances')
                   .select('balance_btc_deposited')
-                  .eq('user_id', matchingMemo.user_id)
+                  .eq('user_id', matchingRequest.user_id)
                   .single();
 
                 const newBalance = (currentBalance?.balance_btc_deposited || 0) + receivedBtc;
@@ -147,20 +140,17 @@ Deno.serve(async (req) => {
                 await supabase
                   .from('wallet_balances')
                   .update({ balance_btc_deposited: newBalance })
-                  .eq('user_id', matchingMemo.user_id);
+                  .eq('user_id', matchingRequest.user_id);
 
-                // Mark memo as completed
+                // Mark request as completed
                 await supabase
-                  .from('deposit_memos')
+                  .from('deposit_requests')
                   .update({
                     status: 'completed',
                     tx_hash: tx.txid,
-                    amount_received: receivedBtc,
-                    rate_at_receive: btcPrice,
-                    eur_credited: receivedEur,
-                    completed_at: new Date().toISOString()
+                    confirmations: confirmations
                   })
-                  .eq('id', matchingMemo.id);
+                  .eq('id', matchingRequest.id);
 
                 // Record processed deposit
                 await supabase
@@ -170,25 +160,40 @@ Deno.serve(async (req) => {
                     currency: 'BTC',
                     amount_crypto: receivedBtc,
                     amount_eur: receivedEur,
-                    user_id: matchingMemo.user_id,
-                    deposit_memo_id: matchingMemo.id
+                    user_id: matchingRequest.user_id
                   });
 
                 // Create transaction record
                 await supabase
                   .from('transactions')
                   .insert({
-                    user_id: matchingMemo.user_id,
+                    user_id: matchingRequest.user_id,
                     type: 'deposit',
                     amount_btc: receivedBtc,
                     amount_eur: receivedEur,
                     status: 'completed',
                     btc_tx_hash: tx.txid,
-                    description: `BTC Einzahlung (Memo: ${matchingMemo.memo_code})`
+                    description: `BTC Einzahlung`
                   });
 
                 processedCount++;
-                console.log(`✅ Credited ${receivedBtc} BTC to user ${matchingMemo.user_id}`);
+                console.log(`✅ Credited ${receivedBtc} BTC to user ${matchingRequest.user_id}`);
+                
+                // Remove from array to prevent double matching
+                const idx = btcRequests.indexOf(matchingRequest);
+                if (idx > -1) btcRequests.splice(idx, 1);
+              } else {
+                // Unconfirmed - mark as received
+                await supabase
+                  .from('deposit_requests')
+                  .update({ 
+                    status: 'received',
+                    tx_hash: tx.txid,
+                    confirmations: 0
+                  })
+                  .eq('id', matchingRequest.id);
+                
+                console.log(`⏳ TX received but waiting for confirmation`);
               }
             }
           }
@@ -199,8 +204,8 @@ Deno.serve(async (req) => {
     }
 
     // Check LTC transactions
-    const ltcMemos = pendingMemos.filter(m => m.currency === 'LTC');
-    if (ltcMemos.length > 0) {
+    const ltcRequests = pendingRequests.filter(r => r.currency === 'LTC');
+    if (ltcRequests.length > 0) {
       try {
         console.log(`🔍 Checking LTC address: ${CENTRAL_LTC_ADDRESS}`);
         const ltcResponse = await fetch(
@@ -229,75 +234,91 @@ Deno.serve(async (req) => {
 
             const receivedLitoshi = txRef.value;
             const receivedLtc = receivedLitoshi / 100000000;
-            const receivedEur = receivedLtc * ltcPrice;
             const confirmations = txRef.confirmations || 0;
 
-            console.log(`💸 LTC TX ${txHash.substring(0, 16)}...: ${receivedLtc} LTC (${receivedEur.toFixed(2)}€)`);
+            console.log(`💸 LTC TX ${txHash.substring(0, 16)}...: ${receivedLtc} LTC, ${confirmations} conf`);
 
-            // Match to oldest pending LTC memo
-            const matchingMemo = ltcMemos.find(m => m.status === 'pending');
+            // Match by fingerprint (exact amount matching)
+            const matchingRequest = ltcRequests.find(r => {
+              const expectedAmount = r.crypto_amount;
+              const diff = Math.abs(receivedLtc - expectedAmount);
+              return diff <= AMOUNT_TOLERANCE;
+            });
 
-            if (matchingMemo && confirmations >= 1) {
-              console.log(`✅ Matched to memo ${matchingMemo.memo_code} for user ${matchingMemo.user_id}`);
+            if (matchingRequest) {
+              console.log(`✅ Matched TX to request ${matchingRequest.id} (fingerprint: ${matchingRequest.fingerprint})`);
               
-              // Get current balance
-              const { data: currentBalance } = await supabase
-                .from('wallet_balances')
-                .select('balance_ltc_deposited')
-                .eq('user_id', matchingMemo.user_id)
-                .single();
+              if (confirmations >= 1) {
+                // Confirmed - credit balance
+                const receivedEur = receivedLtc * ltcPrice;
+                
+                // Get current balance
+                const { data: currentBalance } = await supabase
+                  .from('wallet_balances')
+                  .select('balance_ltc_deposited')
+                  .eq('user_id', matchingRequest.user_id)
+                  .single();
 
-              const newBalance = (currentBalance?.balance_ltc_deposited || 0) + receivedLtc;
-              
-              await supabase
-                .from('wallet_balances')
-                .update({ balance_ltc_deposited: newBalance })
-                .eq('user_id', matchingMemo.user_id);
+                const newBalance = (currentBalance?.balance_ltc_deposited || 0) + receivedLtc;
+                
+                await supabase
+                  .from('wallet_balances')
+                  .update({ balance_ltc_deposited: newBalance })
+                  .eq('user_id', matchingRequest.user_id);
 
-              // Mark memo as completed
-              await supabase
-                .from('deposit_memos')
-                .update({
-                  status: 'completed',
-                  tx_hash: txHash,
-                  amount_received: receivedLtc,
-                  rate_at_receive: ltcPrice,
-                  eur_credited: receivedEur,
-                  completed_at: new Date().toISOString()
-                })
-                .eq('id', matchingMemo.id);
+                // Mark request as completed
+                await supabase
+                  .from('deposit_requests')
+                  .update({
+                    status: 'completed',
+                    tx_hash: txHash,
+                    confirmations: confirmations
+                  })
+                  .eq('id', matchingRequest.id);
 
-              // Record processed deposit
-              await supabase
-                .from('processed_deposits')
-                .insert({
-                  tx_hash: txHash,
-                  currency: 'LTC',
-                  amount_crypto: receivedLtc,
-                  amount_eur: receivedEur,
-                  user_id: matchingMemo.user_id,
-                  deposit_memo_id: matchingMemo.id
-                });
+                // Record processed deposit
+                await supabase
+                  .from('processed_deposits')
+                  .insert({
+                    tx_hash: txHash,
+                    currency: 'LTC',
+                    amount_crypto: receivedLtc,
+                    amount_eur: receivedEur,
+                    user_id: matchingRequest.user_id
+                  });
 
-              // Create transaction record
-              await supabase
-                .from('transactions')
-                .insert({
-                  user_id: matchingMemo.user_id,
-                  type: 'deposit',
-                  amount_btc: receivedLtc, // Using btc field for LTC amount too
-                  amount_eur: receivedEur,
-                  status: 'completed',
-                  btc_tx_hash: txHash,
-                  description: `LTC Einzahlung (Memo: ${matchingMemo.memo_code})`
-                });
+                // Create transaction record
+                await supabase
+                  .from('transactions')
+                  .insert({
+                    user_id: matchingRequest.user_id,
+                    type: 'deposit',
+                    amount_btc: receivedLtc, // Using btc field for LTC
+                    amount_eur: receivedEur,
+                    status: 'completed',
+                    btc_tx_hash: txHash,
+                    description: `LTC Einzahlung`
+                  });
 
-              processedCount++;
-              console.log(`✅ Credited ${receivedLtc} LTC to user ${matchingMemo.user_id}`);
-              
-              // Remove from array to not match again
-              const idx = ltcMemos.indexOf(matchingMemo);
-              if (idx > -1) ltcMemos.splice(idx, 1);
+                processedCount++;
+                console.log(`✅ Credited ${receivedLtc} LTC to user ${matchingRequest.user_id}`);
+                
+                // Remove from array
+                const idx = ltcRequests.indexOf(matchingRequest);
+                if (idx > -1) ltcRequests.splice(idx, 1);
+              } else {
+                // Unconfirmed - mark as received
+                await supabase
+                  .from('deposit_requests')
+                  .update({ 
+                    status: 'received',
+                    tx_hash: txHash,
+                    confirmations: 0
+                  })
+                  .eq('id', matchingRequest.id);
+                
+                console.log(`⏳ TX received but waiting for confirmation`);
+              }
             }
           }
         }
@@ -306,9 +327,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Expire old memos
+    // Expire old requests
     await supabase
-      .from('deposit_memos')
+      .from('deposit_requests')
       .update({ status: 'expired' })
       .eq('status', 'pending')
       .lt('expires_at', new Date().toISOString());
