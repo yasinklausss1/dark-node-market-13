@@ -7,7 +7,8 @@ const corsHeaders = {
 };
 
 const SATS = 1e8;
-const TOLERANCE = 2 / SATS; // ±2 sats/litoshis
+// 5% tolerance to account for network fees deducted by sending wallets (e.g., Exodus)
+const TOLERANCE_PERCENT = 0.05;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -188,25 +189,34 @@ serve(async (req) => {
           if (existingTx) continue;
 
           // Find matching pending deposit request
-          const minAmt = amountCrypto - TOLERANCE;
-          const maxAmt = amountCrypto + TOLERANCE;
+          // Use percentage tolerance to handle network fees from sending wallets
+          const tolerance = amountCrypto * TOLERANCE_PERCENT;
           const now = new Date();
 
+          // Get all pending requests for this user and currency, then filter
           const { data: requests, error: reqErr } = await supabase
             .from('deposit_requests')
             .select('id, user_id, requested_eur, crypto_amount, rate_locked, created_at, expires_at')
             .eq('user_id', userAddr.user_id)
             .eq('currency', userAddr.currency)
             .eq('status', 'pending')
-            .gte('crypto_amount', minAmt)
-            .lte('crypto_amount', maxAmt)
             .gt('expires_at', now.toISOString())
-            .limit(1);
+            .order('created_at', { ascending: false });
 
           if (reqErr) throw reqErr;
-          if (!requests || requests.length === 0) continue;
+          
+          // Find request where received amount is within 5% of expected (allowing for fees)
+          // Received amount should be <= expected (fees deducted) but >= expected - 5%
+          const matchingRequest = requests?.find(req => {
+            const expected = req.crypto_amount;
+            const minAccepted = expected * (1 - TOLERANCE_PERCENT); // 95% of expected
+            const maxAccepted = expected * (1 + 0.01); // Allow 1% overpayment
+            return amountCrypto >= minAccepted && amountCrypto <= maxAccepted;
+          });
 
-          const request = requests[0];
+          if (!matchingRequest) continue;
+
+          const request = matchingRequest;
 
           // Get confirmations
           let confirmations = 0;
@@ -218,7 +228,10 @@ serve(async (req) => {
             confirmations = tx.confirmations;
           }
 
-          const amountEur = request.requested_eur;
+          // Calculate actual EUR value based on received crypto (may be less due to fees)
+          // Use the locked rate from the request for consistency
+          const actualEur = amountCrypto * request.rate_locked;
+          const amountEur = Math.min(actualEur, request.requested_eur); // Don't credit more than requested
 
           // CRITICAL: If confirmed, do ALL operations atomically before marking as confirmed
           if (confirmations >= 1) {
