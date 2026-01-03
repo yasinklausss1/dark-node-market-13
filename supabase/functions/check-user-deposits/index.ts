@@ -22,6 +22,82 @@ serve(async (req) => {
 
     console.log('Checking user deposits...');
 
+    // FIRST: Retry any confirmed deposits that failed balance update
+    const { data: failedDeposits } = await supabase
+      .from('deposit_requests')
+      .select('id, user_id, currency, requested_eur, crypto_amount, tx_hash')
+      .eq('status', 'confirmed'); // These are confirmed but balance update failed
+
+    if (failedDeposits && failedDeposits.length > 0) {
+      console.log(`Retrying ${failedDeposits.length} failed balance updates...`);
+      
+      for (const deposit of failedDeposits) {
+        try {
+          // Check if transaction already exists
+          const { data: existingTx } = await supabase
+            .from('transactions')
+            .select('id, status')
+            .eq('btc_tx_hash', deposit.tx_hash)
+            .eq('user_id', deposit.user_id)
+            .maybeSingle();
+
+          // Create transaction if missing
+          if (!existingTx) {
+            await supabase.from('transactions').insert({
+              user_id: deposit.user_id,
+              type: 'deposit',
+              amount_eur: deposit.requested_eur,
+              amount_btc: deposit.crypto_amount,
+              btc_tx_hash: deposit.tx_hash,
+              btc_confirmations: 1,
+              status: 'completed',
+              description: `${deposit.currency} deposit (retry)`
+            });
+          } else if (existingTx.status === 'pending') {
+            await supabase.from('transactions')
+              .update({ status: 'completed', btc_confirmations: 1 })
+              .eq('id', existingTx.id);
+          }
+
+          // Update wallet balance
+          const { data: bal } = await supabase
+            .from('wallet_balances')
+            .select('balance_eur, balance_btc, balance_ltc, balance_btc_deposited, balance_ltc_deposited')
+            .eq('user_id', deposit.user_id)
+            .maybeSingle();
+
+          if (bal) {
+            const updateData: any = {
+              balance_eur: Number(bal.balance_eur) + Number(deposit.requested_eur)
+            };
+            
+            if (deposit.currency === 'BTC') {
+              updateData.balance_btc = Number(bal.balance_btc) + Number(deposit.crypto_amount);
+              updateData.balance_btc_deposited = Number(bal.balance_btc_deposited || 0) + Number(deposit.crypto_amount);
+            } else {
+              updateData.balance_ltc = Number(bal.balance_ltc) + Number(deposit.crypto_amount);
+              updateData.balance_ltc_deposited = Number(bal.balance_ltc_deposited || 0) + Number(deposit.crypto_amount);
+            }
+
+            const { error: updateError } = await supabase
+              .from('wallet_balances')
+              .update(updateData)
+              .eq('user_id', deposit.user_id);
+
+            if (!updateError) {
+              await supabase
+                .from('deposit_requests')
+                .update({ status: 'completed' })
+                .eq('id', deposit.id);
+              console.log(`✅ Retry successful for deposit ${deposit.id}`);
+            }
+          }
+        } catch (err) {
+          console.error(`Retry failed for deposit ${deposit.id}:`, err);
+        }
+      }
+    }
+
     // Get all active user addresses
     const { data: userAddresses, error: addressError } = await supabase
       .from('user_addresses')
@@ -142,41 +218,40 @@ serve(async (req) => {
             confirmations = tx.confirmations;
           }
 
-          // Mark request as received/confirmed
-          await supabase
-            .from('deposit_requests')
-            .update({
-              status: confirmations >= 1 ? 'confirmed' : 'received',
-              tx_hash: txHash,
-              confirmations: confirmations
-            })
-            .eq('id', request.id);
-
-          // Create transaction record
           const amountEur = request.requested_eur;
-          await supabase.from('transactions').insert({
-            user_id: request.user_id,
-            type: 'deposit',
-            amount_eur: amountEur,
-            amount_btc: userAddr.currency === 'BTC' ? amountCrypto : 0,
-            btc_tx_hash: txHash,
-            btc_confirmations: confirmations,
-            status: confirmations >= 1 ? 'completed' : 'pending',
-            description: `${userAddr.currency} deposit (individual address)`
-          });
 
-          // Update wallet balance if confirmed
+          // CRITICAL: If confirmed, do ALL operations atomically before marking as confirmed
           if (confirmations >= 1) {
+            // Step 1: Create transaction record FIRST
+            const { error: txError } = await supabase.from('transactions').insert({
+              user_id: request.user_id,
+              type: 'deposit',
+              amount_eur: amountEur,
+              amount_btc: userAddr.currency === 'BTC' ? amountCrypto : amountCrypto, // Store crypto amount in amount_btc for both
+              btc_tx_hash: txHash,
+              btc_confirmations: confirmations,
+              status: 'completed',
+              description: `${userAddr.currency} deposit (individual address)`
+            });
+
+            if (txError) {
+              console.error(`Failed to create transaction for ${request.id}:`, txError);
+              continue; // Skip this one, try again next time
+            }
+
+            // Step 2: Update wallet balance
             const { data: bal } = await supabase
               .from('wallet_balances')
               .select('balance_eur, balance_btc, balance_ltc, balance_btc_deposited, balance_ltc_deposited')
               .eq('user_id', request.user_id)
               .maybeSingle();
 
-            const updateData: any = {};
-            
+            let balanceUpdateSuccess = false;
+
             if (bal) {
-              updateData.balance_eur = Number(bal.balance_eur) + amountEur;
+              const updateData: any = {
+                balance_eur: Number(bal.balance_eur) + amountEur
+              };
               
               if (userAddr.currency === 'BTC') {
                 updateData.balance_btc = Number(bal.balance_btc) + amountCrypto;
@@ -186,10 +261,15 @@ serve(async (req) => {
                 updateData.balance_ltc_deposited = Number(bal.balance_ltc_deposited || 0) + amountCrypto;
               }
 
-              await supabase
+              const { error: updateError } = await supabase
                 .from('wallet_balances')
                 .update(updateData)
                 .eq('user_id', request.user_id);
+
+              balanceUpdateSuccess = !updateError;
+              if (updateError) {
+                console.error(`Failed to update balance for ${request.user_id}:`, updateError);
+              }
             } else {
               // Create new balance
               const newBalance: any = {
@@ -209,13 +289,64 @@ serve(async (req) => {
                 newBalance.balance_ltc_deposited = amountCrypto;
               }
 
-              await supabase
+              const { error: insertError } = await supabase
                 .from('wallet_balances')
                 .insert(newBalance);
+
+              balanceUpdateSuccess = !insertError;
+              if (insertError) {
+                console.error(`Failed to create balance for ${request.user_id}:`, insertError);
+              }
             }
 
-            console.log(`Credited ${amountEur} EUR (${amountCrypto} ${userAddr.currency}) to user ${request.user_id}`);
-            processedCount++;
+            // Step 3: ONLY mark as completed if balance was updated successfully
+            if (balanceUpdateSuccess) {
+              await supabase
+                .from('deposit_requests')
+                .update({
+                  status: 'completed', // Use 'completed' to indicate fully processed
+                  tx_hash: txHash,
+                  confirmations: confirmations
+                })
+                .eq('id', request.id);
+
+              console.log(`✅ Credited ${amountEur} EUR (${amountCrypto} ${userAddr.currency}) to user ${request.user_id}`);
+              processedCount++;
+            } else {
+              // Mark as confirmed but not completed - will be retried
+              await supabase
+                .from('deposit_requests')
+                .update({
+                  status: 'confirmed', // Needs balance update retry
+                  tx_hash: txHash,
+                  confirmations: confirmations
+                })
+                .eq('id', request.id);
+              
+              console.warn(`⚠️ Deposit ${request.id} confirmed but balance update failed - will retry`);
+            }
+          } else {
+            // Not yet confirmed - just mark as received
+            await supabase
+              .from('deposit_requests')
+              .update({
+                status: 'received',
+                tx_hash: txHash,
+                confirmations: confirmations
+              })
+              .eq('id', request.id);
+
+            // Create pending transaction record
+            await supabase.from('transactions').insert({
+              user_id: request.user_id,
+              type: 'deposit',
+              amount_eur: amountEur,
+              amount_btc: userAddr.currency === 'BTC' ? amountCrypto : amountCrypto,
+              btc_tx_hash: txHash,
+              btc_confirmations: confirmations,
+              status: 'pending',
+              description: `${userAddr.currency} deposit (awaiting confirmation)`
+            });
           }
         }
       } catch (error) {
