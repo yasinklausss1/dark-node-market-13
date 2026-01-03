@@ -196,6 +196,37 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
     };
   };
 
+  // Calculate max withdrawal based on balance, limits, and pool liquidity
+  const getMaxWithdrawal = () => {
+    if (!balance || !limits || !fees.length) return 0;
+
+    const cryptoPrice = selectedCrypto === 'BTC' ? btcPrice : ltcPrice;
+    if (!cryptoPrice) return 0;
+
+    const currentBalance = selectedCrypto === 'BTC' ? balance.balance_btc : balance.balance_ltc;
+    const balanceInEur = currentBalance * cryptoPrice;
+
+    // Pool liquidity limit
+    const currentPoolBalance = selectedCrypto === 'BTC' ? poolLiquidity.btc : poolLiquidity.ltc;
+    const poolLiquidityInEur = currentPoolBalance !== null ? currentPoolBalance * cryptoPrice : Infinity;
+
+    // Daily/monthly remaining
+    const dailyRemaining = limits.withdrawal_limit_daily_eur - limits.daily_spent;
+    const monthlyRemaining = limits.withdrawal_limit_monthly_eur - limits.monthly_spent;
+
+    // Get the minimum of all constraints
+    const maxAmount = Math.min(balanceInEur, poolLiquidityInEur * 0.95, dailyRemaining, monthlyRemaining);
+    
+    return Math.max(0, Math.floor(maxAmount * 100) / 100); // Round down to 2 decimals
+  };
+
+  const handleSetMaxAmount = () => {
+    const maxAmount = getMaxWithdrawal();
+    if (maxAmount > 0) {
+      setAmount(maxAmount.toString());
+    }
+  };
+
   const validateWithdrawal = () => {
     const amountEur = parseFloat(amount);
     const calculation = calculateWithdrawal();
@@ -384,54 +415,68 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Currency Selection */}
-          <div className="space-y-3">
-            <Label>Währung auswählen</Label>
-            <RadioGroup
-              value={selectedCrypto}
-              onValueChange={(value: 'BTC' | 'LTC') => setSelectedCrypto(value)}
-              className="flex space-x-6"
+        <div className="space-y-4">
+          {/* Currency Selection - Compact */}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={selectedCrypto === 'BTC' ? 'default' : 'outline'}
+              onClick={() => setSelectedCrypto('BTC')}
+              className="flex-1"
             >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="BTC" id="btc" />
-                <Label htmlFor="btc" className="flex items-center gap-2">
-                  Bitcoin (BTC)
-                  {balance && (
-                    <span className="text-sm text-muted-foreground">
-                      {balance.balance_btc.toFixed(8)} BTC
-                    </span>
-                  )}
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="LTC" id="ltc" />
-                <Label htmlFor="ltc" className="flex items-center gap-2">
-                  Litecoin (LTC)
-                  {balance && (
-                    <span className="text-sm text-muted-foreground">
-                      {balance.balance_ltc.toFixed(8)} LTC
-                    </span>
-                  )}
-                </Label>
-              </div>
-            </RadioGroup>
+              Bitcoin (BTC)
+            </Button>
+            <Button
+              type="button"
+              variant={selectedCrypto === 'LTC' ? 'default' : 'outline'}
+              onClick={() => setSelectedCrypto('LTC')}
+              className="flex-1"
+            >
+              Litecoin (LTC)
+            </Button>
           </div>
 
-          {/* Amount Input */}
+          {/* Balance & Max Amount Info */}
+          <div className="p-3 bg-muted rounded-lg space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium">Dein Guthaben:</span>
+              <span className="font-mono text-sm">
+                {balance ? (selectedCrypto === 'BTC' ? balance.balance_btc.toFixed(8) : balance.balance_ltc.toFixed(8)) : '0'} {selectedCrypto}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Max. auszahlbar:</span>
+              <span className="font-semibold text-primary">{getMaxWithdrawal().toFixed(2)} EUR</span>
+            </div>
+          </div>
+
+          {/* Amount Input with Max Button */}
           <div className="space-y-2">
             <Label htmlFor="amount">Betrag (EUR)</Label>
-            <Input
-              id="amount"
-              type="number"
-              placeholder="Betrag in EUR eingeben"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              min={fee?.min_amount_eur || 0}
-              step="0.01"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="amount"
+                type="number"
+                placeholder="Betrag in EUR"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                min={fee?.min_amount_eur || 0}
+                max={getMaxWithdrawal()}
+                step="0.01"
+                className="flex-1"
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleSetMaxAmount}
+                disabled={getMaxWithdrawal() <= 0}
+                className="px-4"
+              >
+                Max
+              </Button>
+            </div>
             {fee && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Minimum: {fee.min_amount_eur} EUR
               </p>
             )}
@@ -449,119 +494,16 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
             />
           </div>
 
-          {/* Fee Information */}
+          {/* Fee Summary - Compact */}
           {calculation && fee && (
-            <div className="space-y-2 p-3 bg-muted rounded-lg">
-              <h4 className="font-medium">Transaktionsdetails</h4>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span>Betrag:</span>
-                  <span>{amount} EUR</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Grundgebühr:</span>
-                  <span>{fee.base_fee_eur.toFixed(2)} EUR</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Prozentuale Gebühr ({(fee.percentage_fee * 100).toFixed(1)}%):</span>
-                  <span>{((parseFloat(amount) || 0) * fee.percentage_fee).toFixed(2)} EUR</span>
-                </div>
-                <div className="flex justify-between font-medium">
-                  <span>Gebühren gesamt:</span>
-                  <span>{calculation.totalFee.toFixed(2)} EUR</span>
-                </div>
-                <div className="flex justify-between font-medium">
-                  <span>Du erhältst:</span>
-                  <span>≈ {calculation.cryptoAmount.toFixed(8)} {selectedCrypto}</span>
-                </div>
+            <div className="p-3 bg-muted rounded-lg space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Gebühren:</span>
+                <span>{calculation.totalFee.toFixed(2)} EUR</span>
               </div>
-              
-              {/* Transaction Time Information */}
-              <div className="mt-3 pt-3 border-t space-y-1 text-xs text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>Bearbeitungszeit:</span>
-                  <span>~2-5 Minuten</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Netzwerk-Bestätigung:</span>
-                  <span>{selectedCrypto === 'BTC' ? '~10-60 Min' : selectedCrypto === 'LTC' ? '~2,5-15 Min' : '~20-30 Min'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Vollständige Abwicklung:</span>
-                  <span>{selectedCrypto === 'BTC' ? '~1-3 Stunden' : selectedCrypto === 'LTC' ? '~15-45 Min' : '~30-60 Min'}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Pool Liquidity Warning */}
-          {(() => {
-            const currentPoolBalance = selectedCrypto === 'BTC' ? poolLiquidity.btc : poolLiquidity.ltc;
-            const cryptoAmount = calculation?.cryptoAmount || 0;
-            const isLowLiquidity = currentPoolBalance !== null && currentPoolBalance < cryptoAmount * 1.2;
-            const isInsufficientLiquidity = currentPoolBalance !== null && currentPoolBalance < cryptoAmount;
-            
-            if (poolLiquidity.loading) {
-              return (
-                <div className="p-3 bg-muted rounded-lg">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Pool-Liquidität wird geprüft...
-                  </div>
-                </div>
-              );
-            }
-            
-            if (currentPoolBalance !== null) {
-              return (
-                <div className={`p-3 rounded-lg ${isInsufficientLiquidity ? 'bg-destructive/10 border border-destructive' : isLowLiquidity ? 'bg-yellow-500/10 border border-yellow-500' : 'bg-green-500/10 border border-green-500'}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    {isInsufficientLiquidity ? (
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
-                    ) : isLowLiquidity ? (
-                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                    ) : (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    )}
-                    <span className="font-medium text-sm">
-                      {isInsufficientLiquidity ? 'Unzureichende Pool-Liquidität' : isLowLiquidity ? 'Niedrige Pool-Liquidität' : 'Pool-Liquidität OK'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {selectedCrypto}-Pool: {currentPoolBalance.toFixed(8)} {selectedCrypto} verfügbar
-                  </p>
-                  {isInsufficientLiquidity && (
-                    <p className="text-xs text-destructive mt-1">
-                      Nicht genug Liquidität für diese Auszahlung. Bitte wähle einen kleineren Betrag oder versuche es später erneut.
-                    </p>
-                  )}
-                </div>
-              );
-            }
-            return null;
-          })()}
-
-          {/* Limits Information */}
-          {limits && (
-            <div className="space-y-2 p-3 bg-muted rounded-lg">
-              <h4 className="font-medium">Auszahlungslimits</h4>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span>Tägliches Limit:</span>
-                  <span>{limits.withdrawal_limit_daily_eur} EUR</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Heute verwendet:</span>
-                  <span>{limits.daily_spent.toFixed(2)} EUR</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Monatliches Limit:</span>
-                  <span>{limits.withdrawal_limit_monthly_eur} EUR</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Monatlich verwendet:</span>
-                  <span>{limits.monthly_spent.toFixed(2)} EUR</span>
-                </div>
+              <div className="flex justify-between font-semibold text-base">
+                <span>Du erhältst:</span>
+                <span className="text-primary">≈ {calculation.cryptoAmount.toFixed(8)} {selectedCrypto}</span>
               </div>
             </div>
           )}
