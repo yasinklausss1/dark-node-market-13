@@ -8,6 +8,12 @@ const corsHeaders = {
 
 const ADMIN_USER_ID = '0af916bb-1c03-4173-a898-fd4274ae4a2b'
 
+// Hardcoded fee addresses (2% escrow fee)
+const FEE_ADDRESSES = {
+  BTC: 'bc1q2yqlvcucm0dd39p49tymfw0e3pg3f5xup3es7g',
+  LTC: 'ltc1qen9f64z87lgkf35qz5ap0qf2xgjphh0cdtwvnf'
+}
+
 // Decrypt private key (AES-GCM) - MUST use same key as encryption in generate-user-addresses
 async function decryptPrivateKey(encryptedKey: string): Promise<string> {
   const decoder = new TextDecoder()
@@ -266,13 +272,8 @@ serve(async (req) => {
         throw new Error(`Seller ${currency} wallet not found`)
       }
 
-      // Get admin fee address for this currency
-      const { data: adminFeeAddress } = await supabase
-        .from('admin_fee_addresses')
-        .select('address, balance')
-        .eq('admin_user_id', ADMIN_USER_ID)
-        .eq('currency', currency.toUpperCase())
-        .maybeSingle()
+      // Use hardcoded fee address
+      const feeAddress = FEE_ADDRESSES[currency.toUpperCase() as keyof typeof FEE_ADDRESSES]
 
       // Decrypt buyer's private key
       console.log('Decrypting buyer private key...')
@@ -362,25 +363,48 @@ serve(async (req) => {
           btc_tx_hash: txHash
         })
 
-        // Update admin fee address balance (fees stay in buyer's wallet for now, need separate TX)
-        if (adminFeeAddress && feeAmountSmallest > 0) {
-          // For simplicity, we track fees internally - a separate process can sweep them
-          await supabase
-            .from('admin_fee_addresses')
-            .update({ balance: Number(adminFeeAddress.balance) + Number(fee_amount_crypto) })
-            .eq('admin_user_id', ADMIN_USER_ID)
-            .eq('currency', currency.toUpperCase())
+        // Send fee to hardcoded fee address
+        if (feeAddress && feeAmountSmallest > 0) {
+          try {
+            console.log(`Sending ${fee_amount_crypto} ${currency} fee to ${feeAddress}`)
+            
+            let feeTxHash = ''
+            if (currency.toUpperCase() === 'BTC') {
+              const feeResult = await sendBitcoinTransaction(
+                privateKey,
+                buyerAddress.address,
+                feeAddress,
+                feeAmountSmallest
+              )
+              feeTxHash = feeResult.txHash
+            } else if (currency.toUpperCase() === 'LTC') {
+              const feeResult = await sendLitecoinTransaction(
+                privateKey,
+                buyerAddress.address,
+                feeAddress,
+                feeAmountSmallest
+              )
+              feeTxHash = feeResult.txHash
+            }
+            
+            console.log(`Fee transaction sent! TX Hash: ${feeTxHash}`)
 
-          // Record fee transaction
-          await supabase.from('admin_fee_transactions').insert({
-            escrow_holding_id: holding.id,
-            order_id: orderId,
-            amount_eur: fee_amount_eur,
-            amount_crypto: fee_amount_crypto,
-            currency: currency.toUpperCase(),
-            transaction_type: 'fee_collected',
-            status: 'completed'
-          })
+            // Record fee transaction
+            await supabase.from('admin_fee_transactions').insert({
+              escrow_holding_id: holding.id,
+              order_id: orderId,
+              amount_eur: fee_amount_eur,
+              amount_crypto: fee_amount_crypto,
+              currency: currency.toUpperCase(),
+              transaction_type: 'fee_collected',
+              status: 'completed',
+              tx_hash: feeTxHash,
+              destination_address: feeAddress
+            })
+          } catch (feeError) {
+            console.error('Fee transaction failed (non-critical):', feeError)
+            // Continue even if fee fails - seller payment was successful
+          }
         }
 
         console.log(`Escrow ${holding.id} released successfully with blockchain TX: ${txHash}`)
