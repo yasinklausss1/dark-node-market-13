@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.fix-deposit-balance]
 verify_jwt = false
+
+[functions.manual-balance-correction]
+verify_jwt = false
