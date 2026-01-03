@@ -55,6 +55,30 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     digitalContent: ''
   });
 
+  // Fetch categories and subcategories first, then load product data
+  useEffect(() => {
+    const init = async () => {
+      // Fetch categories
+      const { data: catData } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      setCategories(catData || []);
+
+      // Fetch subcategories
+      const { data: subData } = await supabase
+        .from('subcategories')
+        .select('*')
+        .order('name');
+      setSubcategories(subData || []);
+    };
+    
+    if (open) {
+      init();
+    }
+  }, [open]);
+
+  // Load product data after modal opens
   useEffect(() => {
     const loadProductData = async () => {
       if (product && open) {
@@ -88,39 +112,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
 
     loadProductData();
   }, [product, open]);
-
-  useEffect(() => {
-    fetchCategories();
-    fetchSubcategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name');
-    
-    if (error) {
-      console.error('Error fetching categories:', error);
-      return;
-    }
-
-    setCategories(data || []);
-  };
-
-  const fetchSubcategories = async () => {
-    const { data, error } = await supabase
-      .from('subcategories')
-      .select('*')
-      .order('name');
-    
-    if (error) {
-      console.error('Error fetching subcategories:', error);
-      return;
-    }
-
-    setSubcategories(data || []);
-  };
 
   const getSelectedCategoryId = () => {
     const category = categories.find(c => c.name === formData.category);
