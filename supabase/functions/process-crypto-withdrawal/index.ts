@@ -6,6 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const ADMIN_USER_ID = '0af916bb-1c03-4173-a898-fd4274ae4a2b'
+
 // Decrypt private key (AES-GCM) - MUST use same key as encryption in generate-user-addresses
 async function decryptPrivateKey(encryptedKey: string): Promise<string> {
   const decoder = new TextDecoder()
@@ -351,22 +353,27 @@ serve(async (req) => {
       )
     }
 
-    // Get user's wallet address and encrypted private key
-    const { data: addressData, error: addressError } = await adminClient
-      .from('user_addresses')
+    // *** CRITICAL FIX: Get ADMIN wallet for withdrawals, not user wallet ***
+    // Since user balances are internal ledger (from sales), we need to send from the admin/platform wallet
+    const { data: adminWallet, error: adminWalletError } = await adminClient
+      .from('admin_fee_addresses')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('admin_user_id', ADMIN_USER_ID)
       .eq('currency', currency)
-      .eq('is_active', true)
       .single()
 
-    if (addressError || !addressData || !addressData.private_key_encrypted) {
-      console.error('Address error:', addressError)
+    if (adminWalletError || !adminWallet || !adminWallet.private_key_encrypted) {
+      console.error('Admin wallet error:', adminWalletError)
       return new Response(
-        JSON.stringify({ error: `Keine aktive ${currency}-Wallet gefunden. Bitte zuerst Wallet generieren.` }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: `Plattform-Wallet für ${currency} nicht konfiguriert. Bitte Admin kontaktieren.` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Check if admin wallet has enough balance for the withdrawal
+    // We need to check the actual blockchain balance, not just the DB balance
+    console.log(`Admin wallet ${adminWallet.address} DB balance: ${adminWallet.balance} ${currency}`)
+    console.log(`User requesting withdrawal of ${cryptoAmount} ${currency} (net after fees)`)
 
     // Create withdrawal request with status 'processing'
     const { data: withdrawalRequest, error: insertError } = await adminClient
@@ -388,9 +395,9 @@ serve(async (req) => {
       throw new Error('Auszahlungsanfrage konnte nicht erstellt werden')
     }
 
-    console.log(`Created withdrawal request ${withdrawalRequest.id}, now processing blockchain transaction...`)
+    console.log(`Created withdrawal request ${withdrawalRequest.id}, now processing blockchain transaction from admin wallet...`)
 
-    // Deduct balance immediately
+    // Deduct balance from USER's internal ledger
     const balanceField = currency === 'BTC' ? 'balance_btc' : 'balance_ltc'
     const newBalance = userBalance - totalCryptoNeeded
 
@@ -420,10 +427,10 @@ serve(async (req) => {
       transaction_direction: 'outgoing',
     }).select().single()
 
-    // Now attempt to send the actual blockchain transaction
+    // Now attempt to send the actual blockchain transaction FROM ADMIN WALLET
     try {
-      // Decrypt private key (uses SERVICE_ROLE_KEY, same as encryption)
-      const privateKey = await decryptPrivateKey(addressData.private_key_encrypted)
+      // Decrypt ADMIN private key
+      const privateKey = await decryptPrivateKey(adminWallet.private_key_encrypted)
       
       let txHash: string
       
@@ -432,7 +439,7 @@ serve(async (req) => {
         const satoshiAmount = Math.floor(cryptoAmount * 100000000)
         txHash = await sendBitcoinTransaction(
           privateKey,
-          addressData.address,
+          adminWallet.address,  // Send FROM admin wallet
           destinationAddress,
           satoshiAmount
         )
@@ -441,7 +448,7 @@ serve(async (req) => {
         const litoshiAmount = Math.floor(cryptoAmount * 100000000)
         txHash = await sendLitecoinTransaction(
           privateKey,
-          addressData.address,
+          adminWallet.address,  // Send FROM admin wallet
           destinationAddress,
           litoshiAmount
         )
@@ -470,7 +477,16 @@ serve(async (req) => {
           .eq('id', txRecord.id)
       }
 
-      console.log(`Withdrawal ${withdrawalRequest.id} completed successfully. TX: ${txHash}`)
+      // Update admin wallet balance in DB (reduce by amount sent)
+      await adminClient
+        .from('admin_fee_addresses')
+        .update({
+          balance: Number(adminWallet.balance) - cryptoAmount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', adminWallet.id)
+
+      console.log(`Withdrawal ${withdrawalRequest.id} completed successfully from admin wallet. TX: ${txHash}`)
 
       return new Response(
         JSON.stringify({
@@ -498,16 +514,16 @@ serve(async (req) => {
         })
         .eq('id', withdrawalRequest.id)
 
-      // Refund the balance
+      // Refund the user's balance since transaction failed
       await adminClient
         .from('wallet_balances')
         .update({
-          [balanceField]: userBalance, // Restore original balance
+          [balanceField]: userBalance,  // Restore original balance
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', user.id)
 
-      // Update transaction as failed
+      // Update transaction record as failed
       if (txRecord) {
         await adminClient
           .from('transactions')
@@ -520,15 +536,15 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({ 
-          error: `Blockchain-Transaktion fehlgeschlagen: ${txError.message}`,
-          details: 'Dein Guthaben wurde zurückerstattet.'
+          error: `Blockchain-Transaktion fehlgeschlagen: ${txError.message}. Dein Guthaben wurde zurückerstattet.`,
+          withdrawal_id: withdrawalRequest.id
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
   } catch (error) {
-    console.error('Error in withdrawal processing:', error)
+    console.error('Withdrawal error:', error)
     return new Response(
       JSON.stringify({ error: error.message || 'Auszahlung fehlgeschlagen' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
