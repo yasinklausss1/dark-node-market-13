@@ -9,8 +9,14 @@ const corsHeaders = {
 const CENTRAL_BTC_ADDRESS = '16rmws2YNweEAsbVAV2KauwhFjP2myDfsf';
 const CENTRAL_LTC_ADDRESS = 'Lejgj3ZCYryMz4b7ConCzv5wpEHqTZriFy';
 
-// Tolerance for amount matching (to account for minor network fee variations)
-const AMOUNT_TOLERANCE = 0.00000100; // 100 satoshi tolerance
+// Extract fingerprint from amount (digits 3-6 from satoshi, i.e., positions for XFFFF00 pattern)
+function extractFingerprint(satoshi: number): number {
+  // Amount format: XFFFF00 where FFFF is the fingerprint (4 digits)
+  return Math.floor((satoshi % 1000000) / 100);
+}
+
+// Tolerance for fingerprint matching (allow some variance in last 2 digits due to fees)
+const FINGERPRINT_TOLERANCE = 5; // Allow fingerprint to be off by up to 5
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -114,11 +120,13 @@ Deno.serve(async (req) => {
 
             console.log(`💸 BTC TX ${tx.txid.substring(0, 16)}...: ${receivedBtc} BTC, ${confirmations} conf`);
 
-            // Match by fingerprint (exact amount matching)
+            // Extract fingerprint from received amount and match
+            const receivedFingerprint = extractFingerprint(receivedSats);
+            
             const matchingRequest = btcRequests.find(r => {
-              const expectedAmount = r.crypto_amount;
-              const diff = Math.abs(receivedBtc - expectedAmount);
-              return diff <= AMOUNT_TOLERANCE;
+              const expectedFingerprint = r.fingerprint;
+              const diff = Math.abs(receivedFingerprint - expectedFingerprint);
+              return diff <= FINGERPRINT_TOLERANCE;
             });
 
             if (matchingRequest) {
@@ -238,11 +246,13 @@ Deno.serve(async (req) => {
 
             console.log(`💸 LTC TX ${txHash.substring(0, 16)}...: ${receivedLtc} LTC, ${confirmations} conf`);
 
-            // Match by fingerprint (exact amount matching)
+            // Extract fingerprint from received amount and match
+            const receivedFingerprint = extractFingerprint(receivedLitoshi);
+            
             const matchingRequest = ltcRequests.find(r => {
-              const expectedAmount = r.crypto_amount;
-              const diff = Math.abs(receivedLtc - expectedAmount);
-              return diff <= AMOUNT_TOLERANCE;
+              const expectedFingerprint = r.fingerprint;
+              const diff = Math.abs(receivedFingerprint - expectedFingerprint);
+              return diff <= FINGERPRINT_TOLERANCE;
             });
 
             if (matchingRequest) {
