@@ -481,6 +481,62 @@ export type Database = {
         }
         Relationships: []
       }
+      deposit_memos: {
+        Row: {
+          amount_received: number | null
+          completed_at: string | null
+          created_at: string
+          currency: string
+          eur_credited: number | null
+          expires_at: string
+          id: string
+          memo_code: string
+          rate_at_receive: number | null
+          requested_eur: number | null
+          status: string
+          tx_hash: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_received?: number | null
+          completed_at?: string | null
+          created_at?: string
+          currency: string
+          eur_credited?: number | null
+          expires_at?: string
+          id?: string
+          memo_code: string
+          rate_at_receive?: number | null
+          requested_eur?: number | null
+          status?: string
+          tx_hash?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_received?: number | null
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          eur_credited?: number | null
+          expires_at?: string
+          id?: string
+          memo_code?: string
+          rate_at_receive?: number | null
+          requested_eur?: number | null
+          status?: string
+          tx_hash?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deposit_memos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       deposit_requests: {
         Row: {
           address: string
@@ -1453,6 +1509,54 @@ export type Database = {
         }
         Relationships: []
       }
+      processed_deposits: {
+        Row: {
+          amount_crypto: number
+          amount_eur: number
+          currency: string
+          deposit_memo_id: string | null
+          id: string
+          processed_at: string
+          tx_hash: string
+          user_id: string | null
+        }
+        Insert: {
+          amount_crypto: number
+          amount_eur: number
+          currency: string
+          deposit_memo_id?: string | null
+          id?: string
+          processed_at?: string
+          tx_hash: string
+          user_id?: string | null
+        }
+        Update: {
+          amount_crypto?: number
+          amount_eur?: number
+          currency?: string
+          deposit_memo_id?: string | null
+          id?: string
+          processed_at?: string
+          tx_hash?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processed_deposits_deposit_memo_id_fkey"
+            columns: ["deposit_memo_id"]
+            isOneToOne: false
+            referencedRelation: "deposit_memos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "processed_deposits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       product_addons: {
         Row: {
           addon_type: string
@@ -2311,6 +2415,7 @@ export type Database = {
         Returns: boolean
       }
       close_deposit_request: { Args: { request_id: string }; Returns: boolean }
+      generate_memo_code: { Args: never; Returns: string }
       get_or_create_wallet_balance: {
         Args: { user_uuid: string }
         Returns: {
