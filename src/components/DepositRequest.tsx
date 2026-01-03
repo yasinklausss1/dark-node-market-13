@@ -62,7 +62,7 @@ export function DepositRequest() {
             setEurAmount("");
             toast({
               title: "Zahlung erkannt! 🎉",
-              description: "Deine Einzahlung wurde erkannt und wird deinem Konto gutgeschrieben.",
+              description: "Deine Einzahlung wurde erkannt. Es kann bis zu 30 Minuten dauern, bis dein Wallet-Guthaben aktualisiert wird.",
             });
           }
         }
