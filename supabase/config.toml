@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.manual-ltc-transfer]
 verify_jwt = false
+
+[functions.check-central-deposits]
+verify_jwt = false
