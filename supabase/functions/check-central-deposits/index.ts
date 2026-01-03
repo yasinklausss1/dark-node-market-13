@@ -49,12 +49,11 @@ Deno.serve(async (req) => {
 
     console.log(`💰 Prices: BTC=${btcPrice}€, LTC=${ltcPrice}€`);
 
-    // Get all active deposit requests for the CENTRAL addresses only
+    // Get all pending deposit requests
     const { data: pendingRequests, error: requestsError } = await supabase
       .from('deposit_requests')
       .select('*')
-      .in('status', ['pending', 'received', 'confirmed'])
-      .in('address', [CENTRAL_BTC_ADDRESS, CENTRAL_LTC_ADDRESS])
+      .in('status', ['pending', 'received'])
       .gt('expires_at', new Date().toISOString());
 
     if (requestsError) {
@@ -82,26 +81,6 @@ Deno.serve(async (req) => {
     }
 
     let processedCount = 0;
-
-    // If a request is stuck in status='confirmed' but the TX was already processed,
-    // finalize it to 'completed' so other flows (e.g., check-user-deposits retry) can't double-credit.
-    const confirmedRequests = (pendingRequests || []).filter((r: any) => r.status === 'confirmed' && r.tx_hash);
-    for (const r of confirmedRequests) {
-      const { data: processed } = await supabase
-        .from('processed_deposits')
-        .select('id')
-        .eq('tx_hash', r.tx_hash)
-        .maybeSingle();
-
-      if (processed) {
-        await supabase
-          .from('deposit_requests')
-          .update({ status: 'completed' })
-          .eq('id', r.id);
-
-        console.log(`🧹 Finalized confirmed request ${r.id} -> completed (tx: ${r.tx_hash})`);
-      }
-    }
 
     // Check BTC transactions
     const btcRequests = pendingRequests.filter(r => r.currency === 'BTC');
