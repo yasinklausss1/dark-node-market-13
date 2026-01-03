@@ -40,6 +40,40 @@ export function DepositRequest() {
     }
   }, [user]);
 
+  // Subscribe to deposit_requests changes to auto-close when payment is detected
+  useEffect(() => {
+    if (!existingRequest || !user) return;
+
+    const channel = supabase
+      .channel('deposit-status')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'deposit_requests',
+          filter: `id=eq.${existingRequest.id}`
+        },
+        (payload) => {
+          const newStatus = payload.new?.status;
+          if (newStatus === 'confirmed' || newStatus === 'completed') {
+            // Payment detected! Close the deposit window
+            setExistingRequest(null);
+            setEurAmount("");
+            toast({
+              title: "Zahlung erkannt! 🎉",
+              description: "Deine Einzahlung wurde erkannt und wird deinem Konto gutgeschrieben.",
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [existingRequest, user, toast]);
+
   // Countdown timer for active deposit request
   useEffect(() => {
     if (!existingRequest) return;
