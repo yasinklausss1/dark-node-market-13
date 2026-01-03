@@ -10,6 +10,12 @@ const SATS = 1e8;
 // 5% tolerance to account for network fees deducted by sending wallets (e.g., Exodus)
 const TOLERANCE_PERCENT = 0.05;
 
+// Central platform addresses (used by check-central-deposits)
+// If a TX is already in processed_deposits, we MUST NOT "retry"-credit it here.
+// Otherwise a deposit_request stuck in status='confirmed' can be credited multiple times.
+const CENTRAL_BTC_ADDRESS = '16rmws2YNweEAsbVAV2KauwhFjP2myDfsf';
+const CENTRAL_LTC_ADDRESS = 'Lejgj3ZCYryMz4b7ConCzv5wpEHqTZriFy';
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -34,6 +40,26 @@ serve(async (req) => {
       
       for (const deposit of failedDeposits) {
         try {
+          // Safety: if this TX was already processed by the centralized-deposit flow,
+          // do NOT "retry" credit here. Just mark the request completed.
+          if (deposit.tx_hash) {
+            const { data: processedCentral } = await supabase
+              .from('processed_deposits')
+              .select('id')
+              .eq('tx_hash', deposit.tx_hash)
+              .maybeSingle();
+
+            if (processedCentral) {
+              await supabase
+                .from('deposit_requests')
+                .update({ status: 'completed' })
+                .eq('id', deposit.id);
+
+              console.log(`✅ Skipped retry for centralized TX (already processed): ${deposit.tx_hash}`);
+              continue;
+            }
+          }
+
           // Check if transaction already exists
           const { data: existingTx } = await supabase
             .from('transactions')
