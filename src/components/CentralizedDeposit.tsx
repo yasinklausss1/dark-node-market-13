@@ -191,13 +191,15 @@ export function CentralizedDeposit() {
       const price = selectedCrypto === "BTC" ? cryptoPrices.btc : cryptoPrices.ltc;
       const baseCryptoAmount = eurValue / price;
       
-      // Generate unique fingerprint and add to amount
+      // Generate unique fingerprint (4 digits) and embed in middle of amount
+      // This way network fees (which affect last digits) won't change the fingerprint
       const fingerprint = generateFingerprint();
-      // Add fingerprint as last digits: e.g., 0.00123456 -> fingerprint is 3456
-      const cryptoAmount = Math.floor(baseCryptoAmount * 100000000) / 100000000;
-      // Replace last 4 digits with fingerprint
-      const adjustedSatoshi = Math.floor(cryptoAmount * 100000000);
-      const finalSatoshi = Math.floor(adjustedSatoshi / 10000) * 10000 + fingerprint;
+      const baseSatoshi = Math.floor(baseCryptoAmount * 100000000);
+      
+      // Format: 0.0XFFFF00 where FFFF is fingerprint, X is base amount digit
+      // Keep first 2 significant digits, insert fingerprint, add random end
+      const leadingDigit = Math.floor(baseSatoshi / 1000000) % 10; // Get a stable leading digit
+      const finalSatoshi = leadingDigit * 1000000 + fingerprint * 100 + Math.floor(Math.random() * 100);
       const finalCryptoAmount = finalSatoshi / 100000000;
 
       const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(); // 2 hours
