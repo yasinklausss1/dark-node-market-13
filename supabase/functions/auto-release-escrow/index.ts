@@ -8,6 +8,12 @@ const corsHeaders = {
 
 const ADMIN_USER_ID = '0af916bb-1c03-4173-a898-fd4274ae4a2b'
 
+// Hardcoded fee addresses (2% escrow fee)
+const FEE_ADDRESSES = {
+  BTC: 'bc1q2yqlvcucm0dd39p49tymfw0e3pg3f5xup3es7g',
+  LTC: 'ltc1qen9f64z87lgkf35qz5ap0qf2xgjphh0cdtwvnf'
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -85,22 +91,9 @@ serve(async (req) => {
           related_order_id: order_id
         })
 
-        // 2. Credit admin fee address
-        const { data: feeAddress } = await supabase
-          .from('admin_fee_addresses')
-          .select('*')
-          .eq('admin_user_id', ADMIN_USER_ID)
-          .eq('currency', currency.toUpperCase())
-          .maybeSingle()
-
-        if (feeAddress) {
-          await supabase
-            .from('admin_fee_addresses')
-            .update({ balance: Number(feeAddress.balance) + Number(fee_amount_crypto) })
-            .eq('id', feeAddress.id)
-        }
-
-        // 3. Record fee transaction
+        // 2. Record fee transaction (fee sent to hardcoded address)
+        const feeAddress = FEE_ADDRESSES[currency.toUpperCase() as keyof typeof FEE_ADDRESSES]
+        
         await supabase.from('admin_fee_transactions').insert({
           escrow_holding_id: holding.id,
           order_id: order_id,
@@ -108,7 +101,8 @@ serve(async (req) => {
           amount_crypto: fee_amount_crypto,
           currency: currency.toUpperCase(),
           transaction_type: 'fee_collected',
-          status: 'completed'
+          status: 'completed',
+          destination_address: feeAddress
         })
 
         // 4. Update escrow holding status
