@@ -222,8 +222,13 @@ serve(async (req) => {
     const escrowLabel = useEscrow ? ' - In Escrow' : '';
     
     if (method === 'btc') {
+      const newBalanceBtc = Number(buyerBal.balance_btc) - totalBTC;
+      const newBalanceEur = Number(buyerBal.balance_eur) - totalEUR;
       await supabase.from('wallet_balances')
-        .update({ balance_btc: Number(buyerBal.balance_btc) - totalBTC })
+        .update({ 
+          balance_btc: newBalanceBtc,
+          balance_eur: Math.max(0, newBalanceEur)
+        })
         .eq('user_id', userId);
       await supabase.from('transactions').insert({
         user_id: userId,
@@ -236,8 +241,13 @@ serve(async (req) => {
         related_order_id: order.id
       });
     } else {
+      const newBalanceLtc = Number((buyerBal as any).balance_ltc || 0) - totalLTC;
+      const newBalanceEur = Number(buyerBal.balance_eur) - totalEUR;
       await supabase.from('wallet_balances')
-        .update({ balance_ltc: Number((buyerBal as any).balance_ltc || 0) - totalLTC })
+        .update({ 
+          balance_ltc: newBalanceLtc,
+          balance_eur: Math.max(0, newBalanceEur)
+        })
         .eq('user_id', userId);
       await supabase.from('transactions').insert({
         user_id: userId,
