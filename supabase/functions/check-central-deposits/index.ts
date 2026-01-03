@@ -139,15 +139,21 @@ Deno.serve(async (req) => {
                 // Get current balance
                 const { data: currentBalance } = await supabase
                   .from('wallet_balances')
-                  .select('balance_btc_deposited')
+                  .select('balance_btc, balance_btc_deposited, balance_eur')
                   .eq('user_id', matchingRequest.user_id)
                   .single();
 
-                const newBalance = (currentBalance?.balance_btc_deposited || 0) + receivedBtc;
+                const newBtcBalance = (currentBalance?.balance_btc || 0) + receivedBtc;
+                const newBtcDeposited = (currentBalance?.balance_btc_deposited || 0) + receivedBtc;
+                const newEurBalance = (currentBalance?.balance_eur || 0) + receivedEur;
                 
                 await supabase
                   .from('wallet_balances')
-                  .update({ balance_btc_deposited: newBalance })
+                  .update({ 
+                    balance_btc: newBtcBalance,
+                    balance_btc_deposited: newBtcDeposited,
+                    balance_eur: newEurBalance
+                  })
                   .eq('user_id', matchingRequest.user_id);
 
                 // Mark request as completed
@@ -265,15 +271,21 @@ Deno.serve(async (req) => {
                 // Get current balance
                 const { data: currentBalance } = await supabase
                   .from('wallet_balances')
-                  .select('balance_ltc_deposited')
+                  .select('balance_ltc, balance_ltc_deposited, balance_eur')
                   .eq('user_id', matchingRequest.user_id)
                   .single();
 
-                const newBalance = (currentBalance?.balance_ltc_deposited || 0) + receivedLtc;
+                const newLtcBalance = (currentBalance?.balance_ltc || 0) + receivedLtc;
+                const newLtcDeposited = (currentBalance?.balance_ltc_deposited || 0) + receivedLtc;
+                const newEurBalance = (currentBalance?.balance_eur || 0) + receivedEur;
                 
                 await supabase
                   .from('wallet_balances')
-                  .update({ balance_ltc_deposited: newBalance })
+                  .update({ 
+                    balance_ltc: newLtcBalance,
+                    balance_ltc_deposited: newLtcDeposited,
+                    balance_eur: newEurBalance
+                  })
                   .eq('user_id', matchingRequest.user_id);
 
                 // Mark request as completed
