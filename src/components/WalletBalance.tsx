@@ -68,19 +68,24 @@ export function WalletBalance() {
 
   const refreshPayments = async () => {
     if (!user) return;
-    
+
     setRefreshing(true);
     try {
-      // Check for new deposits
-      const { error } = await supabase.functions.invoke('check-crypto-deposits');
-      if (error) throw error;
-      
+      // Check for new deposits (individual addresses + legacy/shared address flow)
+      const [userDepositRes, sharedDepositRes] = await Promise.all([
+        supabase.functions.invoke('check-user-deposits'),
+        supabase.functions.invoke('check-crypto-deposits'),
+      ]);
+
+      if (userDepositRes.error) throw userDepositRes.error;
+      if (sharedDepositRes.error) throw sharedDepositRes.error;
+
       // Refresh balance after checking
       await fetchBalance();
-      
+
       toast({
         title: "Aktualisiert",
-        description: "Auf neue Zahlungen geprüft und Guthaben aktualisiert",
+        description: "Auf neue Zahlungen geprüft. Es kann bis zu 30 Minuten dauern, bis alles überall aktualisiert ist.",
       });
     } catch (error) {
       console.error('Error refreshing payments:', error);
