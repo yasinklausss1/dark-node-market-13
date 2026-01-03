@@ -38,6 +38,12 @@ interface WithdrawalLimits {
   monthly_spent: number;
 }
 
+interface PoolLiquidity {
+  btc: number | null;
+  ltc: number | null;
+  loading: boolean;
+}
+
 export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSuccess }: WithdrawalModalProps) {
   const { user } = useAuth();
   const { btcPrice, ltcPrice } = useCryptoPrices();
@@ -51,14 +57,43 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
   const [fees, setFees] = useState<WithdrawalFees[]>([]);
   const [limits, setLimits] = useState<WithdrawalLimits | null>(null);
   const [withdrawalResult, setWithdrawalResult] = useState<any>(null);
+  const [poolLiquidity, setPoolLiquidity] = useState<PoolLiquidity>({ btc: null, ltc: null, loading: false });
 
   useEffect(() => {
     if (open && user) {
       fetchBalance();
       fetchFees();
       fetchLimits();
+      fetchPoolLiquidity();
     }
   }, [open, user]);
+
+  const fetchPoolLiquidity = async () => {
+    setPoolLiquidity(prev => ({ ...prev, loading: true }));
+    try {
+      // Fetch BTC pool balance
+      const btcResponse = await fetch('https://mempool.space/api/address/16rmws2YNweEAsbVAV2KauwhFjP2myDfsf');
+      let btcBalance = null;
+      if (btcResponse.ok) {
+        const btcData = await btcResponse.json();
+        const satoshis = (btcData.chain_stats?.funded_txo_sum || 0) - (btcData.chain_stats?.spent_txo_sum || 0);
+        btcBalance = satoshis / 100000000;
+      }
+
+      // Fetch LTC pool balance (using public API without token for frontend)
+      const ltcResponse = await fetch('https://api.blockcypher.com/v1/ltc/main/addrs/Lejgj3ZCYryMz4b7ConCzv5wpEHqTZriFy/balance');
+      let ltcBalance = null;
+      if (ltcResponse.ok) {
+        const ltcData = await ltcResponse.json();
+        ltcBalance = (ltcData.balance || 0) / 100000000;
+      }
+
+      setPoolLiquidity({ btc: btcBalance, ltc: ltcBalance, loading: false });
+    } catch (error) {
+      console.error('Error fetching pool liquidity:', error);
+      setPoolLiquidity({ btc: null, ltc: null, loading: false });
+    }
+  };
 
   const fetchBalance = async () => {
     if (!user) return;
@@ -204,6 +239,15 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
       }
     }
 
+    // Check pool liquidity
+    const currentPoolBalance = selectedCrypto === 'BTC' ? poolLiquidity.btc : poolLiquidity.ltc;
+    if (currentPoolBalance !== null && currentPoolBalance < calculation.cryptoAmount) {
+      return { 
+        valid: false, 
+        error: `Unzureichende Pool-Liquidität. Der ${selectedCrypto}-Pool hat aktuell nur ${currentPoolBalance.toFixed(8)} ${selectedCrypto} verfügbar.` 
+      };
+    }
+
     return { valid: true };
   };
 
@@ -246,11 +290,20 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
         onWithdrawalSuccess();
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Withdrawal error:', error);
+      
+      // Parse error message for pool liquidity issues
+      let errorMessage = error.message || "Auszahlung konnte nicht verarbeitet werden";
+      if (errorMessage.includes('Pool-Liquidität') || errorMessage.includes('pool')) {
+        errorMessage = `Unzureichende Pool-Liquidität. Bitte versuche es später erneut oder wähle einen kleineren Betrag.`;
+        // Refresh pool liquidity
+        fetchPoolLiquidity();
+      }
+      
       toast({
         title: "Auszahlung fehlgeschlagen",
-        description: error.message || "Auszahlung konnte nicht verarbeitet werden",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -440,6 +493,53 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
               </div>
             </div>
           )}
+
+          {/* Pool Liquidity Warning */}
+          {(() => {
+            const currentPoolBalance = selectedCrypto === 'BTC' ? poolLiquidity.btc : poolLiquidity.ltc;
+            const cryptoAmount = calculation?.cryptoAmount || 0;
+            const isLowLiquidity = currentPoolBalance !== null && currentPoolBalance < cryptoAmount * 1.2;
+            const isInsufficientLiquidity = currentPoolBalance !== null && currentPoolBalance < cryptoAmount;
+            
+            if (poolLiquidity.loading) {
+              return (
+                <div className="p-3 bg-muted rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Pool-Liquidität wird geprüft...
+                  </div>
+                </div>
+              );
+            }
+            
+            if (currentPoolBalance !== null) {
+              return (
+                <div className={`p-3 rounded-lg ${isInsufficientLiquidity ? 'bg-destructive/10 border border-destructive' : isLowLiquidity ? 'bg-yellow-500/10 border border-yellow-500' : 'bg-green-500/10 border border-green-500'}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {isInsufficientLiquidity ? (
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                    ) : isLowLiquidity ? (
+                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    )}
+                    <span className="font-medium text-sm">
+                      {isInsufficientLiquidity ? 'Unzureichende Pool-Liquidität' : isLowLiquidity ? 'Niedrige Pool-Liquidität' : 'Pool-Liquidität OK'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedCrypto}-Pool: {currentPoolBalance.toFixed(8)} {selectedCrypto} verfügbar
+                  </p>
+                  {isInsufficientLiquidity && (
+                    <p className="text-xs text-destructive mt-1">
+                      Nicht genug Liquidität für diese Auszahlung. Bitte wähle einen kleineren Betrag oder versuche es später erneut.
+                    </p>
+                  )}
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Limits Information */}
           {limits && (

@@ -65,6 +65,29 @@ async function getCryptoPrices(): Promise<{ btc: number; ltc: number }> {
   }
 }
 
+// Get real blockchain balance for central pool wallets
+async function getPoolBalance(currency: string, address: string): Promise<number> {
+  try {
+    if (currency === 'BTC') {
+      const response = await fetch(`https://mempool.space/api/address/${address}`)
+      if (!response.ok) throw new Error('Failed to fetch BTC balance')
+      const data = await response.json()
+      const satoshis = (data.chain_stats?.funded_txo_sum || 0) - (data.chain_stats?.spent_txo_sum || 0)
+      return satoshis / 100000000 // Convert to BTC
+    } else if (currency === 'LTC') {
+      const blockcypherToken = Deno.env.get('BLOCKCYPHER_TOKEN')
+      const response = await fetch(`https://api.blockcypher.com/v1/ltc/main/addrs/${address}/balance?token=${blockcypherToken}`)
+      if (!response.ok) throw new Error('Failed to fetch LTC balance')
+      const data = await response.json()
+      return (data.balance || 0) / 100000000 // Convert to LTC
+    }
+    return 0
+  } catch (error) {
+    console.error(`Error fetching ${currency} pool balance:`, error)
+    return -1 // Return -1 to indicate error
+  }
+}
+
 // Send Bitcoin transaction via BlockCypher
 async function sendBitcoinTransaction(
   privateKey: string, 
@@ -370,10 +393,42 @@ serve(async (req) => {
       )
     }
 
-    // Check if admin wallet has enough balance for the withdrawal
-    // We need to check the actual blockchain balance, not just the DB balance
-    console.log(`Admin wallet ${adminWallet.address} DB balance: ${adminWallet.balance} ${currency}`)
+    // *** CRITICAL: Check REAL blockchain balance before attempting withdrawal ***
+    const realPoolBalance = await getPoolBalance(currency, adminWallet.address)
+    console.log(`Pool ${currency} real blockchain balance: ${realPoolBalance}`)
     console.log(`User requesting withdrawal of ${cryptoAmount} ${currency} (net after fees)`)
+
+    if (realPoolBalance === -1) {
+      console.error('Could not fetch pool balance - proceeding with caution')
+    } else if (realPoolBalance < cryptoAmount) {
+      console.error(`INSUFFICIENT POOL LIQUIDITY: Pool has ${realPoolBalance} ${currency}, need ${cryptoAmount} ${currency}`)
+      return new Response(
+        JSON.stringify({ 
+          error: `Unzureichende Pool-Liquidität. Der ${currency}-Pool hat derzeit nicht genug Guthaben für diese Auszahlung. Bitte versuche es später erneut oder wähle einen kleineren Betrag.`,
+          pool_balance: realPoolBalance,
+          required: cryptoAmount,
+          currency
+        }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
+    // Warn if pool is getting low (less than 20% buffer after this withdrawal)
+    const remainingAfterWithdrawal = realPoolBalance - cryptoAmount
+    const lowLiquidityThreshold = cryptoAmount * 0.2
+    if (remainingAfterWithdrawal < lowLiquidityThreshold && realPoolBalance !== -1) {
+      console.warn(`LOW LIQUIDITY WARNING: After this withdrawal, ${currency} pool will have only ${remainingAfterWithdrawal.toFixed(8)} ${currency}`)
+      // Create a notification for admins about low liquidity
+      await adminClient.from('transactions').insert({
+        user_id: ADMIN_USER_ID,
+        type: 'system_alert',
+        amount_eur: 0,
+        amount_btc: 0,
+        status: 'confirmed',
+        description: `⚠️ NIEDRIGE LIQUIDITÄT: ${currency}-Pool hat nach Auszahlung nur noch ${remainingAfterWithdrawal.toFixed(8)} ${currency}`,
+        transaction_direction: 'system'
+      })
+    }
 
     // Create withdrawal request with status 'processing'
     const { data: withdrawalRequest, error: insertError } = await adminClient
