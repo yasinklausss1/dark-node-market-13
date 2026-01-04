@@ -2028,6 +2028,7 @@ export type Database = {
         Row: {
           amount_btc: number
           amount_eur: number
+          amount_ltc: number | null
           btc_confirmations: number | null
           btc_tx_hash: string | null
           confirmed_at: string | null
@@ -2045,6 +2046,7 @@ export type Database = {
         Insert: {
           amount_btc?: number
           amount_eur: number
+          amount_ltc?: number | null
           btc_confirmations?: number | null
           btc_tx_hash?: string | null
           confirmed_at?: string | null
@@ -2062,6 +2064,7 @@ export type Database = {
         Update: {
           amount_btc?: number
           amount_eur?: number
+          amount_ltc?: number | null
           btc_confirmations?: number | null
           btc_tx_hash?: string | null
           confirmed_at?: string | null
