@@ -260,8 +260,9 @@ export function WalletBalance() {
         </div>
 
         {/* Info Note */}
-        <div className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed">
-          <strong>Hinweis:</strong> Dein Guthaben besteht aus echtem Krypto. Der EUR-Wert wird live berechnet.
+        <div className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed space-y-1">
+          <p><strong>Hinweis:</strong> Dein Guthaben besteht aus echtem Krypto. Der EUR-Wert wird live berechnet.</p>
+          <p className="text-amber-600 dark:text-amber-400">⏱️ Nach einer Einzahlung dauert es ca. 5-15 Minuten, bis das Guthaben zugeschrieben wird.</p>
         </div>
       </CardContent>
     </Card>

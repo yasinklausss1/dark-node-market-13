@@ -519,6 +519,13 @@ export function DepositRequest() {
               <li>• Läuft ab: {new Date(existingRequest.expires_at).toLocaleString('de-DE')}</li>
             </ul>
           </div>
+
+          {/* Timing Info */}
+          <div className="bg-amber-500/10 border border-amber-500/30 p-3 sm:p-4 rounded-xl">
+            <p className="text-[10px] sm:text-xs text-amber-700 dark:text-amber-400">
+              ⏱️ <strong>Hinweis:</strong> Nach erfolgreicher Zahlung dauert es ca. 5-15 Minuten, bis das Guthaben deinem Wallet zugeschrieben wird.
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
@@ -647,6 +654,13 @@ export function DepositRequest() {
             <li>• An deine persönliche Adresse senden</li>
             <li>• Anfragen laufen nach 6 Stunden ab</li>
           </ul>
+        </div>
+
+        {/* Timing Info */}
+        <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl">
+          <p className="text-[10px] sm:text-xs text-amber-700 dark:text-amber-400">
+            ⏱️ Nach erfolgreicher Zahlung dauert es ca. 5-15 Minuten, bis das Guthaben zugeschrieben wird.
+          </p>
         </div>
       </CardContent>
     </Card>
