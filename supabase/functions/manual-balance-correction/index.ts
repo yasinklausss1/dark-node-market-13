@@ -43,11 +43,15 @@ serve(async (req) => {
     }
 
     // Calculate new balances
-    const newLtc = Number(balance.balance_ltc) + (addLtc || 0);
-    const newBtc = Number(balance.balance_btc) + (addBtc || 0);
-    const newEur = Number(balance.balance_eur) + (addEur || 0);
-    const newLtcDeposited = Number(balance.balance_ltc_deposited || 0) + (addLtc || 0);
-    const newBtcDeposited = Number(balance.balance_btc_deposited || 0) + (addBtc || 0);
+    const ltcDelta = Number(addLtc || 0);
+    const btcDelta = Number(addBtc || 0);
+    const eurDelta = Number(addEur || 0);
+
+    const newLtc = Number(balance.balance_ltc || 0) + ltcDelta;
+    const newBtc = Number(balance.balance_btc || 0) + btcDelta;
+    const newEur = Number(balance.balance_eur || 0) + eurDelta;
+
+    // Manual corrections should NOT change *_deposited fields (those are for real deposits only)
 
     // Update balance
     const { error: updateError } = await supabase
@@ -56,27 +60,28 @@ serve(async (req) => {
         balance_ltc: newLtc,
         balance_btc: newBtc,
         balance_eur: newEur,
-        balance_ltc_deposited: newLtcDeposited,
-        balance_btc_deposited: newBtcDeposited,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', userId);
 
     if (updateError) throw updateError;
 
-    // Create transaction record
+    // Create transaction record (store BTC/LTC in correct columns)
+    const isOutgoing = (ltcDelta + btcDelta + eurDelta) < 0;
+
     const { error: txError } = await supabase
       .from('transactions')
       .insert({
         user_id: userId,
         type: 'deposit',
-        amount_eur: addEur || 0,
-        amount_btc: addLtc || addBtc || 0,
+        amount_eur: eurDelta,
+        amount_btc: btcDelta,
+        amount_ltc: ltcDelta,
         btc_tx_hash: txHash || `manual-correction-${Date.now()}`,
         btc_confirmations: 1,
         status: 'completed',
         description: description || 'Manual balance correction',
-        transaction_direction: 'incoming'
+        transaction_direction: isOutgoing ? 'outgoing' : 'incoming'
       });
 
     if (txError) {

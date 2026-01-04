@@ -47,8 +47,10 @@ serve(async (req) => {
             await supabase.from('transactions').insert({
               user_id: deposit.user_id,
               type: 'deposit',
+              // amount_eur is reference-only (display), crypto is the ledger source of truth
               amount_eur: deposit.requested_eur,
-              amount_btc: deposit.crypto_amount,
+              amount_btc: deposit.currency === 'BTC' ? deposit.crypto_amount : 0,
+              amount_ltc: deposit.currency === 'LTC' ? deposit.crypto_amount : 0,
               btc_tx_hash: deposit.tx_hash,
               btc_confirmations: 1,
               status: 'completed',
@@ -68,10 +70,8 @@ serve(async (req) => {
             .maybeSingle();
 
           if (bal) {
-            const updateData: any = {
-              balance_eur: Number(bal.balance_eur) + Number(deposit.requested_eur)
-            };
-            
+            const updateData: any = {};
+
             if (deposit.currency === 'BTC') {
               updateData.balance_btc = Number(bal.balance_btc) + Number(deposit.crypto_amount);
               updateData.balance_btc_deposited = Number(bal.balance_btc_deposited || 0) + Number(deposit.crypto_amount);
@@ -263,7 +263,8 @@ serve(async (req) => {
                 user_id: userAddr.user_id,
                 type: 'deposit',
                 amount_eur: amountEur,
-                amount_btc: amountCrypto,
+                amount_btc: userAddr.currency === 'BTC' ? amountCrypto : 0,
+                amount_ltc: userAddr.currency === 'LTC' ? amountCrypto : 0,
                 btc_tx_hash: txHash,
                 btc_confirmations: confirmations,
                 status: 'completed',
@@ -283,10 +284,8 @@ serve(async (req) => {
                 .maybeSingle();
 
               if (bal) {
-                const updateData: any = {
-                  balance_eur: Number(bal.balance_eur) + amountEur
-                };
-                
+                const updateData: any = {};
+
                 if (userAddr.currency === 'BTC') {
                   updateData.balance_btc = Number(bal.balance_btc) + amountCrypto;
                   updateData.balance_btc_deposited = Number(bal.balance_btc_deposited || 0) + amountCrypto;
@@ -320,7 +319,8 @@ serve(async (req) => {
               user_id: request.user_id,
               type: 'deposit',
               amount_eur: amountEur,
-              amount_btc: amountCrypto,
+              amount_btc: userAddr.currency === 'BTC' ? amountCrypto : 0,
+              amount_ltc: userAddr.currency === 'LTC' ? amountCrypto : 0,
               btc_tx_hash: txHash,
               btc_confirmations: confirmations,
               status: 'completed',
@@ -342,10 +342,8 @@ serve(async (req) => {
             let balanceUpdateSuccess = false;
 
             if (bal) {
-              const updateData: any = {
-                balance_eur: Number(bal.balance_eur) + amountEur
-              };
-              
+              const updateData: any = {};
+
               if (userAddr.currency === 'BTC') {
                 updateData.balance_btc = Number(bal.balance_btc) + amountCrypto;
                 updateData.balance_btc_deposited = Number(bal.balance_btc_deposited || 0) + amountCrypto;
@@ -367,7 +365,7 @@ serve(async (req) => {
               // Create new balance
               const newBalance: any = {
                 user_id: request.user_id,
-                balance_eur: amountEur,
+                balance_eur: 0,
                 balance_btc: 0,
                 balance_ltc: 0,
                 balance_btc_deposited: 0,
@@ -434,7 +432,8 @@ serve(async (req) => {
               user_id: request.user_id,
               type: 'deposit',
               amount_eur: amountEur,
-              amount_btc: amountCrypto,
+              amount_btc: userAddr.currency === 'BTC' ? amountCrypto : 0,
+              amount_ltc: userAddr.currency === 'LTC' ? amountCrypto : 0,
               btc_tx_hash: txHash,
               btc_confirmations: confirmations,
               status: 'pending',
