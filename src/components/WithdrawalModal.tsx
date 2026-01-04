@@ -70,21 +70,40 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
   const fetchPoolLiquidity = async () => {
     setPoolLiquidity(prev => ({ ...prev, loading: true }));
     try {
-      // Fetch BTC pool balance
-      const btcResponse = await fetch('https://mempool.space/api/address/16rmws2YNweEAsbVAV2KauwhFjP2myDfsf');
-      let btcBalance = null;
-      if (btcResponse.ok) {
-        const btcData = await btcResponse.json();
-        const satoshis = (btcData.chain_stats?.funded_txo_sum || 0) - (btcData.chain_stats?.spent_txo_sum || 0);
-        btcBalance = satoshis / 100000000;
+      // Fetch pool addresses from database
+      const { data: poolAddresses, error: poolError } = await supabase
+        .from('admin_fee_addresses')
+        .select('currency, address');
+      
+      if (poolError) {
+        console.error('Error fetching pool addresses:', poolError);
+        setPoolLiquidity({ btc: null, ltc: null, loading: false });
+        return;
       }
 
-      // Fetch LTC pool balance (using public API without token for frontend)
-      const ltcResponse = await fetch('https://api.blockcypher.com/v1/ltc/main/addrs/Lejgj3ZCYryMz4b7ConCzv5wpEHqTZriFy/balance');
+      const btcPoolAddress = poolAddresses?.find(a => a.currency === 'BTC')?.address;
+      const ltcPoolAddress = poolAddresses?.find(a => a.currency === 'LTC')?.address;
+
+      let btcBalance = null;
       let ltcBalance = null;
-      if (ltcResponse.ok) {
-        const ltcData = await ltcResponse.json();
-        ltcBalance = (ltcData.balance || 0) / 100000000;
+
+      // Fetch BTC pool balance
+      if (btcPoolAddress) {
+        const btcResponse = await fetch(`https://mempool.space/api/address/${btcPoolAddress}`);
+        if (btcResponse.ok) {
+          const btcData = await btcResponse.json();
+          const satoshis = (btcData.chain_stats?.funded_txo_sum || 0) - (btcData.chain_stats?.spent_txo_sum || 0);
+          btcBalance = satoshis / 100000000;
+        }
+      }
+
+      // Fetch LTC pool balance
+      if (ltcPoolAddress) {
+        const ltcResponse = await fetch(`https://api.blockcypher.com/v1/ltc/main/addrs/${ltcPoolAddress}/balance`);
+        if (ltcResponse.ok) {
+          const ltcData = await ltcResponse.json();
+          ltcBalance = (ltcData.balance || 0) / 100000000;
+        }
       }
 
       setPoolLiquidity({ btc: btcBalance, ltc: ltcBalance, loading: false });
