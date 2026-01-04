@@ -58,7 +58,11 @@ serve(async (req) => {
       throw new Error('Unauthorized - Only main admin can generate fee addresses')
     }
 
-    console.log('Generating admin fee addresses for:', ADMIN_USER_ID)
+    // Check if force regeneration is requested
+    const body = await req.json().catch(() => ({}))
+    const forceRegenerate = body.forceRegenerate === true
+
+    console.log('Generating admin fee addresses for:', ADMIN_USER_ID, 'force:', forceRegenerate)
 
     // Check if admin already has fee addresses
     const { data: existingAddresses } = await supabase
@@ -69,8 +73,8 @@ serve(async (req) => {
     const btcAddr = existingAddresses?.find(a => a.currency === 'BTC')
     const ltcAddr = existingAddresses?.find(a => a.currency === 'LTC')
 
-    // If both addresses exist, return them
-    if (btcAddr?.address && ltcAddr?.address) {
+    // If both addresses exist AND we're not forcing regeneration, return them
+    if (btcAddr?.address && ltcAddr?.address && !forceRegenerate) {
       console.log('Admin already has fee addresses')
       return new Response(
         JSON.stringify({ 
@@ -84,6 +88,15 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+    
+    // If forcing regeneration, delete old addresses first
+    if (forceRegenerate) {
+      console.log('Force regenerating - deleting old addresses...')
+      await supabase
+        .from('admin_fee_addresses')
+        .delete()
+        .eq('admin_user_id', ADMIN_USER_ID)
+    }
 
     const blockcypherToken = Deno.env.get('BLOCKCYPHER_TOKEN')
     if (!blockcypherToken) {
@@ -93,8 +106,8 @@ serve(async (req) => {
     let btcData = null
     let ltcData = null
 
-    // Generate Bitcoin fee address if needed
-    if (!btcAddr?.address) {
+    // Generate Bitcoin fee address if needed or forced
+    if (!btcAddr?.address || forceRegenerate) {
       console.log('Generating new Bitcoin fee address...')
       const btcResponse = await fetch(
         `https://api.blockcypher.com/v1/btc/main/addrs?token=${blockcypherToken}`,
@@ -114,8 +127,8 @@ serve(async (req) => {
       console.log('Generated Bitcoin fee address:', btcData.address)
     }
 
-    // Generate Litecoin fee address if needed
-    if (!ltcAddr?.address) {
+    // Generate Litecoin fee address if needed or forced
+    if (!ltcAddr?.address || forceRegenerate) {
       console.log('Generating new Litecoin fee address...')
       const ltcResponse = await fetch(
         `https://api.blockcypher.com/v1/ltc/main/addrs?token=${blockcypherToken}`,
