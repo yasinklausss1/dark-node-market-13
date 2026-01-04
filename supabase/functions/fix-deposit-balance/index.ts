@@ -99,7 +99,8 @@ serve(async (req) => {
       );
     }
 
-    // Update wallet balance
+    // Update wallet balance - ONLY update crypto balance, NOT *_deposited
+    // The *_deposited fields should only be updated by actual deposit processing, not manual corrections
     const updateData: any = {
       balance_eur: Number(wallet.balance_eur) + Number(deposit.requested_eur),
       updated_at: new Date().toISOString()
@@ -107,10 +108,10 @@ serve(async (req) => {
 
     if (deposit.currency === 'BTC') {
       updateData.balance_btc = Number(wallet.balance_btc) + Number(deposit.crypto_amount);
-      updateData.balance_btc_deposited = Number(wallet.balance_btc_deposited || 0) + Number(deposit.crypto_amount);
+      // DO NOT update balance_btc_deposited - this is a correction, not a new deposit
     } else if (deposit.currency === 'LTC') {
       updateData.balance_ltc = Number(wallet.balance_ltc) + Number(deposit.crypto_amount);
-      updateData.balance_ltc_deposited = Number(wallet.balance_ltc_deposited || 0) + Number(deposit.crypto_amount);
+      // DO NOT update balance_ltc_deposited - this is a correction, not a new deposit
     }
 
     const { error: updateError } = await supabase
