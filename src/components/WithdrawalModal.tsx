@@ -18,7 +18,6 @@ interface WithdrawalModalProps {
 }
 
 interface WalletBalance {
-  balance_eur: number;
   balance_btc: number;
   balance_ltc: number;
 }
@@ -439,11 +438,19 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
           {/* Balance & Max Amount Info */}
           <div className="p-3 bg-muted rounded-lg space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Dein Guthaben:</span>
-              <span className="font-mono text-sm">
+              <span className="text-sm font-medium">Dein {selectedCrypto} Guthaben:</span>
+              <span className="font-mono text-sm font-bold">
                 {balance ? (selectedCrypto === 'BTC' ? balance.balance_btc.toFixed(8) : balance.balance_ltc.toFixed(8)) : '0'} {selectedCrypto}
               </span>
             </div>
+            {(btcPrice || ltcPrice) && balance && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">EUR-Wert:</span>
+                <span className="text-sm text-primary">
+                  ≈ €{((selectedCrypto === 'BTC' ? balance.balance_btc : balance.balance_ltc) * (selectedCrypto === 'BTC' ? btcPrice! : ltcPrice!)).toFixed(2)}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Max. auszahlbar:</span>
               <span className="font-semibold text-primary">{getMaxWithdrawal().toFixed(2)} EUR</span>

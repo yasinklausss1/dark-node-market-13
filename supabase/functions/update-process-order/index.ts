@@ -40,7 +40,7 @@ serve(async (req) => {
 
     if (!userId || !items?.length || !method) throw new Error('Invalid payload');
 
-    console.log('Processing order with useEscrow:', useEscrow);
+    console.log('Processing order with useEscrow:', useEscrow, 'method:', method);
 
     // Get escrow settings
     const { data: settings } = await supabase
@@ -56,19 +56,15 @@ serve(async (req) => {
 
     // Check if any product requires shipping (physical products)
     let requiresShipping = false;
-    let hasDigitalProducts = false;
     for (const it of items) {
       const { data: product } = await supabase
         .from('products')
         .select('product_type')
         .eq('id', it.id)
         .maybeSingle();
-      if (product) {
-        if (product.product_type !== 'digital') {
-          requiresShipping = true;
-        } else {
-          hasDigitalProducts = true;
-        }
+      if (product && product.product_type !== 'digital') {
+        requiresShipping = true;
+        break;
       }
     }
 
@@ -82,8 +78,11 @@ serve(async (req) => {
     }
 
     // Load product info and compute totals + amounts per seller
-    const sellerTotals: Record<string, { eur: number; btc: number; ltc: number }> = {};
+    const sellerTotals: Record<string, { eur: number; crypto: number }> = {};
     let totalEUR = 0;
+    let totalCrypto = 0;
+
+    const cryptoPrice = method === 'btc' ? (btcPrice || 90000) : (ltcPrice || 100);
 
     for (const it of items) {
       const { data: product, error } = await supabase
@@ -113,33 +112,36 @@ serve(async (req) => {
       const basePrice = Number(product.price);
       const discountedPrice = basePrice * (1 - bestDiscount / 100);
       const lineEUR = discountedPrice * it.quantity;
+      const lineCrypto = lineEUR / cryptoPrice;
+      
       totalEUR += lineEUR;
+      totalCrypto += lineCrypto;
 
-      const btcAmt = btcPrice ? lineEUR / btcPrice : 0;
-      const ltcAmt = ltcPrice ? lineEUR / ltcPrice : 0;
-
-      const s = sellerTotals[product.seller_id] || { eur: 0, btc: 0, ltc: 0 };
+      const s = sellerTotals[product.seller_id] || { eur: 0, crypto: 0 };
       s.eur += lineEUR;
-      s.btc += btcAmt;
-      s.ltc += ltcAmt;
+      s.crypto += lineCrypto;
       sellerTotals[product.seller_id] = s;
     }
 
-    // Check buyer balance
+    // Check buyer CRYPTO balance (not EUR!)
     const { data: buyerBal } = await supabase
       .from('wallet_balances')
-      .select('balance_eur, balance_btc, balance_ltc')
+      .select('balance_btc, balance_ltc')
       .eq('user_id', userId)
       .maybeSingle();
     if (!buyerBal) throw new Error('Buyer wallet not found');
 
-    const totalBTC = method === 'btc' ? (totalEUR / (btcPrice || 1)) : 0;
-    const totalLTC = method === 'ltc' ? (totalEUR / (ltcPrice || 1)) : 0;
+    const buyerCryptoBalance = method === 'btc' 
+      ? Number(buyerBal.balance_btc || 0) 
+      : Number(buyerBal.balance_ltc || 0);
 
-    if (method === 'btc' && Number(buyerBal.balance_btc) + 1e-12 < totalBTC) throw new Error('Insufficient BTC balance');
-    if (method === 'ltc' && Number((buyerBal as any).balance_ltc || 0) + 1e-12 < totalLTC) throw new Error('Insufficient LTC balance');
+    if (buyerCryptoBalance + 1e-12 < totalCrypto) {
+      throw new Error(`Insufficient ${method.toUpperCase()} balance. Required: ${totalCrypto.toFixed(8)}, Available: ${buyerCryptoBalance.toFixed(8)}`);
+    }
 
-    // Create order with escrow status based on user choice
+    console.log(`Buyer balance check passed: ${buyerCryptoBalance.toFixed(8)} ${method.toUpperCase()} >= ${totalCrypto.toFixed(8)} required`);
+
+    // Create order
     const orderData: any = { 
       user_id: userId, 
       total_amount_eur: totalEUR, 
@@ -159,12 +161,8 @@ serve(async (req) => {
       orderData.shipping_country = shippingAddress.country;
     }
     
-    if (buyerNotes) {
-      orderData.buyer_notes = buyerNotes;
-    }
-    if (buyerNotesImages && buyerNotesImages.length > 0) {
-      orderData.buyer_notes_images = buyerNotesImages;
-    }
+    if (buyerNotes) orderData.buyer_notes = buyerNotes;
+    if (buyerNotesImages?.length) orderData.buyer_notes_images = buyerNotesImages;
 
     const { data: order, error: orderErr } = await supabase
       .from('orders')
@@ -173,7 +171,7 @@ serve(async (req) => {
       .maybeSingle();
     if (orderErr || !order) throw orderErr ?? new Error('Order creation failed');
 
-    console.log('Order created with escrow status:', order.escrow_status, 'Order ID:', order.id);
+    console.log('Order created:', order.id, 'escrow:', order.escrow_status);
 
     // Create order items and update stock
     for (const it of items) {
@@ -191,7 +189,7 @@ serve(async (req) => {
         .order('min_quantity', { ascending: false });
 
       let bestDiscount = 0;
-      if (bulkDiscounts && bulkDiscounts.length > 0) {
+      if (bulkDiscounts?.length) {
         for (const discount of bulkDiscounts) {
           if (it.quantity >= discount.min_quantity) {
             bestDiscount = Math.max(bestDiscount, discount.discount_percentage);
@@ -199,84 +197,58 @@ serve(async (req) => {
         }
       }
 
-      const basePrice = Number(product.price);
-      const discountedPrice = basePrice * (1 - bestDiscount / 100);
+      const discountedPrice = Number(product.price) * (1 - bestDiscount / 100);
 
-      const { error: itemErr } = await supabase.from('order_items').insert({
+      await supabase.from('order_items').insert({
         order_id: order.id,
         product_id: it.id,
         quantity: it.quantity,
         price_eur: discountedPrice,
       });
-      
-      if (itemErr) {
-        console.error('Failed to insert order_item:', itemErr);
-        throw new Error(`Failed to create order item: ${itemErr.message}`);
-      }
 
-      const newStock = Math.max(0, Number(product.stock) - it.quantity);
-      await supabase.from('products').update({ stock: newStock }).eq('id', it.id);
+      await supabase.from('products')
+        .update({ stock: Math.max(0, Number(product.stock) - it.quantity) })
+        .eq('id', it.id);
     }
 
-    // Deduct buyer balance and create buyer transaction
-    const escrowLabel = useEscrow ? ' - In Escrow' : '';
+    // Deduct buyer CRYPTO balance only (no EUR deduction!)
+    const balanceField = method === 'btc' ? 'balance_btc' : 'balance_ltc';
+    const newBuyerBalance = buyerCryptoBalance - totalCrypto;
     
-    if (method === 'btc') {
-      const newBalanceBtc = Number(buyerBal.balance_btc) - totalBTC;
-      const newBalanceEur = Number(buyerBal.balance_eur) - totalEUR;
-      await supabase.from('wallet_balances')
-        .update({ 
-          balance_btc: newBalanceBtc,
-          balance_eur: Math.max(0, newBalanceEur)
-        })
-        .eq('user_id', userId);
-      await supabase.from('transactions').insert({
-        user_id: userId,
-        type: 'purchase',
-        amount_eur: -totalEUR,
-        amount_btc: -totalBTC,
-        status: 'confirmed',
-        description: `Order #${String(order.id).slice(0,8)} (BTC)${escrowLabel}`,
-        transaction_direction: 'outgoing',
-        related_order_id: order.id
-      });
-    } else {
-      const newBalanceLtc = Number((buyerBal as any).balance_ltc || 0) - totalLTC;
-      const newBalanceEur = Number(buyerBal.balance_eur) - totalEUR;
-      await supabase.from('wallet_balances')
-        .update({ 
-          balance_ltc: newBalanceLtc,
-          balance_eur: Math.max(0, newBalanceEur)
-        })
-        .eq('user_id', userId);
-      await supabase.from('transactions').insert({
-        user_id: userId,
-        type: 'purchase',
-        amount_eur: -totalEUR,
-        amount_btc: -totalLTC,
-        status: 'confirmed',
-        description: `Order #${String(order.id).slice(0,8)} (LTC)${escrowLabel}`,
-        transaction_direction: 'outgoing',
-        related_order_id: order.id
-      });
-    }
+    await supabase.from('wallet_balances')
+      .update({ [balanceField]: newBuyerBalance })
+      .eq('user_id', userId);
+
+    console.log(`Deducted ${totalCrypto.toFixed(8)} ${method.toUpperCase()} from buyer. New balance: ${newBuyerBalance.toFixed(8)}`);
+
+    // Create buyer purchase transaction
+    await supabase.from('transactions').insert({
+      user_id: userId,
+      type: 'purchase',
+      amount_eur: -totalEUR,
+      amount_btc: method === 'btc' ? -totalCrypto : 0,
+      amount_ltc: method === 'ltc' ? -totalCrypto : 0,
+      status: 'confirmed',
+      description: `Kauf #${String(order.id).slice(0, 8)} (${method.toUpperCase()})${useEscrow ? ' - Escrow' : ''}`,
+      transaction_direction: 'outgoing',
+      related_order_id: order.id
+    });
 
     // Handle based on escrow choice
     if (useEscrow) {
-      // Create escrow holdings for each seller (funds NOT credited yet)
+      // Create escrow holdings - funds NOT credited to seller yet
       for (const [sellerId, sums] of Object.entries(sellerTotals)) {
-        const cryptoAmount = method === 'btc' ? sums.btc : sums.ltc;
+        const feeAmountCrypto = sums.crypto * (escrowFeePercent / 100);
         const feeAmountEur = sums.eur * (escrowFeePercent / 100);
-        const feeAmountCrypto = cryptoAmount * (escrowFeePercent / 100);
+        const sellerAmountCrypto = sums.crypto - feeAmountCrypto;
         const sellerAmountEur = sums.eur - feeAmountEur;
-        const sellerAmountCrypto = cryptoAmount - feeAmountCrypto;
 
-        const { error: escrowErr } = await supabase.from('escrow_holdings').insert({
+        await supabase.from('escrow_holdings').insert({
           order_id: order.id,
           seller_id: sellerId,
           buyer_id: userId,
           amount_eur: sums.eur,
-          amount_crypto: cryptoAmount,
+          amount_crypto: sums.crypto,
           currency: method.toUpperCase(),
           fee_amount_eur: feeAmountEur,
           fee_amount_crypto: feeAmountCrypto,
@@ -286,25 +258,15 @@ serve(async (req) => {
           auto_release_at: autoReleaseAt.toISOString()
         });
 
-        if (escrowErr) {
-          console.error('Failed to create escrow holding:', escrowErr);
-          throw new Error(`Failed to create escrow holding: ${escrowErr.message}`);
-        }
+        console.log(`Created escrow for seller ${sellerId}: ${sums.crypto.toFixed(8)} ${method.toUpperCase()} (fee: ${feeAmountCrypto.toFixed(8)})`);
 
-        console.log(`Created escrow holding for seller ${sellerId}: ${cryptoAmount} ${method.toUpperCase()} (${feeAmountCrypto} fee)`);
-
-        // Send notification to seller about escrow order
-        // Get buyer username for notification
+        // Send notification to seller
         const { data: buyerProfile } = await supabase
           .from('profiles')
           .select('username')
           .eq('user_id', userId)
           .maybeSingle();
 
-        const buyerUsername = buyerProfile?.username || 'Ein Käufer';
-
-        // Create notification via conversation/message
-        // First check if there's already a conversation
         const productIds = items.map(i => i.id);
         for (const productId of productIds) {
           const { data: product } = await supabase
@@ -313,8 +275,7 @@ serve(async (req) => {
             .eq('id', productId)
             .maybeSingle();
           
-          if (product && product.seller_id === sellerId) {
-            // Create or find conversation
+          if (product?.seller_id === sellerId) {
             const { data: existingConv } = await supabase
               .from('conversations')
               .select('id')
@@ -339,65 +300,56 @@ serve(async (req) => {
               conversationId = newConv?.id;
             }
 
-            // Send escrow notification message
             if (conversationId) {
               await supabase.from('chat_messages').insert({
                 conversation_id: conversationId,
                 sender_id: userId,
-                message: `🛡️ **Escrow-Bestellung**\n\n${buyerUsername} hat eine Bestellung mit Escrow-Schutz aufgegeben.\n\nProdukt: ${product.title}\nBetrag: €${sums.eur.toFixed(2)}\n\nDas Geld wird sicher verwahrt und nach Bestätigung des Käufers freigegeben.`,
+                message: `🛡️ **Escrow-Bestellung**\n\n${buyerProfile?.username || 'Käufer'} hat bestellt.\n\nProdukt: ${product.title}\nBetrag: ${sums.crypto.toFixed(8)} ${method.toUpperCase()} (€${sums.eur.toFixed(2)})\n\nGeld im Escrow bis Käufer bestätigt.`,
                 message_type: 'system'
               });
-
-              // Update last message timestamp
-              await supabase.from('conversations')
-                .update({ last_message_at: new Date().toISOString() })
-                .eq('id', conversationId);
             }
-            break; // One notification per seller is enough
+            break;
           }
         }
       }
     } else {
-      // Direct payment - credit sellers immediately
+      // Direct payment - credit seller CRYPTO immediately (not EUR!)
       for (const [sellerId, sums] of Object.entries(sellerTotals)) {
-        const cryptoAmount = method === 'btc' ? sums.btc : sums.ltc;
+        const feeAmountCrypto = sums.crypto * (escrowFeePercent / 100);
         const feeAmountEur = sums.eur * (escrowFeePercent / 100);
-        const feeAmountCrypto = cryptoAmount * (escrowFeePercent / 100);
+        const sellerAmountCrypto = sums.crypto - feeAmountCrypto;
         const sellerAmountEur = sums.eur - feeAmountEur;
-        const sellerAmountCrypto = cryptoAmount - feeAmountCrypto;
 
-        // Credit seller wallet immediately
+        // Get seller current balance
         const { data: sellerBal } = await supabase
           .from('wallet_balances')
           .select('balance_btc, balance_ltc')
           .eq('user_id', sellerId)
           .maybeSingle();
 
-        if (sellerBal) {
-          if (method === 'btc') {
-            await supabase.from('wallet_balances')
-              .update({ balance_btc: Number(sellerBal.balance_btc || 0) + sellerAmountCrypto })
-              .eq('user_id', sellerId);
-          } else {
-            await supabase.from('wallet_balances')
-              .update({ balance_ltc: Number((sellerBal as any).balance_ltc || 0) + sellerAmountCrypto })
-              .eq('user_id', sellerId);
-          }
-        }
+        // Credit seller CRYPTO balance
+        const sellerBalanceField = method === 'btc' ? 'balance_btc' : 'balance_ltc';
+        const currentSellerBalance = Number(sellerBal?.[sellerBalanceField] || 0);
+        const newSellerBalance = currentSellerBalance + sellerAmountCrypto;
 
-        // Create seller transaction
+        await supabase.from('wallet_balances')
+          .update({ [sellerBalanceField]: newSellerBalance })
+          .eq('user_id', sellerId);
+
+        console.log(`Credited seller ${sellerId}: ${sellerAmountCrypto.toFixed(8)} ${method.toUpperCase()} (new balance: ${newSellerBalance.toFixed(8)})`);
+
+        // Create seller sale transaction
         await supabase.from('transactions').insert({
           user_id: sellerId,
           type: 'sale',
           amount_eur: sellerAmountEur,
           amount_btc: method === 'btc' ? sellerAmountCrypto : 0,
+          amount_ltc: method === 'ltc' ? sellerAmountCrypto : 0,
           status: 'confirmed',
-          description: `Verkauf Order #${String(order.id).slice(0,8)} (Direktzahlung)`,
+          description: `Verkauf #${String(order.id).slice(0, 8)} (${method.toUpperCase()})`,
           transaction_direction: 'incoming',
           related_order_id: order.id
         });
-
-        console.log(`Direct payment to seller ${sellerId}: ${sellerAmountCrypto} ${method.toUpperCase()}`);
       }
     }
 
@@ -406,6 +358,9 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error('process-order error:', e);
-    return new Response(JSON.stringify({ error: String(e) }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: String(e) }), { 
+      status: 400, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    });
   }
 });

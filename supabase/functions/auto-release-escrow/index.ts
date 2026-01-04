@@ -6,14 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const ADMIN_USER_ID = '0af916bb-1c03-4173-a898-fd4274ae4a2b'
-
-// Hardcoded fee addresses (2% escrow fee)
-const FEE_ADDRESSES = {
-  BTC: 'bc1q2yqlvcucm0dd39p49tymfw0e3pg3f5xup3es7g',
-  LTC: 'ltc1qen9f64z87lgkf35qz5ap0qf2xgjphh0cdtwvnf'
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -53,9 +45,9 @@ serve(async (req) => {
     // Process each expired holding
     for (const holding of expiredHoldings) {
       try {
-        const { seller_id, seller_amount_crypto, fee_amount_crypto, currency, fee_amount_eur, order_id } = holding
+        const { seller_id, seller_amount_crypto, fee_amount_crypto, currency, fee_amount_eur, order_id, seller_amount_eur } = holding
 
-        // 1. Credit seller's wallet
+        // 1. Credit seller's CRYPTO wallet (not EUR!)
         const balanceField = currency.toLowerCase() === 'btc' ? 'balance_btc' : 'balance_ltc'
         
         const { data: sellerWallet } = await supabase
@@ -64,13 +56,15 @@ serve(async (req) => {
           .eq('user_id', seller_id)
           .maybeSingle()
 
-        if (sellerWallet) {
-          const currentBalance = Number(sellerWallet[balanceField] || 0)
-          await supabase
-            .from('wallet_balances')
-            .update({ [balanceField]: currentBalance + Number(seller_amount_crypto) })
-            .eq('user_id', seller_id)
-        }
+        const currentBalance = Number(sellerWallet?.[balanceField] || 0)
+        const newBalance = currentBalance + Number(seller_amount_crypto)
+
+        await supabase
+          .from('wallet_balances')
+          .update({ [balanceField]: newBalance })
+          .eq('user_id', seller_id)
+
+        console.log(`Credited seller ${seller_id}: ${seller_amount_crypto} ${currency} (new balance: ${newBalance})`)
 
         // Create seller transaction
         const { data: buyerProfile } = await supabase
@@ -82,18 +76,17 @@ serve(async (req) => {
         await supabase.from('transactions').insert({
           user_id: seller_id,
           type: 'sale',
-          amount_eur: holding.seller_amount_eur,
+          amount_eur: seller_amount_eur,
           amount_btc: currency.toLowerCase() === 'btc' ? seller_amount_crypto : 0,
+          amount_ltc: currency.toLowerCase() === 'ltc' ? seller_amount_crypto : 0,
           status: 'confirmed',
-          description: `Sale #${String(order_id).slice(0, 8)} (${currency.toUpperCase()}) - Auto-released`,
+          description: `Verkauf #${String(order_id).slice(0, 8)} (${currency}) - Auto-Release`,
           transaction_direction: 'incoming',
           from_username: buyerProfile?.username || 'Unknown',
           related_order_id: order_id
         })
 
-        // 2. Record fee transaction (fee sent to hardcoded address)
-        const feeAddress = FEE_ADDRESSES[currency.toUpperCase() as keyof typeof FEE_ADDRESSES]
-        
+        // 2. Record fee (platform keeps this in the pool)
         await supabase.from('admin_fee_transactions').insert({
           escrow_holding_id: holding.id,
           order_id: order_id,
@@ -101,11 +94,10 @@ serve(async (req) => {
           amount_crypto: fee_amount_crypto,
           currency: currency.toUpperCase(),
           transaction_type: 'fee_collected',
-          status: 'completed',
-          destination_address: feeAddress
+          status: 'completed'
         })
 
-        // 4. Update escrow holding status
+        // 3. Update escrow holding status
         await supabase
           .from('escrow_holdings')
           .update({ 
@@ -114,7 +106,7 @@ serve(async (req) => {
           })
           .eq('id', holding.id)
 
-        // 5. Update order escrow status
+        // 4. Update order escrow status
         await supabase
           .from('orders')
           .update({ escrow_status: 'released' })
@@ -125,7 +117,6 @@ serve(async (req) => {
 
       } catch (holdingError) {
         console.error(`Error auto-releasing holding ${holding.id}:`, holdingError)
-        // Continue with other holdings
       }
     }
 

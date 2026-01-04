@@ -16,7 +16,7 @@ function extractFingerprint(satoshi: number): number {
 }
 
 // Tolerance for fingerprint matching (allow some variance in last 2 digits due to fees)
-const FINGERPRINT_TOLERANCE = 5; // Allow fingerprint to be off by up to 5
+const FINGERPRINT_TOLERANCE = 5;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
     console.log('🔍 Starting deposit check with fingerprint matching...');
 
-    // Get current crypto prices
+    // Get current crypto prices (only for logging, not for crediting EUR)
     let btcPrice = 90000;
     let ltcPrice = 100;
     
@@ -133,26 +133,25 @@ Deno.serve(async (req) => {
               console.log(`✅ Matched TX to request ${matchingRequest.id} (fingerprint: ${matchingRequest.fingerprint})`);
               
               if (confirmations >= 1) {
-                // Confirmed - credit balance
-                const receivedEur = receivedBtc * btcPrice;
+                // Confirmed - credit ONLY crypto balance (not EUR!)
+                const receivedEurValue = receivedBtc * btcPrice; // Only for logging/display
                 
                 // Get current balance
                 const { data: currentBalance } = await supabase
                   .from('wallet_balances')
-                  .select('balance_btc, balance_btc_deposited, balance_eur')
+                  .select('balance_btc, balance_btc_deposited')
                   .eq('user_id', matchingRequest.user_id)
                   .single();
 
                 const newBtcBalance = (currentBalance?.balance_btc || 0) + receivedBtc;
                 const newBtcDeposited = (currentBalance?.balance_btc_deposited || 0) + receivedBtc;
-                const newEurBalance = (currentBalance?.balance_eur || 0) + receivedEur;
                 
+                // ONLY update crypto balance - no EUR!
                 await supabase
                   .from('wallet_balances')
                   .update({ 
                     balance_btc: newBtcBalance,
-                    balance_btc_deposited: newBtcDeposited,
-                    balance_eur: newEurBalance
+                    balance_btc_deposited: newBtcDeposited
                   })
                   .eq('user_id', matchingRequest.user_id);
 
@@ -173,25 +172,26 @@ Deno.serve(async (req) => {
                     tx_hash: tx.txid,
                     currency: 'BTC',
                     amount_crypto: receivedBtc,
-                    amount_eur: receivedEur,
+                    amount_eur: receivedEurValue, // For reference only
                     user_id: matchingRequest.user_id
                   });
 
-                // Create transaction record
+                // Create transaction record with correct amount_btc
                 await supabase
                   .from('transactions')
                   .insert({
                     user_id: matchingRequest.user_id,
                     type: 'deposit',
                     amount_btc: receivedBtc,
-                    amount_eur: receivedEur,
+                    amount_ltc: 0,
+                    amount_eur: receivedEurValue, // Reference value at time of deposit
                     status: 'completed',
                     btc_tx_hash: tx.txid,
-                    description: `BTC Einzahlung`
+                    description: `BTC Einzahlung: ${receivedBtc.toFixed(8)} BTC`
                   });
 
                 processedCount++;
-                console.log(`✅ Credited ${receivedBtc} BTC to user ${matchingRequest.user_id}`);
+                console.log(`✅ Credited ${receivedBtc} BTC to user ${matchingRequest.user_id} (NO EUR credited)`);
                 
                 // Remove from array to prevent double matching
                 const idx = btcRequests.indexOf(matchingRequest);
@@ -265,26 +265,25 @@ Deno.serve(async (req) => {
               console.log(`✅ Matched TX to request ${matchingRequest.id} (fingerprint: ${matchingRequest.fingerprint})`);
               
               if (confirmations >= 1) {
-                // Confirmed - credit balance
-                const receivedEur = receivedLtc * ltcPrice;
+                // Confirmed - credit ONLY crypto balance (not EUR!)
+                const receivedEurValue = receivedLtc * ltcPrice; // Only for logging/display
                 
                 // Get current balance
                 const { data: currentBalance } = await supabase
                   .from('wallet_balances')
-                  .select('balance_ltc, balance_ltc_deposited, balance_eur')
+                  .select('balance_ltc, balance_ltc_deposited')
                   .eq('user_id', matchingRequest.user_id)
                   .single();
 
                 const newLtcBalance = (currentBalance?.balance_ltc || 0) + receivedLtc;
                 const newLtcDeposited = (currentBalance?.balance_ltc_deposited || 0) + receivedLtc;
-                const newEurBalance = (currentBalance?.balance_eur || 0) + receivedEur;
                 
+                // ONLY update crypto balance - no EUR!
                 await supabase
                   .from('wallet_balances')
                   .update({ 
                     balance_ltc: newLtcBalance,
-                    balance_ltc_deposited: newLtcDeposited,
-                    balance_eur: newEurBalance
+                    balance_ltc_deposited: newLtcDeposited
                   })
                   .eq('user_id', matchingRequest.user_id);
 
@@ -305,25 +304,26 @@ Deno.serve(async (req) => {
                     tx_hash: txHash,
                     currency: 'LTC',
                     amount_crypto: receivedLtc,
-                    amount_eur: receivedEur,
+                    amount_eur: receivedEurValue, // For reference only
                     user_id: matchingRequest.user_id
                   });
 
-                // Create transaction record
+                // Create transaction record with correct amount_ltc
                 await supabase
                   .from('transactions')
                   .insert({
                     user_id: matchingRequest.user_id,
                     type: 'deposit',
-                    amount_btc: receivedLtc, // Using btc field for LTC
-                    amount_eur: receivedEur,
+                    amount_btc: 0,
+                    amount_ltc: receivedLtc, // Now using correct column!
+                    amount_eur: receivedEurValue, // Reference value at time of deposit
                     status: 'completed',
                     btc_tx_hash: txHash,
-                    description: `LTC Einzahlung`
+                    description: `LTC Einzahlung: ${receivedLtc.toFixed(8)} LTC`
                   });
 
                 processedCount++;
-                console.log(`✅ Credited ${receivedLtc} LTC to user ${matchingRequest.user_id}`);
+                console.log(`✅ Credited ${receivedLtc} LTC to user ${matchingRequest.user_id} (NO EUR credited)`);
                 
                 // Remove from array
                 const idx = ltcRequests.indexOf(matchingRequest);
@@ -356,7 +356,7 @@ Deno.serve(async (req) => {
       .eq('status', 'pending')
       .lt('expires_at', new Date().toISOString());
 
-    console.log(`✅ Processed ${processedCount} deposits`);
+    console.log(`✅ Processed ${processedCount} deposits (CRYPTO ONLY - no EUR)`);
 
     return new Response(JSON.stringify({ 
       success: true, 

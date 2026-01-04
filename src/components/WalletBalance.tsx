@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCryptoPrices } from "@/hooks/useCryptoPrices";
 
 interface WalletBalance {
-  balance_eur: number;
   balance_btc: number;
   balance_ltc: number;
   balance_btc_deposited: number;
@@ -29,7 +28,7 @@ export function WalletBalance() {
     try {
       const { data, error } = await supabase
         .from('wallet_balances')
-        .select('balance_eur, balance_btc, balance_ltc, balance_btc_deposited, balance_ltc_deposited')
+        .select('balance_btc, balance_ltc, balance_btc_deposited, balance_ltc_deposited')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -43,7 +42,6 @@ export function WalletBalance() {
           .from('wallet_balances')
           .insert({
             user_id: user.id,
-            balance_eur: 0,
             balance_btc: 0,
             balance_ltc: 0,
             balance_btc_deposited: 0,
@@ -65,13 +63,11 @@ export function WalletBalance() {
     }
   }, [toast, user]);
 
-
   const refreshPayments = async () => {
     if (!user) return;
 
     setRefreshing(true);
     try {
-      // Check for new deposits (individual addresses + shared/legacy + centralized address flow)
       const [userDepositRes, sharedDepositRes, centralDepositRes] = await Promise.all([
         supabase.functions.invoke('check-user-deposits'),
         supabase.functions.invoke('check-crypto-deposits'),
@@ -82,12 +78,11 @@ export function WalletBalance() {
       if (sharedDepositRes.error) throw sharedDepositRes.error;
       if (centralDepositRes.error) throw centralDepositRes.error;
 
-      // Refresh balance after checking
       await fetchBalance();
 
       toast({
         title: "Aktualisiert",
-        description: "Auf neue Zahlungen geprüft. Es kann bis zu 30 Minuten dauern, bis alles überall aktualisiert ist.",
+        description: "Auf neue Zahlungen geprüft.",
       });
     } catch (error) {
       console.error('Error refreshing payments:', error);
@@ -135,6 +130,10 @@ export function WalletBalance() {
     setLoading(false);
   }, [balance]);
 
+  // Calculate total EUR value from crypto balances
+  const totalEurValue = (balance?.balance_btc || 0) * (btcPrice || 0) + 
+                        (balance?.balance_ltc || 0) * (ltcPrice || 0);
+
   if (loading) {
     return (
       <Card>
@@ -175,7 +174,18 @@ export function WalletBalance() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 sm:space-y-6 px-3 sm:px-6 pb-4 sm:pb-6">
-        {/* Crypto Balances - Stacked on Mobile */}
+        {/* Total Value Display */}
+        <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 p-4 rounded-xl text-center">
+          <p className="text-sm text-muted-foreground mb-1">Gesamtwert</p>
+          <p className="text-2xl sm:text-3xl font-bold text-primary">
+            ≈ €{totalEurValue.toFixed(2)}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Basierend auf aktuellen Kursen
+          </p>
+        </div>
+
+        {/* Crypto Balances */}
         <div className="grid grid-cols-1 gap-3 sm:gap-4">
           {/* Bitcoin Balance */}
           <div className="bg-gradient-to-br from-orange-500/5 to-orange-500/10 border border-orange-500/20 p-3 sm:p-4 rounded-xl">
@@ -198,7 +208,7 @@ export function WalletBalance() {
                 </div>
               )}
               <div className="text-[10px] sm:text-xs text-muted-foreground pt-1">
-                Verfügbar für Einkäufe
+                Echtes Krypto-Guthaben
               </div>
             </div>
           </div>
@@ -224,13 +234,13 @@ export function WalletBalance() {
                 </div>
               )}
               <div className="text-[10px] sm:text-xs text-muted-foreground pt-1">
-                Verfügbar für Einkäufe
+                Echtes Krypto-Guthaben
               </div>
             </div>
           </div>
         </div>
 
-        {/* Deposit History - Compact on Mobile */}
+        {/* Deposit History */}
         <div className="bg-muted/50 p-3 sm:p-4 rounded-xl">
           <h4 className="font-medium text-xs sm:text-sm mb-2 sm:mb-3">Einzahlungsverlauf</h4>
           <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
@@ -251,7 +261,7 @@ export function WalletBalance() {
 
         {/* Info Note */}
         <div className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed">
-          <strong>Hinweis:</strong> Klicke auf Aktualisieren um nach neuen Zahlungen zu suchen.
+          <strong>Hinweis:</strong> Dein Guthaben besteht aus echtem Krypto. Der EUR-Wert wird live berechnet.
         </div>
       </CardContent>
     </Card>
