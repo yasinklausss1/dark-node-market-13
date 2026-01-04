@@ -11,12 +11,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-// Zentrale Platform-Adressen
-const CENTRAL_ADDRESSES = {
-  BTC: '16rmws2YNweEAsbVAV2KauwhFjP2myDfsf',
-  LTC: 'Lejgj3ZCYryMz4b7ConCzv5wpEHqTZriFy'
-};
-
 interface DepositRequest {
   id: string;
   currency: string;
@@ -29,6 +23,11 @@ interface DepositRequest {
   rate_locked: number;
 }
 
+interface PoolAddresses {
+  BTC: string | null;
+  LTC: string | null;
+}
+
 export function CentralizedDeposit() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -38,6 +37,29 @@ export function CentralizedDeposit() {
   const [activeRequest, setActiveRequest] = useState<DepositRequest | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>("");
   const [cryptoPrices, setCryptoPrices] = useState<{ btc: number; ltc: number }>({ btc: 90000, ltc: 100 });
+  const [poolAddresses, setPoolAddresses] = useState<PoolAddresses>({ BTC: null, LTC: null });
+
+  // Fetch pool addresses from admin_fee_addresses
+  useEffect(() => {
+    const fetchPoolAddresses = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('admin_fee_addresses')
+          .select('currency, address')
+          .eq('admin_user_id', '0af916bb-1c03-4173-a898-fd4274ae4a2b');
+        
+        if (!error && data) {
+          setPoolAddresses({
+            BTC: data.find(a => a.currency === 'BTC')?.address || null,
+            LTC: data.find(a => a.currency === 'LTC')?.address || null
+          });
+        }
+      } catch (e) {
+        console.error('Error fetching pool addresses:', e);
+      }
+    };
+    fetchPoolAddresses();
+  }, []);
 
   // Fetch crypto prices
   useEffect(() => {
@@ -213,7 +235,7 @@ export function CentralizedDeposit() {
           crypto_amount: finalCryptoAmount,
           fingerprint: fingerprint,
           rate_locked: price,
-          address: CENTRAL_ADDRESSES[selectedCrypto],
+          address: poolAddresses[selectedCrypto] || '',
           expires_at: expiresAt
         })
         .select()
@@ -264,7 +286,7 @@ export function CentralizedDeposit() {
     });
   };
 
-  const address = CENTRAL_ADDRESSES[selectedCrypto];
+  const address = poolAddresses[selectedCrypto];
   const cryptoName = selectedCrypto === "BTC" ? "Bitcoin" : "Litecoin";
   const CryptoIcon = selectedCrypto === "BTC" ? Bitcoin : Coins;
   const iconColor = selectedCrypto === "BTC" ? "text-orange-500" : "text-blue-500";

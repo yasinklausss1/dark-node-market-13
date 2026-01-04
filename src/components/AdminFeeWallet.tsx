@@ -75,7 +75,7 @@ export const AdminFeeWallet: React.FC = () => {
     }
   };
 
-  const generateAddresses = async () => {
+  const generateAddresses = async (forceRegenerate = false) => {
     setGenerating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -84,7 +84,8 @@ export const AdminFeeWallet: React.FC = () => {
       const { data, error } = await supabase.functions.invoke('generate-admin-fee-addresses', {
         headers: {
           Authorization: `Bearer ${session.access_token}`
-        }
+        },
+        body: { forceRegenerate }
       });
 
       if (error) throw error;
@@ -92,7 +93,9 @@ export const AdminFeeWallet: React.FC = () => {
 
       toast({
         title: 'Erfolg',
-        description: 'Gebühren-Adressen wurden generiert'
+        description: forceRegenerate 
+          ? 'Neue Pool-Adressen wurden generiert! Transferiere Funds dorthin.'
+          : 'Gebühren-Adressen wurden geladen'
       });
       
       await fetchData();
@@ -209,7 +212,7 @@ export const AdminFeeWallet: React.FC = () => {
               <p className="text-muted-foreground mb-4">
                 Noch keine Gebühren-Adressen generiert
               </p>
-              <Button onClick={generateAddresses} disabled={generating}>
+              <Button onClick={() => generateAddresses(false)} disabled={generating}>
                 {generating ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -281,6 +284,32 @@ export const AdminFeeWallet: React.FC = () => {
                     </Button>
                   </div>
                 )}
+              </div>
+              
+              {/* Force Regenerate Button */}
+              <div className="col-span-1 md:col-span-2 pt-4 border-t">
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => generateAddresses(true)} 
+                  disabled={generating}
+                  className="w-full"
+                >
+                  {generating ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Generiere neue Adressen...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Neue Pool-Adressen generieren (überschreibt alte!)
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  ⚠️ Nach dem Generieren müssen Funds zur neuen Adresse transferiert werden
+                </p>
               </div>
             </div>
           )}

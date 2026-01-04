@@ -5,9 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Central platform addresses
-const CENTRAL_BTC_ADDRESS = '16rmws2YNweEAsbVAV2KauwhFjP2myDfsf';
-const CENTRAL_LTC_ADDRESS = 'Lejgj3ZCYryMz4b7ConCzv5wpEHqTZriFy';
+const ADMIN_USER_ID = '0af916bb-1c03-4173-a898-fd4274ae4a2b';
 
 // Extract fingerprint from amount (digits 3-6 from satoshi, i.e., positions for XFFFF00 pattern)
 function extractFingerprint(satoshi: number): number {
@@ -30,7 +28,28 @@ Deno.serve(async (req) => {
 
     console.log('🔍 Starting deposit check with fingerprint matching...');
 
-    // Get current crypto prices (only for logging, not for crediting EUR)
+    // Get central pool addresses from admin_fee_addresses
+    const { data: poolAddresses, error: poolError } = await supabase
+      .from('admin_fee_addresses')
+      .select('currency, address')
+      .eq('admin_user_id', ADMIN_USER_ID);
+
+    if (poolError || !poolAddresses?.length) {
+      console.error('No pool addresses configured:', poolError);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Pool addresses not configured. Run generate-admin-fee-addresses first.',
+        processed: 0 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      });
+    }
+
+    const CENTRAL_BTC_ADDRESS = poolAddresses.find(a => a.currency === 'BTC')?.address;
+    const CENTRAL_LTC_ADDRESS = poolAddresses.find(a => a.currency === 'LTC')?.address;
+
+    console.log('Pool addresses:', { BTC: CENTRAL_BTC_ADDRESS, LTC: CENTRAL_LTC_ADDRESS });
     let btcPrice = 90000;
     let ltcPrice = 100;
     
@@ -84,7 +103,7 @@ Deno.serve(async (req) => {
 
     // Check BTC transactions
     const btcRequests = pendingRequests.filter(r => r.currency === 'BTC');
-    if (btcRequests.length > 0) {
+    if (btcRequests.length > 0 && CENTRAL_BTC_ADDRESS) {
       try {
         console.log(`🔍 Checking BTC address: ${CENTRAL_BTC_ADDRESS}`);
         const btcResponse = await fetch(
@@ -219,7 +238,7 @@ Deno.serve(async (req) => {
 
     // Check LTC transactions
     const ltcRequests = pendingRequests.filter(r => r.currency === 'LTC');
-    if (ltcRequests.length > 0) {
+    if (ltcRequests.length > 0 && CENTRAL_LTC_ADDRESS) {
       try {
         console.log(`🔍 Checking LTC address: ${CENTRAL_LTC_ADDRESS}`);
         const ltcResponse = await fetch(
