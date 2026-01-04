@@ -58,11 +58,17 @@ const API_SOURCES = [
   }
 ];
 
+// Global cache to prevent multiple fetches
+let priceCache: { btc: number | null; ltc: number | null; xmr: number | null; timestamp: number } | null = null;
+let fetchPromise: Promise<void> | null = null;
+
 export const useCryptoPrices = (autoRefresh = true): CryptoPrices => {
-  const [btcPrice, setBtcPrice] = useState<number | null>(null);
-  const [ltcPrice, setLtcPrice] = useState<number | null>(null);
-  const [xmrPrice, setXmrPrice] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [prices, setPrices] = useState<{ btc: number | null; ltc: number | null; xmr: number | null }>({
+    btc: priceCache?.btc ?? null,
+    ltc: priceCache?.ltc ?? null,
+    xmr: priceCache?.xmr ?? null
+  });
+  const [loading, setLoading] = useState(!priceCache);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPricesFromSource = async (source: typeof API_SOURCES[0]) => {
@@ -78,12 +84,12 @@ export const useCryptoPrices = (autoRefresh = true): CryptoPrices => {
       }
       
       const data = await response.json();
-      const prices = await source.parseData(data);
+      const parsedPrices = await source.parseData(data);
       
       return {
-        btc: prices.btc && prices.btc > 0 ? prices.btc : null,
-        ltc: prices.ltc && prices.ltc > 0 ? prices.ltc : null,
-        xmr: prices.xmr && prices.xmr > 0 ? prices.xmr : null,
+        btc: parsedPrices.btc && parsedPrices.btc > 0 ? parsedPrices.btc : null,
+        ltc: parsedPrices.ltc && parsedPrices.ltc > 0 ? parsedPrices.ltc : null,
+        xmr: parsedPrices.xmr && parsedPrices.xmr > 0 ? parsedPrices.xmr : null,
         source: source.name
       };
     } catch (err) {
@@ -93,63 +99,79 @@ export const useCryptoPrices = (autoRefresh = true): CryptoPrices => {
   };
 
   const fetchPrices = async () => {
-    try {
-      setError(null);
-      
-      let finalPrices = { btc: null, ltc: null, xmr: null };
-      let successfulSources = [];
-      
-      // Try each API source
-      for (const source of API_SOURCES) {
-        const result = await fetchPricesFromSource(source);
-        if (result) {
-          successfulSources.push(result.source);
-          
-          // Use first successful result for each currency
-          if (!finalPrices.btc && result.btc) finalPrices.btc = result.btc;
-          if (!finalPrices.ltc && result.ltc) finalPrices.ltc = result.ltc;
-          if (!finalPrices.xmr && result.xmr) finalPrices.xmr = result.xmr;
-          
-          // If we have all prices, break early
-          if (finalPrices.btc && finalPrices.ltc && finalPrices.xmr) {
-            break;
+    // Use cache if fresh (< 30 seconds)
+    if (priceCache && Date.now() - priceCache.timestamp < 30000) {
+      setPrices({ btc: priceCache.btc, ltc: priceCache.ltc, xmr: priceCache.xmr });
+      setLoading(false);
+      return;
+    }
+
+    // Prevent concurrent fetches
+    if (fetchPromise) {
+      await fetchPromise;
+      if (priceCache) {
+        setPrices({ btc: priceCache.btc, ltc: priceCache.ltc, xmr: priceCache.xmr });
+        setLoading(false);
+      }
+      return;
+    }
+
+    fetchPromise = (async () => {
+      try {
+        setError(null);
+        
+        let finalPrices = { btc: null as number | null, ltc: null as number | null, xmr: null as number | null };
+        let successSource = '';
+        
+        // Try each API source
+        for (const source of API_SOURCES) {
+          const result = await fetchPricesFromSource(source);
+          if (result) {
+            if (!finalPrices.btc && result.btc) finalPrices.btc = result.btc;
+            if (!finalPrices.ltc && result.ltc) finalPrices.ltc = result.ltc;
+            if (!finalPrices.xmr && result.xmr) finalPrices.xmr = result.xmr;
+            
+            if (!successSource) successSource = result.source;
+            
+            if (finalPrices.btc && finalPrices.ltc) {
+              break;
+            }
           }
         }
-      }
-      
-      // Set prices if we got any valid data
-      if (finalPrices.btc || finalPrices.ltc || finalPrices.xmr) {
-        if (finalPrices.btc) setBtcPrice(finalPrices.btc);
-        if (finalPrices.ltc) setLtcPrice(finalPrices.ltc);
-        if (finalPrices.xmr) setXmrPrice(finalPrices.xmr);
         
-        console.log(`Crypto prices updated from: ${successfulSources.join(', ')}`);
-      } else {
-        throw new Error('All price sources failed');
+        if (finalPrices.btc || finalPrices.ltc || finalPrices.xmr) {
+          priceCache = { ...finalPrices, timestamp: Date.now() };
+          setPrices(finalPrices);
+          console.log(`Crypto prices updated from: ${successSource}`);
+        } else {
+          throw new Error('All price sources failed');
+        }
+        
+      } catch (err) {
+        console.error('Error fetching crypto prices:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch prices');
+        
+        // Set fallback prices
+        const fallback = { btc: 95000, ltc: 110, xmr: 160 };
+        priceCache = { ...fallback, timestamp: Date.now() };
+        setPrices(fallback);
+      } finally {
+        setLoading(false);
+        fetchPromise = null;
       }
-      
-    } catch (err) {
-      console.error('Error fetching crypto prices:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch prices');
-      
-      // Set fallback prices to prevent blocking UI
-      if (!btcPrice) setBtcPrice(95000); // Conservative fallback
-      if (!ltcPrice) setLtcPrice(110);   // Conservative fallback  
-      if (!xmrPrice) setXmrPrice(160);   // Conservative fallback
-    } finally {
-      setLoading(false);
-    }
+    })();
+
+    await fetchPromise;
   };
 
   useEffect(() => {
     fetchPrices();
     
     if (autoRefresh) {
-      // Refresh prices every 2 minutes
       const interval = setInterval(fetchPrices, 120000);
       return () => clearInterval(interval);
     }
   }, [autoRefresh]);
 
-  return { btcPrice, ltcPrice, xmrPrice, loading, error };
+  return { btcPrice: prices.btc, ltcPrice: prices.ltc, xmrPrice: prices.xmr, loading, error };
 };
