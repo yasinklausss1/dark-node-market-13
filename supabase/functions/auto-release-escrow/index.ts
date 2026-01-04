@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { hmac } from "https://deno.land/x/hmac@v2.0.1/mod.ts"
 import * as secp256k1 from "https://esm.sh/@noble/secp256k1@1.7.1"
+import { hmac } from "https://esm.sh/@noble/hashes@1.3.2/hmac"
 import { sha256 } from "https://esm.sh/@noble/hashes@1.3.2/sha256"
 
 // Configure secp256k1 to use HMAC-SHA256 for RFC 6979 deterministic k generation
@@ -12,7 +12,7 @@ secp256k1.utils.hmacSha256Sync = (key: Uint8Array, ...messages: Uint8Array[]) =>
     combined.set(msg, offset)
     offset += msg.length
   }
-  return new Uint8Array(hmac("sha256", key, combined))
+  return hmac(sha256, key, combined)
 }
 
 const corsHeaders = {
