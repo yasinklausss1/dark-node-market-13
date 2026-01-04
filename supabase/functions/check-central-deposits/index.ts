@@ -375,6 +375,39 @@ Deno.serve(async (req) => {
       .eq('status', 'pending')
       .lt('expires_at', new Date().toISOString());
 
+    // Sync pool balances from blockchain
+    try {
+      // Update BTC pool balance
+      if (CENTRAL_BTC_ADDRESS) {
+        const btcBalanceRes = await fetch(`https://mempool.space/api/address/${CENTRAL_BTC_ADDRESS}`);
+        if (btcBalanceRes.ok) {
+          const btcData = await btcBalanceRes.json();
+          const btcBalance = (btcData.chain_stats?.funded_txo_sum - btcData.chain_stats?.spent_txo_sum) / 100000000;
+          await supabase
+            .from('admin_fee_addresses')
+            .update({ balance: btcBalance, updated_at: new Date().toISOString() })
+            .eq('address', CENTRAL_BTC_ADDRESS);
+          console.log(`📊 Updated BTC pool balance: ${btcBalance} BTC`);
+        }
+      }
+
+      // Update LTC pool balance
+      if (CENTRAL_LTC_ADDRESS) {
+        const ltcBalanceRes = await fetch(`https://api.blockcypher.com/v1/ltc/main/addrs/${CENTRAL_LTC_ADDRESS}/balance`);
+        if (ltcBalanceRes.ok) {
+          const ltcData = await ltcBalanceRes.json();
+          const ltcBalance = ltcData.balance / 100000000;
+          await supabase
+            .from('admin_fee_addresses')
+            .update({ balance: ltcBalance, updated_at: new Date().toISOString() })
+            .eq('address', CENTRAL_LTC_ADDRESS);
+          console.log(`📊 Updated LTC pool balance: ${ltcBalance} LTC`);
+        }
+      }
+    } catch (e) {
+      console.log('⚠️ Could not sync pool balances:', e);
+    }
+
     console.log(`✅ Processed ${processedCount} deposits (CRYPTO ONLY - no EUR)`);
 
     return new Response(JSON.stringify({ 
