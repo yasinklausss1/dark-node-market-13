@@ -8,10 +8,10 @@ const corsHeaders = {
 
 const ADMIN_USER_ID = '0af916bb-1c03-4173-a898-fd4274ae4a2b'
 
-// Hardcoded fee addresses (2% escrow fee)
+// Hardcoded fee addresses (1% escrow fee)
 const FEE_ADDRESSES = {
-  BTC: 'bc1q2yqlvcucm0dd39p49tymfw0e3pg3f5xup3es7g',
-  LTC: 'ltc1qen9f64z87lgkf35qz5ap0qf2xgjphh0cdtwvnf'
+  BTC: 'bc1q8qta4hckeqzly0x4kkqldx5v5483sgweuvjxp7',
+  LTC: 'LYaT4LeUYAKnZsNpaRwKLQjNt3AwfKQVyf'
 }
 
 // Decrypt private key (AES-GCM) - MUST use same key as encryption in generate-user-addresses
