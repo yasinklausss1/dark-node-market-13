@@ -71,15 +71,20 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
         .from('wallet_balances')
         .select('balance_eur, balance_btc, balance_ltc')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        throw error;
+      if (error) {
+        console.error('Wallet balance fetch error:', error);
+        // Still set default balance so checkout can proceed
+        setWalletBalance({ balance_eur: 0, balance_btc: 0, balance_ltc: 0 });
+        return;
       }
 
       setWalletBalance(data || { balance_eur: 0, balance_btc: 0, balance_ltc: 0 });
     } catch (error) {
       console.error('Error fetching wallet balance:', error);
+      // Fallback to zero balance instead of null
+      setWalletBalance({ balance_eur: 0, balance_btc: 0, balance_ltc: 0 });
     }
   };
 
