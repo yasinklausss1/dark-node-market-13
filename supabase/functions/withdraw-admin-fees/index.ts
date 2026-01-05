@@ -1,7 +1,7 @@
 import bs58check from 'bs58check';
 import * as secp from 'noble-secp256k1';
 
-// Supabase Functions (Edge) style handler
+// Supabase Functions (Edge) style handlerr
 // Expects JSON body with at least: inputs, outputs
 // Optional fields:
 // - signatures: array of hex signatures (DER+01) to try sending directly
