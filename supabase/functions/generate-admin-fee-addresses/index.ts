@@ -216,7 +216,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in generate-admin-fee-addresses:', error)
     return new Response(
-      JSON.stringify({ error: error.message, success: false }),
+      JSON.stringify({ error: (error as Error).message, success: false }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }

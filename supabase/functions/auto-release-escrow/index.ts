@@ -359,7 +359,7 @@ serve(async (req) => {
           .eq('user_id', seller_id)
           .maybeSingle()
 
-        const currentBalance = Number(sellerWallet?.[balanceField] || 0)
+        const currentBalance = Number((sellerWallet as Record<string, number> | null)?.[balanceField] || 0)
         const newBalance = currentBalance + Number(seller_amount_crypto)
 
         await supabase
@@ -441,7 +441,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in auto-release-escrow:', error)
     return new Response(
-      JSON.stringify({ error: error.message, success: false }),
+      JSON.stringify({ error: (error as Error).message, success: false }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
