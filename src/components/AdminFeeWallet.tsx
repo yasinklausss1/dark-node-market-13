@@ -81,7 +81,8 @@ export const AdminFeeWallet: React.FC = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase.functions.invoke('generate-admin-fee-addresses', {
+      // Use Tatum-based pool address generation
+      const { data, error } = await supabase.functions.invoke('generate-tatum-pool-addresses', {
         headers: {
           Authorization: `Bearer ${session.access_token}`
         },
@@ -94,8 +95,8 @@ export const AdminFeeWallet: React.FC = () => {
       toast({
         title: 'Erfolg',
         description: forceRegenerate 
-          ? 'Neue Pool-Adressen wurden generiert! Transferiere Funds dorthin.'
-          : 'Gebühren-Adressen wurden geladen'
+          ? `Neue Tatum Pool-Adressen generiert! BTC: ${data.btcAddress?.slice(0, 12)}... LTC: ${data.ltcAddress?.slice(0, 12)}...`
+          : 'Pool-Adressen wurden geladen'
       });
       
       await fetchData();

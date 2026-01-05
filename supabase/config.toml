@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.check-central-deposits]
 verify_jwt = false
+
+[functions.generate-tatum-pool-addresses]
+verify_jwt = true
+
+[functions.process-tatum-withdrawal]
+verify_jwt = true

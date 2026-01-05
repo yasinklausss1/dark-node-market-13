@@ -73,7 +73,7 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
       // Fetch pool addresses from database
       const { data: poolAddresses, error: poolError } = await supabase
         .from('admin_fee_addresses')
-        .select('currency, address');
+        .select('currency, address, balance');
       
       if (poolError) {
         console.error('Error fetching pool addresses:', poolError);
@@ -81,28 +81,40 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
         return;
       }
 
-      const btcPoolAddress = poolAddresses?.find(a => a.currency === 'BTC')?.address;
-      const ltcPoolAddress = poolAddresses?.find(a => a.currency === 'LTC')?.address;
+      const btcPool = poolAddresses?.find(a => a.currency === 'BTC');
+      const ltcPool = poolAddresses?.find(a => a.currency === 'LTC');
 
-      let btcBalance = null;
-      let ltcBalance = null;
+      // Use database balance as primary source (synced by check-central-deposits)
+      // Fallback to API if needed
+      let btcBalance = btcPool?.balance ?? null;
+      let ltcBalance = ltcPool?.balance ?? null;
 
-      // Fetch BTC pool balance
-      if (btcPoolAddress) {
-        const btcResponse = await fetch(`https://mempool.space/api/address/${btcPoolAddress}`);
-        if (btcResponse.ok) {
-          const btcData = await btcResponse.json();
-          const satoshis = (btcData.chain_stats?.funded_txo_sum || 0) - (btcData.chain_stats?.spent_txo_sum || 0);
-          btcBalance = satoshis / 100000000;
+      // If database balance is 0 or null, try to fetch from Tatum
+      if ((btcBalance === 0 || btcBalance === null) && btcPool?.address) {
+        try {
+          const btcResponse = await fetch(`https://api.tatum.io/v3/bitcoin/address/balance/${btcPool.address}`, {
+            headers: { 'x-api-key': 't-695c3986e2139cedfe0c3315-f3598ad41e014ee99a2a4f7b' }
+          });
+          if (btcResponse.ok) {
+            const btcData = await btcResponse.json();
+            btcBalance = parseFloat(btcData.incoming) - parseFloat(btcData.outgoing);
+          }
+        } catch (e) {
+          console.log('Tatum BTC balance check fallback failed');
         }
       }
 
-      // Fetch LTC pool balance
-      if (ltcPoolAddress) {
-        const ltcResponse = await fetch(`https://api.blockcypher.com/v1/ltc/main/addrs/${ltcPoolAddress}/balance`);
-        if (ltcResponse.ok) {
-          const ltcData = await ltcResponse.json();
-          ltcBalance = (ltcData.balance || 0) / 100000000;
+      if ((ltcBalance === 0 || ltcBalance === null) && ltcPool?.address) {
+        try {
+          const ltcResponse = await fetch(`https://api.tatum.io/v3/litecoin/address/balance/${ltcPool.address}`, {
+            headers: { 'x-api-key': 't-695c3986e2139cedfe0c3315-f3598ad41e014ee99a2a4f7b' }
+          });
+          if (ltcResponse.ok) {
+            const ltcData = await ltcResponse.json();
+            ltcBalance = parseFloat(ltcData.incoming) - parseFloat(ltcData.outgoing);
+          }
+        } catch (e) {
+          console.log('Tatum LTC balance check fallback failed');
         }
       }
 
@@ -316,23 +328,25 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('process-crypto-withdrawal', {
+      // Use new Tatum-based withdrawal function
+      const { data, error } = await supabase.functions.invoke('process-tatum-withdrawal', {
         body: {
-          amount: parseFloat(amount),
+          amountEur: parseFloat(amount),
           currency: selectedCrypto,
           destinationAddress: destinationAddress
         }
       });
 
       if (error) throw error;
+      if (!data.success) throw new Error(data.error);
 
       setWithdrawalResult(data);
       setAmount('');
       setDestinationAddress('');
       
       toast({
-        title: "Auszahlung eingeleitet",
-        description: `Deine ${selectedCrypto}-Auszahlung wird verarbeitet`,
+        title: "Auszahlung erfolgreich",
+        description: `${data.amountCrypto?.toFixed(8)} ${selectedCrypto} wurde gesendet. TX: ${data.txHash?.slice(0, 16)}...`,
       });
 
       if (onWithdrawalSuccess) {
@@ -342,13 +356,11 @@ export default function WithdrawalModal({ open, onOpenChange, onWithdrawalSucces
     } catch (error: any) {
       console.error('Withdrawal error:', error);
       
-      // Parse error message for pool liquidity issues
+      // Parse error message for better UX
       let errorMessage = error.message || "Auszahlung konnte nicht verarbeitet werden";
-      if (errorMessage.includes('Pool-Liquidität') || errorMessage.includes('pool')) {
-        errorMessage = `Unzureichende Pool-Liquidität. Bitte versuche es später erneut oder wähle einen kleineren Betrag.`;
-        // Refresh pool liquidity
-        fetchPoolLiquidity();
-      }
+      
+      // Refresh pool liquidity on any error
+      fetchPoolLiquidity();
       
       toast({
         title: "Auszahlung fehlgeschlagen",
