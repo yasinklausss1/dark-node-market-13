@@ -775,6 +775,72 @@ export type Database = {
         }
         Relationships: []
       }
+      escrow_audit_log: {
+        Row: {
+          action: string
+          actor_id: string
+          actor_type: string
+          amount_btc: number | null
+          amount_eur: number | null
+          amount_ltc: number | null
+          created_at: string
+          escrow_holding_id: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          new_status: string | null
+          order_id: string
+          previous_status: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          actor_type: string
+          amount_btc?: number | null
+          amount_eur?: number | null
+          amount_ltc?: number | null
+          created_at?: string
+          escrow_holding_id?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_status?: string | null
+          order_id: string
+          previous_status?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          actor_type?: string
+          amount_btc?: number | null
+          amount_eur?: number | null
+          amount_ltc?: number | null
+          created_at?: string
+          escrow_holding_id?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_status?: string | null
+          order_id?: string
+          previous_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escrow_audit_log_escrow_holding_id_fkey"
+            columns: ["escrow_holding_id"]
+            isOneToOne: false
+            referencedRelation: "escrow_holdings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escrow_audit_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       escrow_holdings: {
         Row: {
           amount_crypto: number
@@ -848,6 +914,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      escrow_wallet_pool: {
+        Row: {
+          address: string
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean | null
+          private_key_encrypted: string
+          total_held_btc: number | null
+          total_held_ltc: number | null
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          currency: string
+          id?: string
+          is_active?: boolean | null
+          private_key_encrypted: string
+          total_held_btc?: number | null
+          total_held_ltc?: number | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean | null
+          private_key_encrypted?: string
+          total_held_btc?: number | null
+          total_held_ltc?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       favorites: {
         Row: {
@@ -1403,6 +1505,7 @@ export type Database = {
           id: string
           order_status: Database["public"]["Enums"]["order_status"] | null
           payment_currency: string | null
+          payment_status: string | null
           shipping_city: string | null
           shipping_country: string | null
           shipping_first_name: string | null
@@ -1431,6 +1534,7 @@ export type Database = {
           id?: string
           order_status?: Database["public"]["Enums"]["order_status"] | null
           payment_currency?: string | null
+          payment_status?: string | null
           shipping_city?: string | null
           shipping_country?: string | null
           shipping_first_name?: string | null
@@ -1459,6 +1563,7 @@ export type Database = {
           id?: string
           order_status?: Database["public"]["Enums"]["order_status"] | null
           payment_currency?: string | null
+          payment_status?: string | null
           shipping_city?: string | null
           shipping_country?: string | null
           shipping_first_name?: string | null

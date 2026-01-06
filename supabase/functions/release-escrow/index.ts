@@ -8,189 +8,6 @@ const corsHeaders = {
 
 const ADMIN_USER_ID = '0af916bb-1c03-4173-a898-fd4274ae4a2b'
 
-// Hardcoded fee addresses (1% escrow fee)
-const FEE_ADDRESSES = {
-  BTC: 'bc1q8qta4hckeqzly0x4kkqldx5v5483sgweuvjxp7',
-  LTC: 'LYaT4LeUYAKnZsNpaRwKLQjNt3AwfKQVyf'
-}
-
-// Decrypt private key (AES-GCM) - MUST use same key as encryption in generate-user-addresses
-async function decryptPrivateKey(encryptedKey: string): Promise<string> {
-  const decoder = new TextDecoder()
-  const encryptionKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-  const key = new TextEncoder().encode(encryptionKey.slice(0, 32).padEnd(32, '0'))
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    key,
-    { name: 'AES-GCM' },
-    false,
-    ['decrypt']
-  )
-  
-  const data = Uint8Array.from(atob(encryptedKey), c => c.charCodeAt(0))
-  const iv = data.slice(0, 12)
-  const encrypted = data.slice(12)
-  
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
-    cryptoKey,
-    encrypted
-  )
-  
-  return decoder.decode(decrypted)
-}
-
-// Send Bitcoin transaction via BlockCypher
-async function sendBitcoinTransaction(
-  privateKey: string, 
-  fromAddress: string, 
-  toAddress: string, 
-  amountSatoshi: number
-): Promise<{ txHash: string; fees: number }> {
-  const blockcypherToken = Deno.env.get('BLOCKCYPHER_TOKEN')
-  if (!blockcypherToken) {
-    throw new Error('BlockCypher Token nicht konfiguriert')
-  }
-
-  console.log(`Preparing BTC transaction: ${amountSatoshi} satoshi from ${fromAddress} to ${toAddress}`)
-
-  // Step 1: Create new transaction skeleton
-  const txResponse = await fetch(
-    `https://api.blockcypher.com/v1/btc/main/txs/new?token=${blockcypherToken}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        inputs: [{ addresses: [fromAddress] }],
-        outputs: [{ addresses: [toAddress], value: amountSatoshi }]
-      })
-    }
-  )
-
-  if (!txResponse.ok) {
-    const errorText = await txResponse.text()
-    console.error('BTC tx creation error:', errorText)
-    throw new Error(`BTC Transaktion erstellen fehlgeschlagen: ${errorText}`)
-  }
-
-  const txData = await txResponse.json()
-  
-  if (txData.errors && txData.errors.length > 0) {
-    console.error('BTC tx errors:', txData.errors)
-    throw new Error(`BTC Fehler: ${txData.errors.join(', ')}`)
-  }
-
-  console.log('Created BTC transaction skeleton, fees:', txData.tx?.fees)
-
-  // Step 2: Sign and send the transaction
-  const signedResponse = await fetch(
-    `https://api.blockcypher.com/v1/btc/main/txs/send?token=${blockcypherToken}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tx: txData,
-        private_keys: [privateKey]
-      })
-    }
-  )
-
-  if (!signedResponse.ok) {
-    const errorText = await signedResponse.text()
-    console.error('BTC send error:', errorText)
-    throw new Error(`BTC Transaktion senden fehlgeschlagen: ${errorText}`)
-  }
-
-  const signedData = await signedResponse.json()
-  
-  if (signedData.errors && signedData.errors.length > 0) {
-    console.error('BTC send errors:', signedData.errors)
-    throw new Error(`BTC Senden Fehler: ${signedData.errors.join(', ')}`)
-  }
-
-  const txHash = signedData.tx?.hash
-  const fees = signedData.tx?.fees || 0
-  console.log('BTC transaction sent successfully, tx hash:', txHash, 'fees:', fees)
-  
-  return { txHash, fees }
-}
-
-// Send Litecoin transaction via BlockCypher
-async function sendLitecoinTransaction(
-  privateKey: string,
-  fromAddress: string,
-  toAddress: string,
-  amountLitoshi: number
-): Promise<{ txHash: string; fees: number }> {
-  const blockcypherToken = Deno.env.get('BLOCKCYPHER_TOKEN')
-  if (!blockcypherToken) {
-    throw new Error('BlockCypher Token nicht konfiguriert')
-  }
-
-  console.log(`Preparing LTC transaction: ${amountLitoshi} litoshi from ${fromAddress} to ${toAddress}`)
-
-  // Step 1: Create new transaction skeleton
-  const txResponse = await fetch(
-    `https://api.blockcypher.com/v1/ltc/main/txs/new?token=${blockcypherToken}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        inputs: [{ addresses: [fromAddress] }],
-        outputs: [{ addresses: [toAddress], value: amountLitoshi }]
-      })
-    }
-  )
-
-  if (!txResponse.ok) {
-    const errorText = await txResponse.text()
-    console.error('LTC tx creation error:', errorText)
-    throw new Error(`LTC Transaktion erstellen fehlgeschlagen: ${errorText}`)
-  }
-
-  const txData = await txResponse.json()
-  
-  if (txData.errors && txData.errors.length > 0) {
-    console.error('LTC tx errors:', txData.errors)
-    throw new Error(`LTC Fehler: ${txData.errors.join(', ')}`)
-  }
-
-  console.log('Created LTC transaction skeleton, fees:', txData.tx?.fees)
-
-  // Step 2: Sign and send the transaction
-  const signedResponse = await fetch(
-    `https://api.blockcypher.com/v1/ltc/main/txs/send?token=${blockcypherToken}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tx: txData,
-        private_keys: [privateKey]
-      })
-    }
-  )
-
-  if (!signedResponse.ok) {
-    const errorText = await signedResponse.text()
-    console.error('LTC send error:', errorText)
-    throw new Error(`LTC Transaktion senden fehlgeschlagen: ${errorText}`)
-  }
-
-  const signedData = await signedResponse.json()
-  
-  if (signedData.errors && signedData.errors.length > 0) {
-    console.error('LTC send errors:', signedData.errors)
-    throw new Error(`LTC Senden Fehler: ${signedData.errors.join(', ')}`)
-  }
-
-  const txHash = signedData.tx?.hash
-  const fees = signedData.tx?.fees || 0
-  console.log('LTC transaction sent successfully, tx hash:', txHash, 'fees:', fees)
-  
-  return { txHash, fees }
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -202,29 +19,56 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { orderId, isAutoRelease } = await req.json()
+    const { orderId, isAutoRelease, isAdminRelease } = await req.json()
 
     if (!orderId) throw new Error('Order ID required')
 
-    // If not auto-release, verify the caller is the buyer
+    let actorId = ADMIN_USER_ID
+    let actorType = 'system'
+
+    // Verify caller authorization
     if (!isAutoRelease) {
       const authHeader = req.headers.get('Authorization')
       const token = authHeader?.replace('Bearer ', '')
       const { data: userData } = await supabase.auth.getUser(token)
       
-      // Get the order to verify buyer
-      const { data: order } = await supabase
-        .from('orders')
-        .select('user_id')
-        .eq('id', orderId)
-        .maybeSingle()
-      
-      if (!order || order.user_id !== userData.user?.id) {
-        throw new Error('Unauthorized - Only the buyer can release escrow')
+      if (!userData.user) {
+        throw new Error('Authentication required')
       }
+
+      actorId = userData.user.id
+      
+      // Get user role
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', userData.user.id)
+        .maybeSingle()
+
+      if (isAdminRelease) {
+        // Only admins can do admin release
+        if (profile?.role !== 'admin') {
+          throw new Error('Admin authorization required')
+        }
+        actorType = 'admin'
+      } else {
+        // Verify the caller is the buyer
+        const { data: order } = await supabase
+          .from('orders')
+          .select('user_id')
+          .eq('id', orderId)
+          .maybeSingle()
+        
+        if (!order || order.user_id !== userData.user.id) {
+          throw new Error('Unauthorized - Only the buyer can release escrow')
+        }
+        actorType = 'buyer'
+      }
+    } else {
+      actorType = 'system'
     }
 
-    console.log('Releasing escrow for order:', orderId)
+    console.log(`Releasing escrow for order: ${orderId}, actor: ${actorType}, actorId: ${actorId}`)
 
     // Get all escrow holdings for this order that are still held
     const { data: escrowHoldings, error: escrowError } = await supabase
@@ -238,191 +82,145 @@ serve(async (req) => {
       throw new Error('No held escrow found for this order')
     }
 
-    // Process each escrow holding
+    const releasedAt = new Date().toISOString()
+
+    // Process each escrow holding - internal ledger transfer only
     for (const holding of escrowHoldings) {
-      const { buyer_id, seller_id, seller_amount_crypto, fee_amount_crypto, currency, fee_amount_eur, seller_amount_eur } = holding
+      const { 
+        id: holdingId,
+        buyer_id, 
+        seller_id, 
+        seller_amount_crypto, 
+        fee_amount_crypto, 
+        currency, 
+        fee_amount_eur, 
+        seller_amount_eur,
+        amount_crypto,
+        amount_eur
+      } = holding
 
-      console.log(`Processing escrow holding ${holding.id}: ${seller_amount_crypto} ${currency} from buyer ${buyer_id} to seller ${seller_id}`)
+      console.log(`Processing escrow holding ${holdingId}: ${seller_amount_crypto} ${currency} to seller ${seller_id}`)
 
-      // Get buyer's wallet address and private key
-      const { data: buyerAddress, error: buyerAddressError } = await supabase
-        .from('user_addresses')
-        .select('address, private_key_encrypted')
-        .eq('user_id', buyer_id)
-        .eq('currency', currency.toUpperCase())
-        .eq('is_active', true)
-        .maybeSingle()
-
-      if (buyerAddressError || !buyerAddress || !buyerAddress.private_key_encrypted) {
-        console.error('Buyer address not found:', buyerAddressError)
-        throw new Error(`Buyer ${currency} wallet not found or has no private key`)
-      }
-
-      // Get seller's wallet address
-      const { data: sellerAddress, error: sellerAddressError } = await supabase
-        .from('user_addresses')
-        .select('address')
+      // Get seller's current balance
+      const { data: sellerBal } = await supabase
+        .from('wallet_balances')
+        .select('balance_btc, balance_ltc')
         .eq('user_id', seller_id)
-        .eq('currency', currency.toUpperCase())
-        .eq('is_active', true)
         .maybeSingle()
 
-      if (sellerAddressError || !sellerAddress || sellerAddress.address === 'pending') {
-        console.error('Seller address not found:', sellerAddressError)
-        throw new Error(`Seller ${currency} wallet not found`)
-      }
-
-      // Use hardcoded fee address
-      const feeAddress = FEE_ADDRESSES[currency.toUpperCase() as keyof typeof FEE_ADDRESSES]
-
-      // Decrypt buyer's private key
-      console.log('Decrypting buyer private key...')
-      const privateKey = await decryptPrivateKey(buyerAddress.private_key_encrypted)
-
-      // Calculate amounts in smallest unit (satoshi/litoshi)
-      const sellerAmountSmallest = Math.floor(Number(seller_amount_crypto) * 100000000)
-      const feeAmountSmallest = Math.floor(Number(fee_amount_crypto) * 100000000)
-
-      let txHash = ''
-      let blockchainFee = 0
-
-      // Send blockchain transaction from buyer to seller
-      try {
-        console.log(`Sending ${seller_amount_crypto} ${currency} from ${buyerAddress.address} to ${sellerAddress.address}`)
-        
+      // Credit seller's internal balance (minus platform fee)
+      if (sellerBal) {
         if (currency.toUpperCase() === 'BTC') {
-          const result = await sendBitcoinTransaction(
-            privateKey,
-            buyerAddress.address,
-            sellerAddress.address,
-            sellerAmountSmallest
-          )
-          txHash = result.txHash
-          blockchainFee = result.fees
+          await supabase.from('wallet_balances')
+            .update({ balance_btc: Number(sellerBal.balance_btc) + Number(seller_amount_crypto) })
+            .eq('user_id', seller_id)
         } else if (currency.toUpperCase() === 'LTC') {
-          const result = await sendLitecoinTransaction(
-            privateKey,
-            buyerAddress.address,
-            sellerAddress.address,
-            sellerAmountSmallest
-          )
-          txHash = result.txHash
-          blockchainFee = result.fees
-        } else {
-          throw new Error(`Unsupported currency: ${currency}`)
-        }
-
-        console.log(`Blockchain transaction successful! TX Hash: ${txHash}, Fee: ${blockchainFee}`)
-
-        // Update escrow holding with blockchain details
-        await supabase
-          .from('escrow_holdings')
-          .update({ 
-            status: 'released',
-            released_at: new Date().toISOString(),
-            blockchain_tx_hash: txHash,
-            blockchain_tx_status: 'confirmed',
-            blockchain_fee_satoshi: blockchainFee
-          })
-          .eq('id', holding.id)
-
-        // Credit seller's internal balance (for tracking purposes)
-        const balanceField = currency.toLowerCase() === 'btc' ? 'balance_btc' : 'balance_ltc'
-        
-        const { data: sellerWallet } = await supabase
-          .from('wallet_balances')
-          .select(balanceField)
-          .eq('user_id', seller_id)
-          .maybeSingle()
-
-        if (sellerWallet) {
-          const currentBalance = Number(sellerWallet[balanceField] || 0)
-          await supabase
-            .from('wallet_balances')
-            .update({ [balanceField]: currentBalance + Number(seller_amount_crypto) })
+          await supabase.from('wallet_balances')
+            .update({ balance_ltc: Number(sellerBal.balance_ltc || 0) + Number(seller_amount_crypto) })
             .eq('user_id', seller_id)
         }
+      } else {
+        // Create wallet if doesn't exist
+        await supabase.from('wallet_balances').insert({
+          user_id: seller_id,
+          balance_btc: currency.toUpperCase() === 'BTC' ? seller_amount_crypto : 0,
+          balance_ltc: currency.toUpperCase() === 'LTC' ? seller_amount_crypto : 0,
+          balance_eur: 0
+        })
+      }
 
-        // Create seller transaction record
-        const { data: buyerProfile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('user_id', buyer_id)
-          .maybeSingle()
+      // Update escrow holding to released
+      await supabase
+        .from('escrow_holdings')
+        .update({ 
+          status: 'released',
+          released_at: releasedAt,
+          blockchain_tx_status: 'completed'
+        })
+        .eq('id', holdingId)
 
+      // Get usernames for transaction records
+      const { data: buyerProfile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('user_id', buyer_id)
+        .maybeSingle()
+
+      const { data: sellerProfile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('user_id', seller_id)
+        .maybeSingle()
+
+      // Update pending sale transaction to confirmed
+      await supabase
+        .from('transactions')
+        .update({
+          status: 'confirmed',
+          type: 'sale',
+          description: `Sale #${String(orderId).slice(0,8)} (${currency}) - Escrow freigegeben`
+        })
+        .eq('related_order_id', orderId)
+        .eq('user_id', seller_id)
+        .eq('type', 'sale_pending')
+
+      // If no pending transaction found, create a new confirmed one
+      const { data: existingTx } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('related_order_id', orderId)
+        .eq('user_id', seller_id)
+        .eq('type', 'sale')
+        .maybeSingle()
+
+      if (!existingTx) {
         await supabase.from('transactions').insert({
           user_id: seller_id,
           type: 'sale',
           amount_eur: seller_amount_eur,
-          amount_btc: currency.toLowerCase() === 'btc' ? seller_amount_crypto : 0,
+          amount_btc: currency.toUpperCase() === 'BTC' ? seller_amount_crypto : 0,
+          amount_ltc: currency.toUpperCase() === 'LTC' ? seller_amount_crypto : 0,
           status: 'confirmed',
-          description: `Sale #${String(orderId).slice(0, 8)} (${currency.toUpperCase()}) - Blockchain TX: ${txHash.slice(0, 16)}...`,
+          description: `Sale #${String(orderId).slice(0,8)} (${currency}) - Escrow freigegeben`,
           transaction_direction: 'incoming',
           from_username: buyerProfile?.username || 'Unknown',
-          related_order_id: orderId,
-          btc_tx_hash: txHash
+          related_order_id: orderId
         })
-
-        // Send fee to hardcoded fee address
-        if (feeAddress && feeAmountSmallest > 0) {
-          try {
-            console.log(`Sending ${fee_amount_crypto} ${currency} fee to ${feeAddress}`)
-            
-            let feeTxHash = ''
-            if (currency.toUpperCase() === 'BTC') {
-              const feeResult = await sendBitcoinTransaction(
-                privateKey,
-                buyerAddress.address,
-                feeAddress,
-                feeAmountSmallest
-              )
-              feeTxHash = feeResult.txHash
-            } else if (currency.toUpperCase() === 'LTC') {
-              const feeResult = await sendLitecoinTransaction(
-                privateKey,
-                buyerAddress.address,
-                feeAddress,
-                feeAmountSmallest
-              )
-              feeTxHash = feeResult.txHash
-            }
-            
-            console.log(`Fee transaction sent! TX Hash: ${feeTxHash}`)
-
-            // Record fee transaction
-            await supabase.from('admin_fee_transactions').insert({
-              escrow_holding_id: holding.id,
-              order_id: orderId,
-              amount_eur: fee_amount_eur,
-              amount_crypto: fee_amount_crypto,
-              currency: currency.toUpperCase(),
-              transaction_type: 'fee_collected',
-              status: 'completed',
-              tx_hash: feeTxHash,
-              destination_address: feeAddress
-            })
-          } catch (feeError) {
-            console.error('Fee transaction failed (non-critical):', feeError)
-            // Continue even if fee fails - seller payment was successful
-          }
-        }
-
-        console.log(`Escrow ${holding.id} released successfully with blockchain TX: ${txHash}`)
-
-      } catch (txError) {
-        console.error('Blockchain transaction failed:', txError)
-        
-        // Mark escrow as failed
-        await supabase
-          .from('escrow_holdings')
-          .update({ 
-            blockchain_tx_status: 'failed',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', holding.id)
-
-        throw new Error(`Blockchain transaction failed: ${txError.message}`)
       }
+
+      // Record fee transaction
+      await supabase.from('admin_fee_transactions').insert({
+        escrow_holding_id: holdingId,
+        order_id: orderId,
+        amount_eur: fee_amount_eur,
+        amount_crypto: fee_amount_crypto,
+        currency: currency.toUpperCase(),
+        transaction_type: 'fee_collected',
+        status: 'completed'
+      })
+
+      // Create audit log entry for release
+      await supabase.from('escrow_audit_log').insert({
+        escrow_holding_id: holdingId,
+        order_id: orderId,
+        action: isAutoRelease ? 'auto_released' : (isAdminRelease ? 'admin_released' : 'released'),
+        actor_id: actorId,
+        actor_type: actorType,
+        previous_status: 'held',
+        new_status: 'released',
+        amount_btc: currency.toUpperCase() === 'BTC' ? amount_crypto : 0,
+        amount_ltc: currency.toUpperCase() === 'LTC' ? amount_crypto : 0,
+        amount_eur: amount_eur,
+        metadata: {
+          seller_credited: seller_amount_crypto,
+          fee_collected: fee_amount_crypto,
+          seller_username: sellerProfile?.username,
+          buyer_username: buyerProfile?.username,
+          release_type: isAutoRelease ? 'automatic' : (isAdminRelease ? 'admin' : 'buyer_confirmed')
+        }
+      })
+
+      console.log(`Escrow ${holdingId} released: ${seller_amount_crypto} ${currency} to seller, ${fee_amount_crypto} ${currency} fee`)
     }
 
     // Update order escrow status
@@ -430,12 +228,13 @@ serve(async (req) => {
       .from('orders')
       .update({ 
         escrow_status: 'released',
-        buyer_confirmed_at: isAutoRelease ? null : new Date().toISOString()
+        payment_status: 'released',
+        buyer_confirmed_at: isAutoRelease ? null : releasedAt
       })
       .eq('id', orderId)
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Escrow released successfully - Blockchain transaction sent!' }),
+      JSON.stringify({ success: true, message: 'Escrow released successfully - Seller credited!' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
