@@ -11,13 +11,13 @@ interface Particle {
 
 export const FloatingParticles: React.FC = () => {
   const particles = useMemo<Particle[]>(() => {
-    return Array.from({ length: 20 }, (_, i) => ({
+    return Array.from({ length: 50 }, (_, i) => ({
       id: i,
-      size: Math.random() * 4 + 2,
+      size: Math.random() * 5 + 3,
       left: Math.random() * 100,
-      delay: Math.random() * 15,
-      duration: 15 + Math.random() * 20,
-      opacity: 0.1 + Math.random() * 0.2,
+      delay: Math.random() * 10,
+      duration: 12 + Math.random() * 15,
+      opacity: 0.2 + Math.random() * 0.3,
     }));
   }, []);
 
