@@ -7,6 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./hooks/useCart";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { SpotlightEffect } from "./components/SpotlightEffect";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -32,6 +33,7 @@ const App = () => (
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <SpotlightEffect />
               <BrowserRouter>
                 <Routes>
                   <Route path="/" element={<Index />} />
