@@ -8,6 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./hooks/useCart";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { SpotlightEffect } from "./components/SpotlightEffect";
+import { FloatingParticles } from "./components/FloatingParticles";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -34,6 +35,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <SpotlightEffect />
+              <FloatingParticles />
               <BrowserRouter>
                 <Routes>
                   <Route path="/" element={<Index />} />
