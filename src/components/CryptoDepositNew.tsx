@@ -146,6 +146,9 @@ export function CryptoDepositNew() {
     if (data) {
       setActiveDeposit(data as DepositAddress);
       setSelectedCrypto(data.currency as "BTC" | "LTC");
+    } else {
+      // Explizit null setzen wenn kein aktiver Deposit gefunden
+      setActiveDeposit(null);
     }
   };
 
@@ -224,10 +227,20 @@ export function CryptoDepositNew() {
   const cancelDeposit = async () => {
     if (!activeDeposit) return;
     
-    await supabase
+    const { error } = await supabase
       .from('deposit_addresses')
       .update({ status: 'cancelled' })
       .eq('id', activeDeposit.id);
+
+    if (error) {
+      console.error('Error cancelling deposit:', error);
+      toast({
+        title: "Fehler",
+        description: "Einzahlung konnte nicht abgebrochen werden",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setActiveDeposit(null);
     toast({

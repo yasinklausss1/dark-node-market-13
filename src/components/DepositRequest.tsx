@@ -357,22 +357,27 @@ export function DepositRequest() {
   const closeDepositRequest = async () => {
     if (!existingRequest) return;
     
+    // Sofort UI aktualisieren um doppelte Anzeige zu verhindern
+    const requestToClose = existingRequest;
+    setExistingRequest(null);
+    setEurAmount("");
+    
     try {
       const { error } = await supabase
         .from('deposit_addresses')
-        .update({ status: 'expired' })
-        .eq('id', existingRequest.id);
+        .update({ status: 'cancelled' })
+        .eq('id', requestToClose.id);
 
       if (error) throw error;
 
-      setExistingRequest(null);
-      setEurAmount("");
       toast({
         title: "Anfrage geschlossen",
         description: "Deine Einzahlungsanfrage wurde geschlossen.",
       });
     } catch (error) {
       console.error('Error closing request:', error);
+      // Bei Fehler Request wieder anzeigen
+      setExistingRequest(requestToClose);
       toast({
         title: "Fehler",
         description: "Einzahlungsanfrage konnte nicht geschlossen werden",
