@@ -158,8 +158,8 @@ export function CentralizedDeposit() {
     if (!user) return;
     
     const { data, error } = await supabase
-      .from('deposit_requests')
-      .select('*')
+      .from('deposit_addresses')
+      .select('id, currency, requested_amount_crypto, status, expires_at, address, user_id')
       .eq('user_id', user.id)
       .eq('status', 'pending')
       .gt('expires_at', new Date().toISOString())
@@ -168,7 +168,19 @@ export function CentralizedDeposit() {
       .maybeSingle();
 
     if (!error && data) {
-      setActiveRequest(data);
+      // Map deposit_addresses fields to DepositRequest interface
+      const mappedRequest: DepositRequest = {
+        id: data.id,
+        currency: data.currency,
+        requested_eur: 0, // Will be calculated from crypto_amount
+        crypto_amount: data.requested_amount_crypto,
+        fingerprint: 0, // Not used in new system
+        status: data.status,
+        expires_at: data.expires_at,
+        address: data.address,
+        rate_locked: 0
+      };
+      setActiveRequest(mappedRequest);
       setSelectedCrypto(data.currency as "BTC" | "LTC");
     }
   };
@@ -226,28 +238,34 @@ export function CentralizedDeposit() {
 
       const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(); // 2 hours
 
-      const { data, error } = await supabase
-        .from('deposit_requests')
-        .insert({
-          user_id: user.id,
+      // Use the generate-deposit-address edge function instead
+      const { data: funcData, error: funcError } = await supabase.functions.invoke('generate-deposit-address', {
+        body: {
           currency: selectedCrypto,
-          requested_eur: eurValue,
-          crypto_amount: finalCryptoAmount,
-          fingerprint: fingerprint,
-          rate_locked: price,
-          address: poolAddresses[selectedCrypto] || '',
-          expires_at: expiresAt
-        })
-        .select()
-        .single();
+          amount: eurValue
+        }
+      });
 
-      if (error) throw error;
+      if (funcError) throw funcError;
+      if (!funcData?.success) throw new Error(funcData?.error || 'Failed to generate address');
+
+      const data = {
+        id: funcData.deposit.id,
+        currency: selectedCrypto,
+        requested_eur: eurValue,
+        crypto_amount: funcData.deposit.requested_amount_crypto,
+        fingerprint: 0,
+        status: 'pending',
+        expires_at: funcData.deposit.expires_at,
+        address: funcData.deposit.address,
+        rate_locked: price
+      };
 
       setActiveRequest(data);
       
       toast({
         title: "Einzahlung erstellt",
-        description: `Sende exakt ${finalCryptoAmount.toFixed(8)} ${selectedCrypto}`,
+        description: `Sende exakt ${data.crypto_amount.toFixed(8)} ${selectedCrypto}`,
       });
       
     } catch (error) {
@@ -266,7 +284,7 @@ export function CentralizedDeposit() {
     if (!activeRequest) return;
     
     await supabase
-      .from('deposit_requests')
+      .from('deposit_addresses')
       .update({ status: 'expired' })
       .eq('id', activeRequest.id);
 

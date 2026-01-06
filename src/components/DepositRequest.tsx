@@ -106,8 +106,8 @@ export function DepositRequest() {
     
     try {
       const { data, error } = await supabase
-        .from('deposit_requests')
-        .select('*')
+        .from('deposit_addresses')
+        .select('id, currency, address, requested_amount_crypto, expires_at, status')
         .eq('user_id', user.id)
         .eq('status', 'pending')
         .maybeSingle();
@@ -121,11 +121,17 @@ export function DepositRequest() {
         
         if (expires > now) {
           const currency = data.currency === 'BTC' ? 'bitcoin' : 'litecoin';
-          const qrData = `${currency}:${data.address}?amount=${data.crypto_amount.toFixed(8)}`;
+          const qrData = `${currency}:${data.address}?amount=${data.requested_amount_crypto.toFixed(8)}`;
           
           setExistingRequest({
-            ...data,
-            qr_data: qrData
+            id: data.id,
+            crypto_amount: data.requested_amount_crypto,
+            requested_eur: 0,
+            qr_data: qrData,
+            fingerprint: 0,
+            expires_at: data.expires_at,
+            address: data.address,
+            currency: data.currency
           });
           setSelectedCrypto(currency);
         }
@@ -287,57 +293,38 @@ export function DepositRequest() {
         throw new Error("Ungültiger Krypto-Preis empfangen");
       }
       
-      const amountCrypto = amountEur / price;
-      
-      // Use user's individual address
-      const address = selectedCrypto === "bitcoin" ? userAddresses.btc : userAddresses.ltc;
-      
-      // Generate fingerprint (1-99 satoshis/litoshis)
-      const fingerprint = Math.floor(Math.random() * 99) + 1;
-      const finalAmount = amountCrypto + (fingerprint / 1e8);
-      
-      // Set expiry to 6 hours from now
-      const expiresAt = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
-      
-      // Create deposit request in database
-      const { data, error } = await supabase
-        .from('deposit_requests')
-        .insert({
-          user_id: user.id,
-          currency: selectedCrypto === "bitcoin" ? "BTC" : "LTC",
-          address: address,
-          requested_eur: amountEur,
-          rate_locked: price,
-          crypto_amount: finalAmount,
-          fingerprint: fingerprint,
-          status: 'pending',
-          expires_at: expiresAt
-        })
-        .select()
-        .single();
+      // Use the generate-deposit-address edge function
+      const currencyCode = selectedCrypto === "bitcoin" ? "BTC" : "LTC";
+      const { data: funcData, error: funcError } = await supabase.functions.invoke('generate-deposit-address', {
+        body: {
+          currency: currencyCode,
+          amount: amountEur
+        }
+      });
 
-      if (error) throw error;
+      if (funcError) throw funcError;
+      if (!funcData?.success) throw new Error(funcData?.error || 'Failed to generate address');
 
       // Create BIP21 URI with exact amount
       const currency = selectedCrypto === "bitcoin" ? "bitcoin" : "litecoin";
-      const qrData = `${currency}:${address}?amount=${finalAmount.toFixed(8)}`;
+      const qrData = `${currency}:${funcData.deposit.address}?amount=${funcData.deposit.requested_amount_crypto.toFixed(8)}`;
       
       const newRequest = {
-        id: data.id,
-        crypto_amount: finalAmount,
+        id: funcData.deposit.id,
+        crypto_amount: funcData.deposit.requested_amount_crypto,
         requested_eur: amountEur,
         qr_data: qrData,
-        fingerprint: fingerprint,
-        expires_at: expiresAt,
-        address: address,
-        currency: data.currency
+        fingerprint: 0,
+        expires_at: funcData.deposit.expires_at,
+        address: funcData.deposit.address,
+        currency: currencyCode
       };
 
       setExistingRequest(newRequest);
 
       toast({
         title: "Einzahlungsanfrage erstellt",
-        description: `Sende exakt ${finalAmount.toFixed(8)} ${selectedCrypto.toUpperCase()} an deine Adresse innerhalb von 6 Stunden`,
+        description: `Sende exakt ${funcData.deposit.requested_amount_crypto.toFixed(8)} ${currencyCode} an deine Adresse`,
       });
       
     } catch (error) {
@@ -371,22 +358,19 @@ export function DepositRequest() {
     if (!existingRequest) return;
     
     try {
-      const { data, error } = await supabase.rpc('close_deposit_request', {
-        request_id: existingRequest.id
-      });
+      const { error } = await supabase
+        .from('deposit_addresses')
+        .update({ status: 'expired' })
+        .eq('id', existingRequest.id);
 
       if (error) throw error;
 
-      if (data) {
-        setExistingRequest(null);
-        setEurAmount("");
-        toast({
-          title: "Anfrage geschlossen",
-          description: "Deine Einzahlungsanfrage wurde geschlossen.",
-        });
-      } else {
-        throw new Error("Anfrage konnte nicht geschlossen werden");
-      }
+      setExistingRequest(null);
+      setEurAmount("");
+      toast({
+        title: "Anfrage geschlossen",
+        description: "Deine Einzahlungsanfrage wurde geschlossen.",
+      });
     } catch (error) {
       console.error('Error closing request:', error);
       toast({
