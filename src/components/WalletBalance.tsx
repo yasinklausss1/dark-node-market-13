@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Wallet, Bitcoin, Coins } from "lucide-react";
@@ -130,9 +130,26 @@ export function WalletBalance() {
     setLoading(false);
   }, [balance]);
 
-  // Calculate total EUR value from crypto balances
-  const totalEurValue = (balance?.balance_btc || 0) * (btcPrice || 0) + 
-                        (balance?.balance_ltc || 0) * (ltcPrice || 0);
+  // Memoize EUR calculations to prevent unnecessary re-renders
+  const totalEurValue = useMemo(() => 
+    (balance?.balance_btc || 0) * (btcPrice || 0) + 
+    (balance?.balance_ltc || 0) * (ltcPrice || 0),
+    [balance?.balance_btc, balance?.balance_ltc, btcPrice, ltcPrice]
+  );
+
+  const btcEurValue = useMemo(() => 
+    balance?.balance_btc !== undefined && btcPrice 
+      ? (balance.balance_btc * btcPrice).toFixed(2) 
+      : null,
+    [balance?.balance_btc, btcPrice]
+  );
+
+  const ltcEurValue = useMemo(() => 
+    balance?.balance_ltc !== undefined && ltcPrice 
+      ? (balance.balance_ltc * ltcPrice).toFixed(2) 
+      : null,
+    [balance?.balance_ltc, ltcPrice]
+  );
 
   if (loading) {
     return (
@@ -202,9 +219,9 @@ export function WalletBalance() {
               <div className="text-lg sm:text-2xl font-bold tracking-tight">
                 {balance?.balance_btc?.toFixed(8) || '0.00000000'}
               </div>
-              {btcPrice && balance?.balance_btc !== undefined && (
+              {btcEurValue && (
                 <div className="text-sm sm:text-base font-semibold text-primary">
-                  ≈ €{(balance.balance_btc * btcPrice).toFixed(2)}
+                  ≈ €{btcEurValue}
                 </div>
               )}
               <div className="text-[10px] sm:text-xs text-muted-foreground pt-1">
@@ -228,9 +245,9 @@ export function WalletBalance() {
               <div className="text-lg sm:text-2xl font-bold tracking-tight">
                 {balance?.balance_ltc?.toFixed(8) || '0.00000000'}
               </div>
-              {ltcPrice && balance?.balance_ltc !== undefined && (
+              {ltcEurValue && (
                 <div className="text-sm sm:text-base font-semibold text-primary">
-                  ≈ €{(balance.balance_ltc * ltcPrice).toFixed(2)}
+                  ≈ €{ltcEurValue}
                 </div>
               )}
               <div className="text-[10px] sm:text-xs text-muted-foreground pt-1">
