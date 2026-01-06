@@ -8,174 +8,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Decrypt private key (AES-GCM) - MUST use same key as encryption in generate-user-addresses
-async function decryptPrivateKey(encryptedKey: string): Promise<string> {
-  const decoder = new TextDecoder()
-  const encryptionKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-  const key = new TextEncoder().encode(encryptionKey.slice(0, 32).padEnd(32, '0'))
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    key,
-    { name: 'AES-GCM' },
-    false,
-    ['decrypt']
-  )
-  
-  const data = Uint8Array.from(atob(encryptedKey), c => c.charCodeAt(0))
-  const iv = data.slice(0, 12)
-  const encrypted = data.slice(12)
-  
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
-    cryptoKey,
-    encrypted
-  )
-  
-  return decoder.decode(decrypted)
-}
+// Platform fee percentage (1%)
+const PLATFORM_FEE_PERCENT = 0.01;
 
-// Send Bitcoin transaction via BlockCypher
-async function sendBitcoinTransaction(
-  privateKey: string, 
-  fromAddress: string, 
-  toAddress: string, 
-  amountSatoshi: number
-): Promise<{ txHash: string; fees: number }> {
-  const blockcypherToken = Deno.env.get('BLOCKCYPHER_TOKEN')
-  if (!blockcypherToken) {
-    throw new Error('BlockCypher Token nicht konfiguriert')
-  }
-
-  console.log(`Preparing BTC transaction: ${amountSatoshi} satoshi from ${fromAddress} to ${toAddress}`)
-
-  const txResponse = await fetch(
-    `https://api.blockcypher.com/v1/btc/main/txs/new?token=${blockcypherToken}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        inputs: [{ addresses: [fromAddress] }],
-        outputs: [{ addresses: [toAddress], value: amountSatoshi }]
-      })
-    }
-  )
-
-  if (!txResponse.ok) {
-    const errorText = await txResponse.text()
-    console.error('BTC tx creation error:', errorText)
-    throw new Error(`BTC Transaktion erstellen fehlgeschlagen: ${errorText}`)
-  }
-
-  const txData = await txResponse.json()
-  
-  if (txData.errors && txData.errors.length > 0) {
-    console.error('BTC tx errors:', txData.errors)
-    throw new Error(`BTC Fehler: ${txData.errors.join(', ')}`)
-  }
-
-  const signedResponse = await fetch(
-    `https://api.blockcypher.com/v1/btc/main/txs/send?token=${blockcypherToken}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tx: txData,
-        private_keys: [privateKey]
-      })
-    }
-  )
-
-  if (!signedResponse.ok) {
-    const errorText = await signedResponse.text()
-    console.error('BTC send error:', errorText)
-    throw new Error(`BTC Transaktion senden fehlgeschlagen: ${errorText}`)
-  }
-
-  const signedData = await signedResponse.json()
-  
-  if (signedData.errors && signedData.errors.length > 0) {
-    console.error('BTC send errors:', signedData.errors)
-    throw new Error(`BTC Senden Fehler: ${signedData.errors.join(', ')}`)
-  }
-
-  const txHash = signedData.tx?.hash
-  const fees = signedData.tx?.fees || 0
-  console.log('BTC transaction sent successfully, tx hash:', txHash, 'fees:', fees)
-  
-  return { txHash, fees }
-}
-
-// Send Litecoin transaction via BlockCypher
-async function sendLitecoinTransaction(
-  privateKey: string,
-  fromAddress: string,
-  toAddress: string,
-  amountLitoshi: number
-): Promise<{ txHash: string; fees: number }> {
-  const blockcypherToken = Deno.env.get('BLOCKCYPHER_TOKEN')
-  if (!blockcypherToken) {
-    throw new Error('BlockCypher Token nicht konfiguriert')
-  }
-
-  console.log(`Preparing LTC transaction: ${amountLitoshi} litoshi from ${fromAddress} to ${toAddress}`)
-
-  const txResponse = await fetch(
-    `https://api.blockcypher.com/v1/ltc/main/txs/new?token=${blockcypherToken}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        inputs: [{ addresses: [fromAddress] }],
-        outputs: [{ addresses: [toAddress], value: amountLitoshi }]
-      })
-    }
-  )
-
-  if (!txResponse.ok) {
-    const errorText = await txResponse.text()
-    console.error('LTC tx creation error:', errorText)
-    throw new Error(`LTC Transaktion erstellen fehlgeschlagen: ${errorText}`)
-  }
-
-  const txData = await txResponse.json()
-  
-  if (txData.errors && txData.errors.length > 0) {
-    console.error('LTC tx errors:', txData.errors)
-    throw new Error(`LTC Fehler: ${txData.errors.join(', ')}`)
-  }
-
-  const signedResponse = await fetch(
-    `https://api.blockcypher.com/v1/ltc/main/txs/send?token=${blockcypherToken}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tx: txData,
-        private_keys: [privateKey]
-      })
-    }
-  )
-
-  if (!signedResponse.ok) {
-    const errorText = await signedResponse.text()
-    console.error('LTC send error:', errorText)
-    throw new Error(`LTC Transaktion senden fehlgeschlagen: ${errorText}`)
-  }
-
-  const signedData = await signedResponse.json()
-  
-  if (signedData.errors && signedData.errors.length > 0) {
-    console.error('LTC send errors:', signedData.errors)
-    throw new Error(`LTC Senden Fehler: ${signedData.errors.join(', ')}`)
-  }
-
-  const txHash = signedData.tx?.hash
-  const fees = signedData.tx?.fees || 0
-  console.log('LTC transaction sent successfully, tx hash:', txHash, 'fees:', fees)
-  
-  return { txHash, fees }
-}
+// Auto-release days based on product type
+const AUTO_RELEASE_DAYS = {
+  digital: 3,
+  physical: 14
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -187,13 +27,24 @@ serve(async (req) => {
     );
 
     const body = await req.json();
-    const { userId, items, method, btcPrice, ltcPrice, useEscrow } = body as {
+    const { userId, items, method, btcPrice, ltcPrice, useEscrow = true, shippingAddress, buyerNotes, buyerNotesImages } = body as {
       userId: string;
       items: CartItem[];
       method: 'btc' | 'ltc';
       btcPrice?: number;
       ltcPrice?: number;
       useEscrow?: boolean;
+      shippingAddress?: {
+        firstName?: string;
+        lastName?: string;
+        street?: string;
+        houseNumber?: string;
+        postalCode?: string;
+        city?: string;
+        country?: string;
+      };
+      buyerNotes?: string;
+      buyerNotesImages?: string[];
     };
 
     if (!userId || !items?.length || !method) throw new Error('Invalid payload');
@@ -201,13 +52,20 @@ serve(async (req) => {
     console.log(`Processing order for user ${userId}, method: ${method}, useEscrow: ${useEscrow}`);
 
     // Load product info and compute totals + amounts per seller
-    const sellerTotals: Record<string, { eur: number; btc: number; ltc: number }> = {};
+    const sellerTotals: Record<string, { 
+      eur: number; 
+      btc: number; 
+      ltc: number; 
+      isDigital: boolean;
+      products: { id: string; quantity: number; price: number }[];
+    }> = {};
     let totalEUR = 0;
+    let hasPhysicalProducts = false;
 
     for (const it of items) {
       const { data: product, error } = await supabase
         .from('products')
-        .select('id, price, seller_id, stock')
+        .select('id, price, seller_id, stock, product_type')
         .eq('id', it.id)
         .maybeSingle();
       if (error || !product) throw error ?? new Error('Product not found');
@@ -219,10 +77,21 @@ serve(async (req) => {
       const btcAmt = btcPrice ? lineEUR / btcPrice : 0;
       const ltcAmt = ltcPrice ? lineEUR / ltcPrice : 0;
 
-      const s = sellerTotals[product.seller_id] || { eur: 0, btc: 0, ltc: 0 };
+      const isDigital = product.product_type === 'digital';
+      if (!isDigital) hasPhysicalProducts = true;
+
+      const s = sellerTotals[product.seller_id] || { 
+        eur: 0, 
+        btc: 0, 
+        ltc: 0, 
+        isDigital: true,
+        products: []
+      };
       s.eur += lineEUR;
       s.btc += btcAmt;
       s.ltc += ltcAmt;
+      s.isDigital = s.isDigital && isDigital; // Only digital if ALL products are digital
+      s.products.push({ id: product.id, quantity: it.quantity, price: product.price });
       sellerTotals[product.seller_id] = s;
     }
 
@@ -238,35 +107,44 @@ serve(async (req) => {
     const totalLTC = method === 'ltc' ? (totalEUR / (ltcPrice || 1)) : 0;
 
     if (method === 'btc' && Number(buyerBal.balance_btc) + 1e-12 < totalBTC) throw new Error('Insufficient BTC balance');
-    if (method === 'ltc' && Number((buyerBal as any).balance_ltc || 0) + 1e-12 < totalLTC) throw new Error('Insufficient LTC balance');
+    if (method === 'ltc' && Number(buyerBal.balance_ltc || 0) + 1e-12 < totalLTC) throw new Error('Insufficient LTC balance');
 
-    // Get buyer's wallet address and private key for blockchain transactions
-    const { data: buyerAddress } = await supabase
-      .from('user_addresses')
-      .select('address, private_key_encrypted')
+    // Get buyer profile
+    const { data: buyerProfile } = await supabase
+      .from('profiles')
+      .select('username')
       .eq('user_id', userId)
-      .eq('currency', method.toUpperCase())
-      .eq('is_active', true)
       .maybeSingle();
 
-    if (!buyerAddress || !buyerAddress.private_key_encrypted) {
-      throw new Error(`Buyer ${method.toUpperCase()} wallet not found or has no private key`);
-    }
+    // Create order with proper escrow status
+    const autoReleaseDays = hasPhysicalProducts ? AUTO_RELEASE_DAYS.physical : AUTO_RELEASE_DAYS.digital;
+    const autoReleaseAt = new Date(Date.now() + autoReleaseDays * 24 * 60 * 60 * 1000).toISOString();
 
-    // Create order
     const { data: order, error: orderErr } = await supabase
       .from('orders')
       .insert({ 
         user_id: userId, 
         total_amount_eur: totalEUR, 
         status: 'confirmed',
-        payment_currency: method.toUpperCase()
+        payment_currency: method.toUpperCase(),
+        escrow_status: useEscrow ? 'held' : 'none',
+        payment_status: useEscrow ? 'escrow_funded' : 'released',
+        auto_release_at: useEscrow ? autoReleaseAt : null,
+        shipping_first_name: shippingAddress?.firstName,
+        shipping_last_name: shippingAddress?.lastName,
+        shipping_street: shippingAddress?.street,
+        shipping_house_number: shippingAddress?.houseNumber,
+        shipping_postal_code: shippingAddress?.postalCode,
+        shipping_city: shippingAddress?.city,
+        shipping_country: shippingAddress?.country,
+        buyer_notes: buyerNotes,
+        buyer_notes_images: buyerNotesImages || []
       })
       .select()
       .maybeSingle();
     if (orderErr || !order) throw orderErr ?? new Error('Order creation failed');
 
-    console.log(`Created order ${order.id}`);
+    console.log(`Created order ${order.id} with escrow_status: ${useEscrow ? 'held' : 'none'}`);
 
     // Create order items and update stock
     for (const it of items) {
@@ -295,139 +173,11 @@ serve(async (req) => {
         .eq('user_id', userId);
     } else {
       await supabase.from('wallet_balances')
-        .update({ balance_ltc: Number((buyerBal as any).balance_ltc || 0) - totalLTC })
+        .update({ balance_ltc: Number(buyerBal.balance_ltc || 0) - totalLTC })
         .eq('user_id', userId);
     }
 
-    // Get buyer username for transaction tracking
-    const { data: buyerProfile } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    // Decrypt buyer's private key for blockchain transactions
-    console.log('Decrypting buyer private key...');
-    const buyerPrivateKey = await decryptPrivateKey(buyerAddress.private_key_encrypted);
-
-    // Track all blockchain transactions
-    const blockchainTxHashes: string[] = [];
-
-    // Process each seller - send real blockchain transactions
-    for (const [sellerId, sums] of Object.entries(sellerTotals)) {
-      // Get seller's wallet address
-      const { data: sellerAddress } = await supabase
-        .from('user_addresses')
-        .select('address')
-        .eq('user_id', sellerId)
-        .eq('currency', method.toUpperCase())
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (!sellerAddress || sellerAddress.address === 'pending') {
-        throw new Error(`Seller ${sellerId} has no active ${method.toUpperCase()} wallet`);
-      }
-
-      // Get seller username
-      const { data: sellerProfile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('user_id', sellerId)
-        .maybeSingle();
-
-      const cryptoAmount = method === 'btc' ? sums.btc : sums.ltc;
-      const amountSmallest = Math.floor(cryptoAmount * 100000000);
-
-      console.log(`Sending ${cryptoAmount} ${method.toUpperCase()} from ${buyerAddress.address} to ${sellerAddress.address}`);
-
-      let txResult: { txHash: string; fees: number };
-
-      try {
-        if (method === 'btc') {
-          txResult = await sendBitcoinTransaction(
-            buyerPrivateKey,
-            buyerAddress.address,
-            sellerAddress.address,
-            amountSmallest
-          );
-        } else {
-          txResult = await sendLitecoinTransaction(
-            buyerPrivateKey,
-            buyerAddress.address,
-            sellerAddress.address,
-            amountSmallest
-          );
-        }
-
-        blockchainTxHashes.push(txResult.txHash);
-        console.log(`Blockchain TX successful: ${txResult.txHash}`);
-
-        // Credit seller's internal balance (for tracking)
-        const { data: sBal } = await supabase
-          .from('wallet_balances')
-          .select('balance_btc, balance_ltc')
-          .eq('user_id', sellerId)
-          .maybeSingle();
-
-        if (sBal) {
-          if (method === 'btc') {
-            await supabase.from('wallet_balances')
-              .update({ balance_btc: Number(sBal.balance_btc) + sums.btc })
-              .eq('user_id', sellerId);
-          } else {
-            await supabase.from('wallet_balances')
-              .update({ balance_ltc: Number((sBal as any).balance_ltc || 0) + sums.ltc })
-              .eq('user_id', sellerId);
-          }
-        } else {
-          await supabase.from('wallet_balances')
-            .insert({ 
-              user_id: sellerId, 
-              balance_eur: 0, 
-              balance_btc: method === 'btc' ? sums.btc : 0, 
-              balance_ltc: method === 'ltc' ? sums.ltc : 0 
-            });
-        }
-
-        // Create seller transaction with TX hash
-        await supabase.from('transactions').insert({
-          user_id: sellerId,
-          type: 'sale',
-          amount_eur: sums.eur,
-          amount_btc: method === 'btc' ? sums.btc : 0,
-          amount_ltc: method === 'ltc' ? sums.ltc : 0,
-          status: 'confirmed',
-          description: `Sale #${String(order.id).slice(0,8)} (${method.toUpperCase()}) - TX: ${txResult.txHash.slice(0, 12)}...`,
-          transaction_direction: 'incoming',
-          from_username: buyerProfile?.username || 'Unknown',
-          related_order_id: order.id,
-          btc_tx_hash: txResult.txHash
-        });
-
-      } catch (txError) {
-        console.error(`Blockchain transaction to seller ${sellerId} failed:`, txError);
-        
-        // Mark order as failed
-        await supabase.from('orders')
-          .update({ status: 'payment_failed' })
-          .eq('id', order.id);
-
-        // Refund buyer's internal balance
-        if (method === 'btc') {
-          await supabase.from('wallet_balances')
-            .update({ balance_btc: Number(buyerBal.balance_btc) })
-            .eq('user_id', userId);
-        } else {
-          await supabase.from('wallet_balances')
-            .update({ balance_ltc: Number((buyerBal as any).balance_ltc || 0) })
-            .eq('user_id', userId);
-        }
-
-        throw new Error(`Blockchain transaction failed: ${txError.message}`);
-      }
-    }
-
-    // Create buyer transaction record
+    // Create buyer purchase transaction
     await supabase.from('transactions').insert({
       user_id: userId,
       type: 'purchase',
@@ -435,18 +185,149 @@ serve(async (req) => {
       amount_btc: method === 'btc' ? -totalBTC : 0,
       amount_ltc: method === 'ltc' ? -totalLTC : 0,
       status: 'confirmed',
-      description: `Order #${String(order.id).slice(0,8)} (${method.toUpperCase()}) - ${blockchainTxHashes.length} Blockchain TX`,
+      description: `Order #${String(order.id).slice(0,8)} (${method.toUpperCase()}) - ${useEscrow ? 'Escrow' : 'Direct'}`,
       transaction_direction: 'outgoing',
-      related_order_id: order.id,
-      btc_tx_hash: blockchainTxHashes[0] || null
+      related_order_id: order.id
     });
 
-    console.log(`Order ${order.id} completed with ${blockchainTxHashes.length} blockchain transactions`);
+    // Process each seller
+    for (const [sellerId, sums] of Object.entries(sellerTotals)) {
+      const cryptoAmount = method === 'btc' ? sums.btc : sums.ltc;
+      
+      // Calculate fee and seller amounts
+      const feeAmount = cryptoAmount * PLATFORM_FEE_PERCENT;
+      const sellerAmount = cryptoAmount - feeAmount;
+      const feeAmountEur = sums.eur * PLATFORM_FEE_PERCENT;
+      const sellerAmountEur = sums.eur - feeAmountEur;
+
+      // Get seller profile
+      const { data: sellerProfile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('user_id', sellerId)
+        .maybeSingle();
+
+      if (useEscrow) {
+        // Create escrow holding - funds stay in escrow until buyer confirms
+        const sellerAutoReleaseDays = sums.isDigital ? AUTO_RELEASE_DAYS.digital : AUTO_RELEASE_DAYS.physical;
+        const sellerAutoReleaseAt = new Date(Date.now() + sellerAutoReleaseDays * 24 * 60 * 60 * 1000).toISOString();
+
+        const { data: escrowHolding, error: escrowErr } = await supabase
+          .from('escrow_holdings')
+          .insert({
+            order_id: order.id,
+            buyer_id: userId,
+            seller_id: sellerId,
+            currency: method.toUpperCase(),
+            amount_eur: sums.eur,
+            amount_crypto: cryptoAmount,
+            fee_amount_eur: feeAmountEur,
+            fee_amount_crypto: feeAmount,
+            seller_amount_eur: sellerAmountEur,
+            seller_amount_crypto: sellerAmount,
+            status: 'held',
+            auto_release_at: sellerAutoReleaseAt,
+            blockchain_tx_status: 'internal' // No blockchain TX yet, internal escrow only
+          })
+          .select()
+          .maybeSingle();
+
+        if (escrowErr) {
+          console.error('Escrow creation error:', escrowErr);
+          throw escrowErr;
+        }
+
+        console.log(`Created escrow holding ${escrowHolding?.id} for seller ${sellerId}: ${sellerAmount} ${method.toUpperCase()}`);
+
+        // Create audit log entry for escrow creation
+        await supabase.from('escrow_audit_log').insert({
+          escrow_holding_id: escrowHolding?.id,
+          order_id: order.id,
+          action: 'funded',
+          actor_id: userId,
+          actor_type: 'buyer',
+          previous_status: null,
+          new_status: 'held',
+          amount_btc: method === 'btc' ? cryptoAmount : 0,
+          amount_ltc: method === 'ltc' ? cryptoAmount : 0,
+          amount_eur: sums.eur,
+          metadata: {
+            payment_method: method,
+            fee_percent: PLATFORM_FEE_PERCENT * 100,
+            seller_username: sellerProfile?.username,
+            buyer_username: buyerProfile?.username
+          }
+        });
+
+        // Create pending sale transaction for seller (will be confirmed on release)
+        await supabase.from('transactions').insert({
+          user_id: sellerId,
+          type: 'sale_pending',
+          amount_eur: sellerAmountEur,
+          amount_btc: method === 'btc' ? sellerAmount : 0,
+          amount_ltc: method === 'ltc' ? sellerAmount : 0,
+          status: 'pending',
+          description: `Sale #${String(order.id).slice(0,8)} (${method.toUpperCase()}) - Im Escrow`,
+          transaction_direction: 'incoming',
+          from_username: buyerProfile?.username || 'Unknown',
+          related_order_id: order.id
+        });
+
+      } else {
+        // Direct payment without escrow - credit seller immediately
+        const { data: sellerBal } = await supabase
+          .from('wallet_balances')
+          .select('balance_btc, balance_ltc')
+          .eq('user_id', sellerId)
+          .maybeSingle();
+
+        if (sellerBal) {
+          if (method === 'btc') {
+            await supabase.from('wallet_balances')
+              .update({ balance_btc: Number(sellerBal.balance_btc) + sellerAmount })
+              .eq('user_id', sellerId);
+          } else {
+            await supabase.from('wallet_balances')
+              .update({ balance_ltc: Number(sellerBal.balance_ltc || 0) + sellerAmount })
+              .eq('user_id', sellerId);
+          }
+        }
+
+        // Create confirmed sale transaction for seller
+        await supabase.from('transactions').insert({
+          user_id: sellerId,
+          type: 'sale',
+          amount_eur: sellerAmountEur,
+          amount_btc: method === 'btc' ? sellerAmount : 0,
+          amount_ltc: method === 'ltc' ? sellerAmount : 0,
+          status: 'confirmed',
+          description: `Sale #${String(order.id).slice(0,8)} (${method.toUpperCase()}) - Direct`,
+          transaction_direction: 'incoming',
+          from_username: buyerProfile?.username || 'Unknown',
+          related_order_id: order.id
+        });
+
+        // Record fee transaction (internal, no blockchain)
+        await supabase.from('admin_fee_transactions').insert({
+          order_id: order.id,
+          amount_eur: feeAmountEur,
+          amount_crypto: feeAmount,
+          currency: method.toUpperCase(),
+          transaction_type: 'fee_collected',
+          status: 'completed'
+        });
+
+        console.log(`Direct payment to seller ${sellerId}: ${sellerAmount} ${method.toUpperCase()}, fee: ${feeAmount}`);
+      }
+    }
+
+    console.log(`Order ${order.id} completed successfully with ${useEscrow ? 'escrow' : 'direct'} payment`);
 
     return new Response(JSON.stringify({ 
       ok: true, 
       orderId: order.id,
-      blockchainTxHashes
+      escrowStatus: useEscrow ? 'held' : 'none',
+      paymentStatus: useEscrow ? 'escrow_funded' : 'released'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
