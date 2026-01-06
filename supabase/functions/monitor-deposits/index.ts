@@ -28,13 +28,15 @@ async function getBtcTransactions(address: string, apiKey: string): Promise<any[
 // Get transactions for a LTC address via Tatum
 async function getLtcTransactions(address: string, apiKey: string): Promise<any[]> {
   try {
+    // Correct endpoint: /v3/litecoin/transaction/address/{address}
     const response = await fetch(
-      `https://api.tatum.io/v3/litecoin/address/transaction/${address}?pageSize=50`,
+      `https://api.tatum.io/v3/litecoin/transaction/address/${address}?pageSize=50`,
       { headers: { 'x-api-key': apiKey } }
     );
     
     if (!response.ok) {
-      console.error(`LTC TX fetch failed for ${address}:`, response.status);
+      const errorText = await response.text();
+      console.error(`LTC TX fetch failed for ${address}:`, response.status, errorText);
       return [];
     }
     
