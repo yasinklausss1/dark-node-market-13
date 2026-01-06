@@ -97,41 +97,6 @@ export type Database = {
           },
         ]
       }
-      bitcoin_addresses: {
-        Row: {
-          address: string
-          created_at: string
-          id: string
-          is_active: boolean
-          private_key_encrypted: string
-          user_id: string
-        }
-        Insert: {
-          address: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          private_key_encrypted: string
-          user_id: string
-        }
-        Update: {
-          address?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          private_key_encrypted?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bitcoin_addresses_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
       blocked_ips: {
         Row: {
           blocked_at: string
@@ -340,147 +305,6 @@ export type Database = {
         }
         Relationships: []
       }
-      credit_purchases: {
-        Row: {
-          completed_at: string | null
-          created_at: string
-          credits_amount: number
-          crypto_amount: number | null
-          crypto_currency: string | null
-          eur_amount: number
-          id: string
-          payment_id: string | null
-          payment_provider: string
-          payment_url: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string
-          credits_amount: number
-          crypto_amount?: number | null
-          crypto_currency?: string | null
-          eur_amount: number
-          id?: string
-          payment_id?: string | null
-          payment_provider?: string
-          payment_url?: string | null
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string
-          credits_amount?: number
-          crypto_amount?: number | null
-          crypto_currency?: string | null
-          eur_amount?: number
-          id?: string
-          payment_id?: string | null
-          payment_provider?: string
-          payment_url?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      credit_transactions: {
-        Row: {
-          amount: number
-          created_at: string
-          description: string | null
-          id: string
-          related_order_id: string | null
-          related_purchase_id: string | null
-          type: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          related_order_id?: string | null
-          related_purchase_id?: string | null
-          type: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          related_order_id?: string | null
-          related_purchase_id?: string | null
-          type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "credit_transactions_related_order_id_fkey"
-            columns: ["related_order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "credit_transactions_related_purchase_id_fkey"
-            columns: ["related_purchase_id"]
-            isOneToOne: false
-            referencedRelation: "credit_purchases"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      credit_withdrawals: {
-        Row: {
-          created_at: string
-          credits_amount: number
-          crypto_amount: number
-          crypto_currency: string
-          destination_address: string
-          eur_amount: number
-          fee_eur: number
-          id: string
-          status: string
-          tx_hash: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          credits_amount: number
-          crypto_amount: number
-          crypto_currency: string
-          destination_address: string
-          eur_amount: number
-          fee_eur?: number
-          id?: string
-          status?: string
-          tx_hash?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          credits_amount?: number
-          crypto_amount?: number
-          crypto_currency?: string
-          destination_address?: string
-          eur_amount?: number
-          fee_eur?: number
-          id?: string
-          status?: string
-          tx_hash?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       deposit_addresses: {
         Row: {
           address: string
@@ -534,62 +358,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      deposit_memos: {
-        Row: {
-          amount_received: number | null
-          completed_at: string | null
-          created_at: string
-          currency: string
-          eur_credited: number | null
-          expires_at: string
-          id: string
-          memo_code: string
-          rate_at_receive: number | null
-          requested_eur: number | null
-          status: string
-          tx_hash: string | null
-          user_id: string
-        }
-        Insert: {
-          amount_received?: number | null
-          completed_at?: string | null
-          created_at?: string
-          currency: string
-          eur_credited?: number | null
-          expires_at?: string
-          id?: string
-          memo_code: string
-          rate_at_receive?: number | null
-          requested_eur?: number | null
-          status?: string
-          tx_hash?: string | null
-          user_id: string
-        }
-        Update: {
-          amount_received?: number | null
-          completed_at?: string | null
-          created_at?: string
-          currency?: string
-          eur_credited?: number | null
-          expires_at?: string
-          id?: string
-          memo_code?: string
-          rate_at_receive?: number | null
-          requested_eur?: number | null
-          status?: string
-          tx_hash?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "deposit_memos_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
       }
       deposit_requests: {
         Row: {
@@ -914,42 +682,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      escrow_wallet_pool: {
-        Row: {
-          address: string
-          created_at: string
-          currency: string
-          id: string
-          is_active: boolean | null
-          private_key_encrypted: string
-          total_held_btc: number | null
-          total_held_ltc: number | null
-          updated_at: string
-        }
-        Insert: {
-          address: string
-          created_at?: string
-          currency: string
-          id?: string
-          is_active?: boolean | null
-          private_key_encrypted: string
-          total_held_btc?: number | null
-          total_held_ltc?: number | null
-          updated_at?: string
-        }
-        Update: {
-          address?: string
-          created_at?: string
-          currency?: string
-          id?: string
-          is_active?: boolean | null
-          private_key_encrypted?: string
-          total_held_btc?: number | null
-          total_held_ltc?: number | null
-          updated_at?: string
-        }
-        Relationships: []
       }
       favorites: {
         Row: {
@@ -1700,13 +1432,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "processed_deposits_deposit_memo_id_fkey"
-            columns: ["deposit_memo_id"]
-            isOneToOne: false
-            referencedRelation: "deposit_memos"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "processed_deposits_user_id_fkey"
             columns: ["user_id"]
