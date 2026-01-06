@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { useCryptoPrices } from "@/hooks/useCryptoPrices";
 
 interface DepositAddress {
   id: string;
@@ -33,30 +34,10 @@ export function CryptoDepositNew() {
   const [loading, setLoading] = useState(false);
   const [activeDeposit, setActiveDeposit] = useState<DepositAddress | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>("");
-  const [cryptoPrices, setCryptoPrices] = useState<{ btc: number; ltc: number }>({ btc: 90000, ltc: 100 });
-
-  // Fetch crypto prices
-  useEffect(() => {
-    const fetchPrices = async () => {
-      try {
-        const response = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,litecoin&vs_currencies=eur'
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setCryptoPrices({
-            btc: data.bitcoin?.eur || 90000,
-            ltc: data.litecoin?.eur || 100
-          });
-        }
-      } catch (e) {
-        console.log('Using fallback prices');
-      }
-    };
-    fetchPrices();
-    const interval = setInterval(fetchPrices, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  
+  // Use global cached prices to prevent flickering
+  const { btcPrice, ltcPrice } = useCryptoPrices(false); // autoRefresh=false to reduce updates
+  const cryptoPrices = { btc: btcPrice || 90000, ltc: ltcPrice || 100 };
 
   // Check for existing active deposit
   useEffect(() => {
