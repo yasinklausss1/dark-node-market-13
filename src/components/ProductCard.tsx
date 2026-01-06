@@ -38,7 +38,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <Card 
-      className="group relative overflow-hidden transition-all duration-300 cursor-pointer bg-card border-border hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+      className="group relative overflow-hidden transition-all duration-300 cursor-pointer bg-card border-border hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 gradient-border"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => onProductClick(product)}
