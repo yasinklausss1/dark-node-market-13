@@ -359,57 +359,6 @@ export type Database = {
         }
         Relationships: []
       }
-      deposit_requests: {
-        Row: {
-          address: string
-          confirmations: number | null
-          created_at: string
-          crypto_amount: number
-          currency: string
-          expires_at: string
-          fingerprint: number
-          id: string
-          rate_locked: number
-          requested_eur: number
-          status: string
-          tx_hash: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          address?: string
-          confirmations?: number | null
-          created_at?: string
-          crypto_amount?: number
-          currency: string
-          expires_at?: string
-          fingerprint?: number
-          id?: string
-          rate_locked?: number
-          requested_eur?: number
-          status?: string
-          tx_hash?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          address?: string
-          confirmations?: number | null
-          created_at?: string
-          crypto_amount?: number
-          currency?: string
-          expires_at?: string
-          fingerprint?: number
-          id?: string
-          rate_locked?: number
-          requested_eur?: number
-          status?: string
-          tx_hash?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       dispute_messages: {
         Row: {
           created_at: string | null
@@ -2236,6 +2185,7 @@ export type Database = {
         Row: {
           amount_crypto: number
           amount_eur: number
+          completed_at: string | null
           created_at: string
           currency: string
           destination_address: string
@@ -2251,6 +2201,7 @@ export type Database = {
         Insert: {
           amount_crypto: number
           amount_eur: number
+          completed_at?: string | null
           created_at?: string
           currency: string
           destination_address: string
@@ -2266,6 +2217,7 @@ export type Database = {
         Update: {
           amount_crypto?: number
           amount_eur?: number
+          completed_at?: string | null
           created_at?: string
           currency?: string
           destination_address?: string
