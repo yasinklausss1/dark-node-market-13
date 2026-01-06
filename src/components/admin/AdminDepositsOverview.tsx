@@ -11,8 +11,8 @@ interface Deposit {
   id: string;
   user_id: string;
   currency: string;
-  requested_eur: number;
-  crypto_amount: number;
+  requested_amount_crypto: number;
+  received_amount_crypto: number | null;
   status: string;
   created_at: string;
   tx_hash: string | null;
@@ -27,8 +27,8 @@ const AdminDepositsOverview = () => {
     setLoading(true);
     try {
       const { data: depositsData, error } = await supabase
-        .from('deposit_requests')
-        .select('id, user_id, currency, requested_eur, crypto_amount, status, created_at, tx_hash')
+        .from('deposit_addresses')
+        .select('id, user_id, currency, requested_amount_crypto, received_amount_crypto, status, created_at, tx_hash')
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -45,7 +45,7 @@ const AdminDepositsOverview = () => {
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p.username]) || []);
 
-      const depositsWithUsernames = (depositsData || []).map(d => ({
+      const depositsWithUsernames: Deposit[] = (depositsData || []).map(d => ({
         ...d,
         username: profileMap.get(d.user_id) || 'Unbekannt'
       }));
@@ -112,8 +112,8 @@ const AdminDepositsOverview = () => {
                 <th className="pb-2 font-medium">Datum</th>
                 <th className="pb-2 font-medium">User</th>
                 <th className="pb-2 font-medium">Währung</th>
-                <th className="pb-2 font-medium text-right">EUR</th>
-                <th className="pb-2 font-medium text-right">Krypto</th>
+                <th className="pb-2 font-medium text-right">Angefordert</th>
+                <th className="pb-2 font-medium text-right">Erhalten</th>
                 <th className="pb-2 font-medium">Status</th>
               </tr>
             </thead>
@@ -136,9 +136,11 @@ const AdminDepositsOverview = () => {
                     <td className={`py-2 font-medium ${getCurrencyColor(deposit.currency)}`}>
                       {deposit.currency}
                     </td>
-                    <td className="py-2 text-right">€{Number(deposit.requested_eur).toFixed(2)}</td>
                     <td className="py-2 text-right font-mono text-xs">
-                      {Number(deposit.crypto_amount).toFixed(8)}
+                      {Number(deposit.requested_amount_crypto).toFixed(8)}
+                    </td>
+                    <td className="py-2 text-right font-mono text-xs">
+                      {deposit.received_amount_crypto ? Number(deposit.received_amount_crypto).toFixed(8) : '-'}
                     </td>
                     <td className="py-2">
                       {getStatusBadge(deposit.status)}

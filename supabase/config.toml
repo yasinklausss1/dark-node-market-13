@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.proxy-request]
 verify_jwt = false
+
+[functions.sweep-deposits]
+verify_jwt = false

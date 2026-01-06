@@ -319,6 +319,9 @@ export type Database = {
           requested_amount_crypto: number
           required_confirmations: number | null
           status: string
+          sweep_tx_hash: string | null
+          swept_amount: number | null
+          swept_at: string | null
           tx_hash: string | null
           updated_at: string
           user_id: string
@@ -336,6 +339,9 @@ export type Database = {
           requested_amount_crypto: number
           required_confirmations?: number | null
           status?: string
+          sweep_tx_hash?: string | null
+          swept_amount?: number | null
+          swept_at?: string | null
           tx_hash?: string | null
           updated_at?: string
           user_id: string
@@ -353,6 +359,9 @@ export type Database = {
           requested_amount_crypto?: number
           required_confirmations?: number | null
           status?: string
+          sweep_tx_hash?: string | null
+          swept_amount?: number | null
+          swept_at?: string | null
           tx_hash?: string | null
           updated_at?: string
           user_id?: string
