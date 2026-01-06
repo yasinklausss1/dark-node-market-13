@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WalletBalance } from "@/components/WalletBalance";
-import { CentralizedDeposit } from "@/components/CentralizedDeposit";
+import { CryptoDepositNew } from "@/components/CryptoDepositNew";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import WithdrawalModal from "@/components/WithdrawalModal";
 import WithdrawalHistory from "@/components/WithdrawalHistory";
@@ -75,8 +75,8 @@ export default function Wallet() {
       {/* Actions */}
       <WalletActions />
       
-      {/* Deposit Section - Neues zentralisiertes System */}
-      <CentralizedDeposit />
+      {/* Deposit Section - Neue eindeutige Adressen pro Einzahlung */}
+      <CryptoDepositNew />
       
       {/* Admin Test Panel */}
       {isAdmin && <WalletTestPanel onBalanceChange={handleBalanceChange} />}
