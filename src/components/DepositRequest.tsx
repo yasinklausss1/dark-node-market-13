@@ -5,10 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, Bitcoin, Coins, Euro, RefreshCw, X } from "lucide-react";
+import { Copy, Bitcoin, Coins, Euro, RefreshCw, X, CheckCircle2, PartyPopper } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { useCryptoPrices } from "@/hooks/useCryptoPrices";
 
 export function DepositRequest() {
   const { toast } = useToast();
@@ -31,6 +39,14 @@ export function DepositRequest() {
   const [btcPrice, setBtcPrice] = useState<number | null>(null);
   const [ltcPrice, setLtcPrice] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>("");
+  const [successDialog, setSuccessDialog] = useState<{
+    show: boolean;
+    amount: number;
+    currency: string;
+    newBalance: number;
+  } | null>(null);
+  
+  const { btcPrice: globalBtcPrice, ltcPrice: globalLtcPrice } = useCryptoPrices(false);
 
   // Check for existing pending request and user addresses
   useEffect(() => {
@@ -54,16 +70,41 @@ export function DepositRequest() {
           table: 'deposit_requests',
           filter: `id=eq.${existingRequest.id}`
         },
-        (payload) => {
+        async (payload) => {
           const newStatus = payload.new?.status;
+          const receivedAmount = payload.new?.received_amount_crypto;
+          const currency = payload.new?.currency;
+          
           if (newStatus === 'confirmed' || newStatus === 'completed') {
-            // Payment detected! Close the deposit window
+            // Fetch current wallet balance
+            let newBalance = 0;
+            try {
+              const { data: walletData } = await supabase
+                .from('wallet_balances')
+                .select('balance_btc, balance_ltc')
+                .eq('user_id', user.id)
+                .single();
+              
+              if (walletData) {
+                const price = currency === 'BTC' ? (globalBtcPrice || 90000) : (globalLtcPrice || 100);
+                const cryptoBalance = currency === 'BTC' ? walletData.balance_btc : walletData.balance_ltc;
+                newBalance = (cryptoBalance + (receivedAmount || existingRequest.crypto_amount)) * price;
+              }
+            } catch (e) {
+              console.log('Could not fetch wallet balance for success dialog');
+            }
+            
+            // Show success dialog
+            setSuccessDialog({
+              show: true,
+              amount: receivedAmount || existingRequest.crypto_amount,
+              currency: currency || existingRequest.currency,
+              newBalance: newBalance
+            });
+            
+            // Close the deposit window
             setExistingRequest(null);
             setEurAmount("");
-            toast({
-              title: "Zahlung erkannt! 🎉",
-              description: "Deine Einzahlung wurde erkannt. Es kann bis zu 30 Minuten dauern, bis dein Wallet-Guthaben aktualisiert wird.",
-            });
           }
         }
       )
@@ -652,6 +693,50 @@ export function DepositRequest() {
           </p>
         </div>
       </CardContent>
+
+      {/* Success Dialog */}
+      <Dialog open={successDialog?.show || false} onOpenChange={(open) => !open && setSuccessDialog(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="text-center space-y-4">
+            <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10">
+              <PartyPopper className="h-8 w-8 text-green-500" />
+            </div>
+            <DialogTitle className="text-xl sm:text-2xl text-center">
+              Einzahlung erfolgreich! 🎉
+            </DialogTitle>
+            <DialogDescription className="text-center space-y-3">
+              <div className="bg-muted/50 p-4 rounded-xl space-y-2">
+                <p className="text-base font-medium text-foreground">
+                  Du hast erfolgreich eingezahlt:
+                </p>
+                <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
+                  {successDialog?.currency === 'BTC' ? (
+                    <Bitcoin className="h-6 w-6 text-orange-500" />
+                  ) : (
+                    <Coins className="h-6 w-6 text-blue-500" />
+                  )}
+                  <span>{successDialog?.amount.toFixed(8)} {successDialog?.currency}</span>
+                </div>
+                {successDialog?.newBalance !== undefined && successDialog.newBalance > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Neuer Kontostand: <span className="font-semibold text-foreground">≈ €{successDialog.newBalance.toFixed(2)}</span>
+                  </p>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Es kann einige Minuten dauern, bis dein Guthaben aktualisiert wird.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <Button 
+            onClick={() => setSuccessDialog(null)} 
+            className="w-full mt-2"
+          >
+            <CheckCircle2 className="h-4 w-4 mr-2" />
+            Verstanden
+          </Button>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
