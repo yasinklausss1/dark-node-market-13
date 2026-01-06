@@ -63,7 +63,7 @@ const Marketplace = () => {
   const [selectedSellerUsername, setSelectedSellerUsername] = useState('');
   const [sellerRatings, setSellerRatings] = useState<Record<string, { average: number; total: number }>>({});
   const [sortBy, setSortBy] = useState<'newest' | 'price-asc' | 'price-desc'>('newest');
-  const [productTypeTab, setProductTypeTab] = useState<'physical' | 'digital' | 'forum'>('physical');
+  const [productTypeTab, setProductTypeTab] = useState<'physical' | 'digital' | 'forum'>('digital');
   const [mobileGridCols, setMobileGridCols] = useState<1 | 2>(2);
   const { cartItems, addToCart, updateQuantity, removeItem, clearCart, getCartItemCount } = useCart();
   
