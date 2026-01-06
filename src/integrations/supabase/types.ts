@@ -481,6 +481,60 @@ export type Database = {
         }
         Relationships: []
       }
+      deposit_addresses: {
+        Row: {
+          address: string
+          confirmations: number | null
+          confirmed_at: string | null
+          created_at: string
+          currency: string
+          expires_at: string
+          id: string
+          private_key_encrypted: string | null
+          received_amount_crypto: number | null
+          requested_amount_crypto: number
+          required_confirmations: number | null
+          status: string
+          tx_hash: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          confirmations?: number | null
+          confirmed_at?: string | null
+          created_at?: string
+          currency: string
+          expires_at: string
+          id?: string
+          private_key_encrypted?: string | null
+          received_amount_crypto?: number | null
+          requested_amount_crypto: number
+          required_confirmations?: number | null
+          status?: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          confirmations?: number | null
+          confirmed_at?: string | null
+          created_at?: string
+          currency?: string
+          expires_at?: string
+          id?: string
+          private_key_encrypted?: string | null
+          received_amount_crypto?: number | null
+          requested_amount_crypto?: number
+          required_confirmations?: number | null
+          status?: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       deposit_memos: {
         Row: {
           amount_received: number | null
@@ -540,7 +594,7 @@ export type Database = {
       deposit_requests: {
         Row: {
           address: string
-          confirmations: number
+          confirmations: number | null
           created_at: string
           crypto_amount: number
           currency: string
@@ -555,16 +609,16 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          address: string
-          confirmations?: number
+          address?: string
+          confirmations?: number | null
           created_at?: string
-          crypto_amount: number
+          crypto_amount?: number
           currency: string
-          expires_at: string
-          fingerprint: number
+          expires_at?: string
+          fingerprint?: number
           id?: string
-          rate_locked: number
-          requested_eur: number
+          rate_locked?: number
+          requested_eur?: number
           status?: string
           tx_hash?: string | null
           updated_at?: string
@@ -572,7 +626,7 @@ export type Database = {
         }
         Update: {
           address?: string
-          confirmations?: number
+          confirmations?: number | null
           created_at?: string
           crypto_amount?: number
           currency?: string

@@ -44,3 +44,9 @@ verify_jwt = true
 
 [functions.process-tatum-withdrawal]
 verify_jwt = true
+
+[functions.generate-deposit-address]
+verify_jwt = false
+
+[functions.monitor-deposits]
+verify_jwt = false
