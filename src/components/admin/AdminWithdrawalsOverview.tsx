@@ -20,50 +20,27 @@ interface Withdrawal {
   username: string;
 }
 
-interface CreditWithdrawal {
-  id: string;
-  user_id: string;
-  eur_amount: number;
-  crypto_amount: number;
-  crypto_currency: string;
-  destination_address: string;
-  status: string;
-  tx_hash: string | null;
-  created_at: string;
-  username: string;
-}
-
 const AdminWithdrawalsOverview = () => {
-  const [withdrawals, setWithdrawals] = useState<(Withdrawal | CreditWithdrawal)[]>([]);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAllWithdrawals = async () => {
     setLoading(true);
     try {
-      // Fetch regular withdrawal requests
+      // Fetch withdrawal requests
       const { data: withdrawalData, error: wError } = await supabase
         .from('withdrawal_requests')
         .select('id, user_id, amount_eur, amount_crypto, currency, destination_address, status, tx_hash, created_at')
         .order('created_at', { ascending: false })
         .limit(50);
 
-      // Fetch credit withdrawals
-      const { data: creditWithdrawalData, error: cwError } = await supabase
-        .from('credit_withdrawals')
-        .select('id, user_id, eur_amount, crypto_amount, crypto_currency, destination_address, status, tx_hash, created_at')
-        .order('created_at', { ascending: false })
-        .limit(50);
+      if (wError) {
+        console.error('Error fetching withdrawals:', wError);
+        return;
+      }
 
-      if (wError) console.error('Error fetching withdrawals:', wError);
-      if (cwError) console.error('Error fetching credit withdrawals:', cwError);
-
-      // Get unique user IDs from both
-      const allUserIds = [
-        ...new Set([
-          ...(withdrawalData?.map(w => w.user_id) || []),
-          ...(creditWithdrawalData?.map(w => w.user_id) || [])
-        ])
-      ];
+      // Get unique user IDs
+      const allUserIds = [...new Set(withdrawalData?.map(w => w.user_id) || [])];
       
       // Fetch profiles for usernames
       const { data: profiles } = await supabase
@@ -73,32 +50,13 @@ const AdminWithdrawalsOverview = () => {
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p.username]) || []);
 
-      // Map and combine both types
+      // Map withdrawals with usernames
       const mappedWithdrawals = (withdrawalData || []).map(w => ({
         ...w,
-        username: profileMap.get(w.user_id) || 'Unbekannt',
-        type: 'withdrawal' as const
+        username: profileMap.get(w.user_id) || 'Unbekannt'
       }));
 
-      const mappedCreditWithdrawals = (creditWithdrawalData || []).map(w => ({
-        id: w.id,
-        user_id: w.user_id,
-        amount_eur: w.eur_amount,
-        amount_crypto: w.crypto_amount,
-        currency: w.crypto_currency,
-        destination_address: w.destination_address,
-        status: w.status,
-        tx_hash: w.tx_hash,
-        created_at: w.created_at,
-        username: profileMap.get(w.user_id) || 'Unbekannt',
-        type: 'credit_withdrawal' as const
-      }));
-
-      // Combine and sort by date
-      const allWithdrawals = [...mappedWithdrawals, ...mappedCreditWithdrawals]
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-      setWithdrawals(allWithdrawals);
+      setWithdrawals(mappedWithdrawals);
     } catch (error) {
       console.error('Error fetching withdrawals:', error);
     } finally {
@@ -186,7 +144,7 @@ const AdminWithdrawalsOverview = () => {
                   <td colSpan={8} className="text-center py-8 text-muted-foreground">Keine Auszahlungen gefunden</td>
                 </tr>
               ) : (
-                withdrawals.map((withdrawal: any) => (
+                withdrawals.map((withdrawal) => (
                   <tr key={withdrawal.id} className="hover:bg-muted/30">
                     <td className="py-2 text-xs text-muted-foreground whitespace-nowrap">
                       {format(new Date(withdrawal.created_at), 'dd.MM.yyyy HH:mm', { locale: de })}
