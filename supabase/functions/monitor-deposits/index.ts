@@ -5,11 +5,45 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Get current BTC blockchain height
+async function getBtcBlockHeight(apiKey: string): Promise<number> {
+  try {
+    const response = await fetch(
+      'https://api.tatum.io/v3/bitcoin/info',
+      { headers: { 'x-api-key': apiKey } }
+    );
+    if (response.ok) {
+      const data = await response.json();
+      return data.blocks || 0;
+    }
+  } catch (e) {
+    console.error('Failed to get BTC block height:', e);
+  }
+  return 0;
+}
+
+// Get current LTC blockchain height
+async function getLtcBlockHeight(apiKey: string): Promise<number> {
+  try {
+    const response = await fetch(
+      'https://api.tatum.io/v3/litecoin/info',
+      { headers: { 'x-api-key': apiKey } }
+    );
+    if (response.ok) {
+      const data = await response.json();
+      return data.blocks || 0;
+    }
+  } catch (e) {
+    console.error('Failed to get LTC block height:', e);
+  }
+  return 0;
+}
+
 // Get transactions for a BTC address via Tatum
 async function getBtcTransactions(address: string, apiKey: string): Promise<any[]> {
   try {
     const response = await fetch(
-      `https://api.tatum.io/v3/bitcoin/address/transaction/${address}?pageSize=50`,
+      `https://api.tatum.io/v3/bitcoin/transaction/address/${address}?pageSize=50`,
       { headers: { 'x-api-key': apiKey } }
     );
     
@@ -28,7 +62,6 @@ async function getBtcTransactions(address: string, apiKey: string): Promise<any[
 // Get transactions for a LTC address via Tatum
 async function getLtcTransactions(address: string, apiKey: string): Promise<any[]> {
   try {
-    // Correct endpoint: /v3/litecoin/transaction/address/{address}
     const response = await fetch(
       `https://api.tatum.io/v3/litecoin/transaction/address/${address}?pageSize=50`,
       { headers: { 'x-api-key': apiKey } }
@@ -68,6 +101,14 @@ async function getCryptoPrices(): Promise<{ btc: number; ltc: number }> {
   return { btc: 90000, ltc: 100 };
 }
 
+// Calculate confirmations from block number
+function calculateConfirmations(txBlockNumber: number | null | undefined, currentBlockHeight: number): number {
+  if (!txBlockNumber || txBlockNumber === 0 || currentBlockHeight === 0) {
+    return 0; // Unconfirmed transaction (not in a block yet)
+  }
+  return Math.max(0, currentBlockHeight - txBlockNumber + 1);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -82,9 +123,15 @@ Deno.serve(async (req) => {
 
     console.log('🔍 Starting deposit monitoring...');
 
-    // Get crypto prices
-    const prices = await getCryptoPrices();
+    // Get crypto prices and blockchain heights in parallel
+    const [prices, btcHeight, ltcHeight] = await Promise.all([
+      getCryptoPrices(),
+      getBtcBlockHeight(tatumApiKey),
+      getLtcBlockHeight(tatumApiKey)
+    ]);
+    
     console.log(`💰 Prices: BTC=${prices.btc}€, LTC=${prices.ltc}€`);
+    console.log(`📊 Block heights: BTC=${btcHeight}, LTC=${ltcHeight}`);
 
     // Get all pending or received deposits that haven't expired
     const { data: pendingDeposits, error: fetchError } = await supabase
@@ -124,11 +171,14 @@ Deno.serve(async (req) => {
       console.log(`\n🔎 Checking deposit ${deposit.id}: ${deposit.currency} ${deposit.address.substring(0, 16)}...`);
 
       let transactions: any[] = [];
+      let currentBlockHeight = 0;
       
       if (deposit.currency === 'BTC') {
         transactions = await getBtcTransactions(deposit.address, tatumApiKey);
+        currentBlockHeight = btcHeight;
       } else if (deposit.currency === 'LTC') {
         transactions = await getLtcTransactions(deposit.address, tatumApiKey);
+        currentBlockHeight = ltcHeight;
       }
 
       console.log(`   Found ${transactions.length} transactions`);
@@ -153,9 +203,14 @@ Deno.serve(async (req) => {
         if (receivedSatoshi === 0) continue;
 
         const receivedCrypto = receivedSatoshi / 100000000;
-        const confirmations = tx.confirmations || 0;
+        
+        // Calculate confirmations from block number (Tatum doesn't provide confirmations directly for LTC)
+        const txBlockNumber = tx.blockNumber;
+        const confirmations = tx.confirmations !== undefined 
+          ? tx.confirmations 
+          : calculateConfirmations(txBlockNumber, currentBlockHeight);
 
-        console.log(`   💰 TX ${txHash.substring(0, 16)}...: ${receivedCrypto} ${deposit.currency}, ${confirmations} confirmations`);
+        console.log(`   💰 TX ${txHash.substring(0, 16)}...: ${receivedCrypto} ${deposit.currency}, block=${txBlockNumber || 'pending'}, ${confirmations} confirmations`);
 
         // Update status based on confirmations
         if (confirmations >= deposit.required_confirmations) {
@@ -170,7 +225,7 @@ Deno.serve(async (req) => {
             .from('wallet_balances')
             .select('*')
             .eq('user_id', deposit.user_id)
-            .single();
+            .maybeSingle();
 
           const balanceField = deposit.currency === 'BTC' ? 'balance_btc' : 'balance_ltc';
           const depositedField = deposit.currency === 'BTC' ? 'balance_btc_deposited' : 'balance_ltc_deposited';
