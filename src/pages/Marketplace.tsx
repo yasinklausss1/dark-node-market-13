@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, LogOut, Wallet, Settings, Users, Menu, ShoppingBag, MessageCircle, Package, Download, Flag, LayoutGrid, LayoutList, MessagesSquare } from 'lucide-react';
+import { Search, LogOut, Wallet, Settings, Users, Menu, ShoppingBag, MessageCircle, Package, Download, Flag, LayoutGrid, LayoutList, MessagesSquare, Loader2 } from 'lucide-react';
 import ProductModal from '@/components/ProductModal';
 import ShoppingCart from '@/components/ShoppingCart';
 import SellerProfileModal from '@/components/SellerProfileModal';
@@ -22,6 +22,8 @@ import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { ModernHeroSection } from '@/components/ModernHeroSection';
 import { EscrowTrustBanner } from '@/components/EscrowTrustBanner';
 import { ProductCard } from '@/components/ProductCard';
+import { ProductGridSkeleton } from '@/components/ProductCardSkeleton';
+import { SearchAutocomplete } from '@/components/SearchAutocomplete';
 import { ChatModal } from '@/components/ChatModal';
 import { OracleLogo } from '@/components/OracleLogo';
 import { ForumInline } from '@/components/forum/ForumInline';
@@ -30,7 +32,6 @@ import TelegramAdBanner from '@/components/TelegramAdBanner';
 
 import { ConversationsModal } from '@/components/ConversationsModal';
 import { useChat } from '@/hooks/useChat';
-import { usePagination } from '@/hooks/usePagination';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -67,6 +68,17 @@ const Marketplace = () => {
   const [mobileGridCols, setMobileGridCols] = useState<1 | 2>(2);
   const { cartItems, addToCart, updateQuantity, removeItem, clearCart, getCartItemCount } = useCart();
   
+  // Loading and infinite scroll state
+  const [isLoading, setIsLoading] = useState(true);
+  const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const observerRef = useRef<HTMLDivElement>(null);
+  
+  // Mobile detection
+  const isMobile = useIsMobile();
+  const ITEMS_PER_PAGE = isMobile ? 12 : 20;
+  
   // New state for modals
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [selectedChatProduct, setSelectedChatProduct] = useState<Product | null>(null);
@@ -88,24 +100,6 @@ const Marketplace = () => {
   
   // Track visitor with user association
   useVisitorTracking('/marketplace');
-  
-  // Mobile detection and pagination
-  const isMobile = useIsMobile();
-  const { 
-    currentItems, 
-    currentPage, 
-    totalPages, 
-    goToPage, 
-    nextPage, 
-    prevPage, 
-    hasNextPage, 
-    hasPrevPage 
-  } = usePagination({
-    items: filteredProducts,
-    itemsPerPageMobile: 18,
-    itemsPerPageDesktop: 36,
-    isMobile
-  });
 
   // Fetch new orders count for sellers
   const fetchNewOrdersCount = async () => {
@@ -315,6 +309,50 @@ const Marketplace = () => {
     calculateCategoryCounts();
   }, [products, searchTerm, selectedCategory, selectedSubcategory, sortBy, productTypeTab]);
 
+  // Reset displayed products when filtered products change
+  useEffect(() => {
+    setDisplayedProducts(filteredProducts.slice(0, ITEMS_PER_PAGE));
+    setHasMore(filteredProducts.length > ITEMS_PER_PAGE);
+  }, [filteredProducts, ITEMS_PER_PAGE]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMoreProducts();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentRef = observerRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [hasMore, loadingMore, displayedProducts.length, filteredProducts]);
+
+  // Load more products function
+  const loadMoreProducts = useCallback(() => {
+    if (loadingMore || !hasMore) return;
+    
+    setLoadingMore(true);
+    setTimeout(() => {
+      const currentLength = displayedProducts.length;
+      const nextProducts = filteredProducts.slice(currentLength, currentLength + ITEMS_PER_PAGE);
+      
+      setDisplayedProducts(prev => [...prev, ...nextProducts]);
+      setHasMore(currentLength + nextProducts.length < filteredProducts.length);
+      setLoadingMore(false);
+    }, 100);
+  }, [filteredProducts, displayedProducts.length, ITEMS_PER_PAGE, loadingMore, hasMore]);
+
   // Reset category and subcategory when switching product type tab
   useEffect(() => {
     setSelectedCategory('all');
@@ -384,6 +422,7 @@ const Marketplace = () => {
   };
 
   const fetchProducts = async () => {
+    setIsLoading(true);
     const { data, error } = await supabase
       .from('products')
       .select('*, subcategories(name)')
@@ -397,6 +436,7 @@ const Marketplace = () => {
         description: "Produkte konnten nicht geladen werden.",
         variant: "destructive"
       });
+      setIsLoading(false);
       return;
     }
 
@@ -426,6 +466,8 @@ const Marketplace = () => {
       });
       setLtcPrices(ltcPricesMap);
     }
+    
+    setIsLoading(false);
   };
 
   const calculateCategoryCounts = () => {
@@ -738,15 +780,24 @@ const Marketplace = () => {
               <OnlineUsersMarquee />
               
               <div className="flex flex-col gap-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Produkte suchen..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 h-12"
-                  />
-                </div>
+                <SearchAutocomplete
+                  products={products.map(p => ({
+                    id: p.id,
+                    title: p.title,
+                    price: p.price,
+                    image_url: p.image_url,
+                    product_type: p.product_type || 'physical'
+                  }))}
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                  onSelectProduct={(productId) => {
+                    const product = products.find(p => p.id === productId);
+                    if (product) {
+                      openProductModal(product);
+                    }
+                  }}
+                  placeholder="Produkte suchen..."
+                />
                 <div className="flex flex-wrap gap-3">
                   <Select value={selectedCategory} onValueChange={(value) => {
                     setSelectedCategory(value);
@@ -813,52 +864,57 @@ const Marketplace = () => {
             </div>
 
             {/* Products Grid with Modern Cards */}
-            <div id="products-grid" className={`grid ${mobileGridCols === 1 ? 'grid-cols-1' : 'grid-cols-2'} md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6`}>
-              {currentItems.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  sellerRating={sellerRatings[product.seller_id]}
-                  onProductClick={openProductModal}
-                  onAddToCart={handleAddToCart}
-                  onViewSeller={handleViewSellerProfile}
-                  onStartChat={(p) => {
-                    setSelectedChatProduct(p);
-                    setChatModalOpen(true);
-                  }}
-                  isOwner={user?.id === product.seller_id}
-                />
-              ))}
-            </div>
+            {isLoading ? (
+              <ProductGridSkeleton count={ITEMS_PER_PAGE} mobileGridCols={mobileGridCols} />
+            ) : (
+              <>
+                <div id="products-grid" className={`grid ${mobileGridCols === 1 ? 'grid-cols-1' : 'grid-cols-2'} md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6`}>
+                  {displayedProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      sellerRating={sellerRatings[product.seller_id]}
+                      onProductClick={openProductModal}
+                      onAddToCart={handleAddToCart}
+                      onViewSeller={handleViewSellerProfile}
+                      onStartChat={(p) => {
+                        setSelectedChatProduct(p);
+                        setChatModalOpen(true);
+                      }}
+                      isOwner={user?.id === product.seller_id}
+                    />
+                  ))}
+                </div>
 
-            {filteredProducts.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">Keine Produkte gefunden.</p>
-              </div>
+                {/* Infinite Scroll Loader */}
+                {hasMore && (
+                  <div 
+                    ref={observerRef} 
+                    className="flex justify-center items-center py-8"
+                  >
+                    {loadingMore && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span className="text-sm">Lade mehr...</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Products count */}
+                {!hasMore && displayedProducts.length > 0 && (
+                  <div className="text-center py-6">
+                    <p className="text-sm text-muted-foreground">
+                      {displayedProducts.length} von {filteredProducts.length} Produkten angezeigt
+                    </p>
+                  </div>
+                )}
+              </>
             )}
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-8">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={prevPage}
-                  disabled={!hasPrevPage}
-                >
-                  Zurück
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Seite {currentPage} von {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={nextPage}
-                  disabled={!hasNextPage}
-                >
-                  Weiter
-                </Button>
+            {!isLoading && filteredProducts.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Keine Produkte gefunden.</p>
               </div>
             )}
           </>
