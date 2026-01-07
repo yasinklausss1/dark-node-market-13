@@ -323,6 +323,72 @@ serve(async (req) => {
 
     console.log(`Order ${order.id} completed successfully with ${useEscrow ? 'escrow' : 'direct'} payment`);
 
+    // Send Telegram notification
+    try {
+      // Get product titles for notification
+      const productTitles: { title: string; quantity: number; price: number }[] = [];
+      for (const it of items) {
+        const { data: product } = await supabase
+          .from('products')
+          .select('title, price')
+          .eq('id', it.id)
+          .maybeSingle();
+        if (product) {
+          productTitles.push({ 
+            title: product.title, 
+            quantity: it.quantity, 
+            price: Number(product.price) 
+          });
+        }
+      }
+
+      // Get all seller usernames
+      const sellerUsernames: string[] = [];
+      for (const sellerId of Object.keys(sellerTotals)) {
+        const { data: sellerProfile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('user_id', sellerId)
+          .maybeSingle();
+        if (sellerProfile?.username) {
+          sellerUsernames.push(sellerProfile.username);
+        }
+      }
+
+      const telegramPayload = {
+        orderId: order.id,
+        buyerUsername: buyerProfile?.username || 'Unbekannt',
+        sellerUsernames,
+        amountCrypto: method === 'btc' ? totalBTC : totalLTC,
+        currency: method.toUpperCase(),
+        amountEur: totalEUR,
+        products: productTitles,
+        useEscrow
+      };
+
+      // Call the Telegram notification function
+      const telegramResponse = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-telegram-notification`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          },
+          body: JSON.stringify(telegramPayload)
+        }
+      );
+      
+      if (!telegramResponse.ok) {
+        console.error('Telegram notification failed:', await telegramResponse.text());
+      } else {
+        console.log('Telegram notification sent successfully');
+      }
+    } catch (telegramError) {
+      console.error('Error sending Telegram notification:', telegramError);
+      // Don't fail the order if Telegram notification fails
+    }
+
     return new Response(JSON.stringify({ 
       ok: true, 
       orderId: order.id,
